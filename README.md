@@ -6,6 +6,10 @@ Elsa is a tool that analyses your code without loading or running it.  It can tr
 
 # How do I run it
 
+**(work in progress)**
+
+Load the `elsa.el` file, then open the target file (e.g. `examples.el`) and eval `(elsa-process-file (buffer-file-name))` in `M-:`.  It will dump the analysis state.
+
 # How can I help Elsa to be better at the analysis?
 
 Elsa works out of the box without you having to annotate anything, however, the results will be largely useless.  You can help by adding metadata to your code which will get picked up and help refine the analysis.
