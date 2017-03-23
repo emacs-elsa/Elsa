@@ -40,6 +40,8 @@ Wrap the `defvar` (or `defvar-local`) form in `elsa-type` (see below.)
 
 You can wrap any form in `elsa-type` macro with second argument being the requested type.  This is a manual "cast" operation.  You shouldn't need to use it very often, but one case where it is handy is wrapping of `defvar`s.
 
+This macro does nothing except wraps the `&rest` with a `progn` so it shouldn't have any impact on performance.
+
 # How can I contribute to this project
 
 Open an issue if you want to work on something (not necessarily listed below in the roadmap) so we won't duplicate work.  Or just give us feedback or helpful tips.
@@ -62,3 +64,4 @@ Open an issue if you want to work on something (not necessarily listed below in 
     - [ ] Add undeclared variable warning (e.g. `setq` on not-declared variable or just using it)
     - [ ] Add unused variable warnings
     - [ ] Analyze all calls not just top-level
+    - [ ] Parse `defcustom` types
