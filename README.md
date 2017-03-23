@@ -12,7 +12,31 @@ Load the `elsa.el` file, then open the target file (e.g. `examples.el`) and eval
 
 # How can I help Elsa to be better at the analysis?
 
-Elsa works out of the box without you having to annotate anything, however, the results will be largely useless.  You can help by adding metadata to your code which will get picked up and help refine the analysis.
+Elsa works out of the box without you having to annotate anything, however, the results will be largely useless.  You can help by adding type metadata to your code which will get picked up and help refine the analysis.
+
+## How to construct the "type" name
+
+The types are symbols constructed according to the following guidelines:
+
+- For built-in types with test predicates, drop the `p` or `-p` suffix to get the type:
+    - `stringp` → `string`
+    - `integerp` → `integer`
+    - `markerp` → `marker`
+    - `hash-table-p` → `hash-table`
+- There are some built-in sum-types like `buffer-or-string` and `marker-or-integer` given that many Emacs functions accept these combinations.  For complete list refer to the documentation.
+- Unqualified `alist` and `plist` as subtypes of lists (Note: it is not yet decided  how to do container types).
+- For `cl-defstruct` use the structure name, so `(cl-defstruct my-package-foo bar)` will have type `my-package-foo`.
+- For EIEIO `defclass` use the class name.
+- Sum types can be specified with `&or` syntax similar to `edebug` instrumentation, so `[&or string integer]` is a type accepting both strings or integers.
+
+All types are by default non-nullable.  That means they do not accept `nil` or a nullable version of itself as a value.  You can turn any type into a nullable type by suffixing its symbol name with `?`.
+
+To use a nullable type safely you will be forced to perform a null-check; the analyzer can pick up the condition and restrict the type in the "if" or "else" branch to the (non-)nullable variant.  In some languages a nullable type is called `Maybe`, `Option` or similar.
+
+Some more ideas, not fully fleshed out:
+
+- A type that is a constant value.  In combination with sum types this can represent enumerations.
+- Nested type specifications, so we can have a "list of (integer or lists of string)".
 
 ## Functions
 
