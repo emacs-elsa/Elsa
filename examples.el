@@ -1,0 +1,23 @@
+;; An example file for analysis.  This file is *NOT* loaded, we only
+;; read it and analyse statically.
+
+(require 'dash)
+(require 'elsa-types)
+
+;; elsa-type annotates any form with this type
+(elsa-type string
+  (defvar foo 'lala))
+
+(defun use-foo (foo)
+  "Return string representation of FOO."
+  (declare (elsa-args string?) ;; nullable string
+           (elsa-return string))
+  (symbol-name foo))
+
+;; form is checked according to the definition of use-foo and foo
+;; variable
+(use-foo foo)
+
+(use-foo "or a literal value can be provided")
+
+(use-foo 1) ;; fails on integer literal
