@@ -30,6 +30,7 @@
 
 (require 'elsa-types)
 ;; (require 'elsa-scope)
+(require 'elsa-defun)
 
 (cl-defmacro elsa-cast (_type &rest forms)
   "Assign TYPE to FORMS"
@@ -45,11 +46,6 @@
   ((name :initarg :name)
    (type :initarg :type)))
 
-(defclass elsa-defun nil
-  ((name :initarg :name)
-   (args :initarg :args)
-   (return-type :initarg :return-type)))
-
 (defclass elsa-expression nil
   ((type :initarg :type)))
 
@@ -57,34 +53,10 @@
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar "" :name name :type type) defvars)))
 
-(defun elsa-defun-get-return-type (declarations)
-  "Get return type from DECLARATIONS."
-  (-when-let (return-type (cadr (--first (eq (car it) 'elsa-return) declarations)))
-    (elsa-make-type return-type)))
-
-(defun elsa--get-typed-args (args types)
-  "Attach types to ARGS according to TYPES."
-  (let ((re nil))
-    (-each args
-      (lambda (arg)
-        (if (memq arg '(&optional &rest &key))
-            (push (list arg) re)
-          (push (cons arg
-                      (elsa-make-type
-                       (if (consp types) (car types) 'mixed)))
-                re)
-          (!cdr types))))
-    (nreverse re)))
-
-(defmethod elsa-state-add-defun ((this elsa-state) name args declarations)
+(defmethod elsa-state-add-defun ((this elsa-state) defun)
+  (unless (elsa-defun-p defun) (error "defun must be `elsa-defun-p'"))
   (let ((defuns (oref this defuns)))
-    (puthash
-     name
-     (elsa-defun
-      ""
-      :name name :args args
-      :return-type (elsa-defun-get-return-type declarations))
-     defuns)))
+    (puthash (oref defun name) defun defuns)))
 
 (defmethod elsa-state-add-error ((this elsa-state) error)
   (oset this errors (cons error (oref this errors))))
@@ -149,11 +121,7 @@ in DECLARATIONS (or mixed type by default).
 
 BODY is the body of the function which is further analysed."
   (elsa-state-add-defun
-   state
-   name
-   (elsa--get-typed-args
-    args (cdr (--first (eq (car it) 'elsa-args) declarations)))
-   declarations))
+   state (elsa-make-defun name args declarations)))
 
 (defun elsa-analyse-form (form state &optional type)
   "Analyse FORM in STATE.
