@@ -87,6 +87,10 @@ DEFVARS contains the globally defined variables."
     (oref (gethash arg defvars) type))
    ((stringp arg)
     (elsa-make-type 'string))
+   ((integerp arg)
+    (elsa-make-type 'int))
+   ((eq arg nil)
+    (elsa-make-type nil))
    (t (elsa-make-type 'mixed))))
 
 (defun elsa-check-function (state types args)
