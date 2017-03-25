@@ -129,12 +129,17 @@ representing TYPE."
           :initform nil)))
 
 (defmethod elsa-sum-type-add ((this elsa-sum-type) other)
-  (unless (elsa-type-p other) (error "Other must by `elsa-type'"))
-  (oset this types (cons (oref this types) other))
-  this)
+  (unless (elsa-type-child-p other) (error "Other must be `elsa-type'"))
+  (if (elsa-type-nil-p other)
+      (oset this nullable t)
+    (oset this types (cons other (oref this types)))))
 
 (defmethod elsa-type-accept ((this elsa-sum-type) other)
   (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))
+
+(defmethod elsa-type-nullable-p ((this elsa-sum-type))
+  (or (oref this nullable)
+      (-any? 'elsa-type-nullable-p (oref this types))))
 
 (defclass elsa-type-nil (elsa-type) ())
 
