@@ -26,22 +26,52 @@
 
 (require 'eieio)
 
+(defun elsa-type--get-class-constructor (type)
+  "Return constructor information for TYPE.
+
+If the TYPE starts with elsa-type prefix, it is returned as-is.
+Otherwise, elsa-type- is prefixed.
+
+If the TYPE is suffixed with `?', the type is recognized as
+nullable.
+
+The return value is a plist with :constructor being the
+constructor and :nullable a boolean specifying if the type is
+nullable.
+
+Constructor is a symbol which is the actual EIEIO type
+representing TYPE."
+  (let* ((name (split-string (symbol-name type) "?"))
+         (class (intern
+                 (if (string-prefix-p "elsa-type" (car name))
+                     (car name)
+                   (concat "elsa-type-"  (car name))))))
+    (list :constructor class :nullable (equal (cadr name) ""))))
+
 (defun elsa-make-type (definition)
   "Return instance of class representing DEFINITION."
-  (let* ((name (split-string (symbol-name definition) "?"))
-         (class (intern (concat "elsa-type-"  (car name)))))
-    (make-instance class :nullable (equal (cadr name) ""))))
+  (-let (((&plist :constructor c :nullable n)
+          (elsa-type--get-class-constructor definition)))
+    (make-instance c :nullable n)))
 
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
   (cons type
         (-mapcat 'elsa--eieio-class-parents-recursive (eieio-class-parents type))))
 
+;; TODO: what is the relationship of `a' and `a?'
 (defun elsa-instance-of (this other)
-  "Non-nil of THIS is instance of OTHER."
-  (let ((this-type (eieio-object-class this))
-        (other-type (eieio-object-class other)))
-    (not (null (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
+  "Non-nil if THIS is instance of OTHER."
+  (let ((this-type
+         (if (symbolp this)
+             (plist-get (elsa-type--get-class-constructor this) :constructor)
+           (eieio-object-class this)))
+        (other-type
+         (if (symbolp other)
+             (plist-get (elsa-type--get-class-constructor other) :constructor)
+           (eieio-object-class other))))
+    (not (null
+          (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
 
 (defclass elsa-type nil
   ((nullable :type boolean
