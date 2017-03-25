@@ -31,7 +31,7 @@
 (require 'elsa-types)
 ;; (require 'elsa-scope)
 
-(cl-defmacro elsa-type (type &rest forms)
+(cl-defmacro elsa-cast (_type &rest forms)
   "Assign TYPE to FORMS"
   (declare (indent 1))
   `(progn ,@forms))

@@ -5,7 +5,7 @@
 (require 'elsa-types)
 
 ;; elsa-type annotates any form with this type
-(elsa-type string
+(elsa-cast string
   (defvar foo 'lala))
 
 (defun use-foo (foo)

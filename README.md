@@ -84,12 +84,11 @@ forms so you don't have to do anything!
 
 Wrap the `defvar` (or `defvar-local`) form in `elsa-type` (see below.)
 
-## Annotate any other form with `elsa-type`
+## Annotate any form with `elsa-cast`
 
-You can wrap any form in `elsa-type` macro with second argument being
-the requested type.  This is a manual "cast" operation.  You shouldn't
-need to use it very often, but one case where it is handy is wrapping
-of `defvar`s.
+You can wrap any form with `elsa-cast` macro with second argument
+being the requested type.  This is a manual "cast" operation.  You
+shouldn't need to use it very often, but it is there for convenience around unannotated code.
 
 This macro does nothing except wraps the `&rest` with a `progn` so it
 shouldn't have any impact on performance.
