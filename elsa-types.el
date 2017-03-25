@@ -174,9 +174,18 @@ representing TYPE."
 
 (defclass elsa-type-number (elsa-type-trait-just-nullable elsa-type) ())
 
+(defmethod elsa-type-describe ((this elsa-type-number))
+  "number")
+
 (defclass elsa-type-int (elsa-type-number) ())
 
+(defmethod elsa-type-describe ((this elsa-type-int))
+  "int")
+
 (defclass elsa-type-float (elsa-type-number) ())
+
+(defmethod elsa-type-describe ((this elsa-type-float))
+  "float")
 
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
