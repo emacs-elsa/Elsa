@@ -26,6 +26,8 @@
 
 (require 'eieio)
 
+(require 'dash)
+
 (require 'elsa-types)
 
 (defclass elsa-defun nil
