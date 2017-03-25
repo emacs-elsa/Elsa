@@ -1,4 +1,4 @@
-#  Elsa - Emacs Lisp Static Analyser
+#  Elsa - Emacs Lisp Static Analyser [![Build Status](https://travis-ci.org/Fuco1/Elsa.svg?branch=master)](https://travis-ci.org/Fuco1/Elsa)
 
 (Your favourite princess now in Emacs!)
 
