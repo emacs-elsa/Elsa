@@ -172,5 +172,11 @@ representing TYPE."
 (defmethod elsa-type-describe ((this elsa-type-buffer))
   "buffer")
 
+(defclass elsa-type-number (elsa-type-trait-just-nullable elsa-type) ())
+
+(defclass elsa-type-int (elsa-type-number) ())
+
+(defclass elsa-type-float (elsa-type-number) ())
+
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
