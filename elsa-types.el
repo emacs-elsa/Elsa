@@ -100,7 +100,9 @@ representing TYPE."
 
 (defmethod elsa-type-accept ((this elsa-type-trait-just-nullable) other)
   (cond
-   ((elsa-instance-of other this))
+   ((and (elsa-instance-of other this)
+         (or (elsa-type-nullable-p this)
+             (not (elsa-type-nullable-p other)))))
    ((and (elsa-type-nullable-p this)
          (elsa-type-nil-p other)))
    ((and (elsa-sum-type-p other)
