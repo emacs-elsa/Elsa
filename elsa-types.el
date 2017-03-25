@@ -80,7 +80,7 @@ representing TYPE."
   :abstract t)
 
 (defmethod elsa-type-describe ((this elsa-type))
-  (error "Not implemented yet"))
+  (symbol-name (eieio-object-class this)))
 
 (defmethod elsa-type-accept ((this elsa-type) other)
   (error "Not implemented yet"))
