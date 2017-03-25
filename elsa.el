@@ -57,12 +57,6 @@
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar "" :name name :type type) defvars)))
 
-(defun elsa-make-type (definition)
-  "Return instance of class representing DEFINITION."
-  (let* ((name (split-string (symbol-name definition) "?"))
-         (class (intern (concat "elsa-type-"  (car name)))))
-    (make-instance class :nullable (equal (cadr name) ""))))
-
 (defun elsa-defun-get-return-type (declarations)
   "Get return type from DECLARATIONS."
   (-when-let (return-type (cadr (--first (eq (car it) 'elsa-return) declarations)))

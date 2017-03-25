@@ -26,6 +26,12 @@
 
 (require 'eieio)
 
+(defun elsa-make-type (definition)
+  "Return instance of class representing DEFINITION."
+  (let* ((name (split-string (symbol-name definition) "?"))
+         (class (intern (concat "elsa-type-"  (car name)))))
+    (make-instance class :nullable (equal (cadr name) ""))))
+
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
   (cons type
