@@ -4,9 +4,7 @@
 
 ;; Author: Matúš Goljer <matus.goljer@gmail.com>
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
-;; Version: 0.0.1
 ;; Created: 23rd March 2017
-;; Package-requires: ((dash "2.10.0"))
 ;; Keywords: languages, lisp
 
 ;; This program is free software; you can redistribute it and/or
