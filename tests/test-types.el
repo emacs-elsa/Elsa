@@ -67,6 +67,18 @@
         (elsa-sum-type-add sum (elsa-make-type 'string))
         (expect (length (oref sum types)) :to-equal 2)))
 
+    (it "should accept a type if it is accepted by at least one type of the sum"
+      (let ((sum (elsa-sum-type "")))
+        (elsa-sum-type-add sum (elsa-make-type 'int))
+        (elsa-sum-type-add sum (elsa-make-type 'string))
+        (expect (elsa-type-accept sum (elsa-make-type 'int)) :to-be-truthy)))
+
+    (it "should not accept a type if it is not accepted by at least one type of the sum"
+      (let ((sum (elsa-sum-type "")))
+        (elsa-sum-type-add sum (elsa-make-type 'int))
+        (elsa-sum-type-add sum (elsa-make-type 'string))
+        (expect (elsa-type-accept sum (elsa-make-type 'float)) :not :to-be-truthy)))
+
     (it "should be nullable if some type in the sum is nullable"
       (let ((sum (elsa-sum-type "")))
         (elsa-sum-type-add sum (elsa-make-type 'int))
@@ -94,12 +106,12 @@
                                 (elsa-make-type 'nil))
               :not :to-be-truthy))
 
-    (it "should accept non-nullable types if they are nullable"
+    (it "should accept non-nullable types if it is nullable"
       (expect (elsa-type-accept (elsa-make-type 'string?)
                                 (elsa-make-type 'string))
               :to-be-truthy))
 
-    (it "should not accept nullable types if they are non-nullable"
+    (it "should not accept nullable types if it is non-nullable"
       (expect (elsa-type-accept (elsa-make-type 'string)
                                 (elsa-make-type 'string?))
               :not :to-be-truthy))
