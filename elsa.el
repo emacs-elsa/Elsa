@@ -74,14 +74,15 @@
   (let ((buffer (find-file-noselect file))
         (state (elsa-state ""))
         (form))
-    (save-excursion
-      (save-restriction
-        (widen)
-        (goto-char (point-min))
-        (condition-case err
-            (while (setq form (read buffer))
-              (elsa-analyse-form state form))
-          (end-of-file (message "err %S" err)))))
+    (with-current-buffer buffer
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (point-min))
+          (condition-case _err
+              (while (setq form (read buffer))
+                (elsa-analyse-form state form))
+            (end-of-file t)))))
     (oset state errors (nreverse (oref state errors)))
     state))
 
