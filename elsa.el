@@ -203,10 +203,6 @@ STATE, BINDINGS, BODY."
     ;; TODO: this is wrong if nested let rebound a variable, we need to "pop!"
     (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
 
-(defun elsa-analyse-symbol (state symbol)
-
-  )
-
 ;; There are multiple tasks we need to do:
 ;; - crawl the forms and build up scope
 ;; - figure out types of expressions (and store those?)
@@ -243,9 +239,7 @@ If TYPE is non-nil, force this type on FORM."
     (`(let* ,bindings . ,body)
      (elsa-analyse-let* state bindings body))
     (`(,function-name . ,rest)
-     (elsa-analyse-function-call state (cons function-name rest)))
-    ((and (pred symbolp) symbol)
-     (elsa-analyse-symbol state symbol))))
+     (elsa-analyse-function-call state (cons function-name rest)))))
 
 (provide 'elsa)
 ;;; elsa.el ends here
