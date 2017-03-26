@@ -31,6 +31,7 @@
 (require 'elsa-types)
 ;; (require 'elsa-scope)
 (require 'elsa-defun)
+(require 'elsa-error)
 
 (cl-defmacro elsa-cast (_type &rest forms)
   "Assign TYPE to FORMS"
@@ -105,9 +106,12 @@ STATE, TYPES, ARGS"
            ((not (elsa-type-accept type other))
             (elsa-state-add-error
              state
-             (format "Invalid type, has %s, expected %s"
-                     (elsa-type-describe other)
-                     (elsa-type-describe type))))))
+             (elsa-error
+              ""
+              :message (format "Invalid type, has %s, expected %s"
+                               (elsa-type-describe other)
+                               (elsa-type-describe type))
+              :line (line-number-at-pos))))))
         ;; TODO: handle optional and keyword args
         (!cdr types)))))
 
