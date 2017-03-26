@@ -104,9 +104,9 @@ feedback or helpful tips.
 - [x] Make it use Cask
 - [x] Setup buttercup tests
     - [-] And then write tests :)
-- [ ] Make a command that will analyze current buffer and show the
+- [-] Make a command that will analyze current buffer and show the
   errors somehow
-    - [ ] Make a flycheck extension.
+    - [-] Make a flycheck extension.
 - [-] Keep adding more built-in types
 - [ ] Support type narrowing for all the special forms like `and`,
   `or` and the built-in predicates (you can discard some parts of sum

@@ -86,6 +86,15 @@
     (oset state errors (nreverse (oref state errors)))
     state))
 
+(defun elsa-flycheck ()
+  "Run `elsa-process-file' and output errors to stdout for flycheck."
+  (let* ((file (car command-line-args-left))
+         (state (elsa-process-file file))
+         (errors (oref state errors)))
+    (--each errors (princ (format "%s:%s\n"
+                                  (oref it line)
+                                  (oref it message))))))
+
 (defun elsa--get-expression-type (state expr)
   "Get type of expression EXPR in STATE.
 
