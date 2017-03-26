@@ -196,5 +196,13 @@ This is not accepted by any type because we don't know what it is.")
 (defmethod elsa-type-describe ((this elsa-type-float))
   "float")
 
+(defclass elsa-type-list (elsa-type-trait-just-nullable elsa-type) ())
+
+(defmethod elsa-type-describe ((this elsa-type-list))
+  "list")
+
+;; TODO: add a function type, then use it in defuns and variables
+;; which are lambdas
+
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
