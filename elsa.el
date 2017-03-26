@@ -128,18 +128,18 @@ DEFVARS contains the globally defined variables."
 STATE, TYPES, ARGS"
   (-each args
     (-lambda (arg)
-      (let ((type (cdar types))
-            (other (elsa--get-expression-type state arg)))
-        (cond
-         ((not (elsa-type-accept type other))
-          (elsa-state-add-error
-           state
-           (elsa-error
-            ""
-            :message (format "Invalid type, has %s, expected %s"
-                             (elsa-type-describe other)
-                             (elsa-type-describe type))
-            :line (line-number-at-pos))))))
+      (-when-let (type (cdar types))
+        (let ((other (elsa--get-expression-type state arg)))
+          (cond
+           ((not (elsa-type-accept type other))
+            (elsa-state-add-error
+             state
+             (elsa-error
+              ""
+              :message (format "Invalid type, has %s, expected %s"
+                               (elsa-type-describe other)
+                               (elsa-type-describe type))
+              :line (line-number-at-pos)))))))
       ;; TODO: handle optional and keyword args
       (!cdr types))))
 
