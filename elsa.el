@@ -53,6 +53,7 @@
 (defclass elsa-expression nil
   ((type :initarg :type)))
 
+;; TODO: take defvar directly? For consistency
 (defmethod elsa-state-add-defvar ((this elsa-state) name type)
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar "" :name name :type type) defvars)))
@@ -76,53 +77,75 @@
         (goto-char (point-min))
         (condition-case err
             (while (setq form (read buffer))
-              (elsa-analyse-form form state))
+              (elsa-analyse-form state form))
           (end-of-file (message "err %S" err)))))
     (oset state errors (nreverse (oref state errors)))
     state))
 
-(defun elsa--get-type-of-argument (arg defvars)
-  "Get type of argument ARG in a function call form.
+(defun elsa--get-expression-type (state expr)
+  "Get type of expression EXPR in STATE.
 
 DEFVARS contains the globally defined variables."
-  (cond
-   ((and (symbolp arg)
-         (gethash arg defvars))
-    (oref (gethash arg defvars) type))
-   ((stringp arg)
-    (elsa-make-type 'string))
-   ((integerp arg)
-    (elsa-make-type 'int))
-   ((eq arg nil)
-    (elsa-make-type nil))
-   (t (elsa-make-type 'mixed))))
+  (let ((defvars (oref state defvars))
+        (defuns (oref state defuns))
+        (scope (oref state scope)))
+    (cond
+     ((and (consp expr)
+           (gethash (car expr) defuns))
+      (oref (gethash (car expr) defuns) return-type))
+     ((and (symbolp expr)
+           (elsa-scope-get-var scope expr))
+      (oref (elsa-scope-get-var scope expr) type))
+     ((and (symbolp expr)
+           (gethash expr defvars))
+      (oref (gethash expr defvars) type))
+     ;; if it is a symbol and it is not local variable or defvar, then
+     ;; it is not bound and therefore an error -> unbound type
+     ((and (symbolp expr)
+           (not (eq expr nil))
+           (not (eq expr t))
+           (not (keywordp expr)))
+      ;; TODO: should we mutate the state here with an error???
+      (elsa-state-add-error
+       state (elsa-error
+              "" :message (format "Unbound variable `%s'" (symbol-name expr))
+              :line (line-number-at-pos)))
+      (elsa-make-type 'unbound))
+     ((stringp expr)
+      (elsa-make-type 'string))
+     ((integerp expr)
+      (elsa-make-type 'int))
+     ((eq expr nil)
+      (elsa-make-type nil))
+     (t (elsa-make-type 'mixed)))))
 
 (defun elsa-check-function (state types args)
   "Check if function accepts correct arguments.
 STATE, TYPES, ARGS"
-  (let ((defvars (oref state defvars)))
-    (-each args
-      (-lambda (arg)
-        (let ((type (cdar types))
-              (other (elsa--get-type-of-argument arg defvars)))
-          (cond
-           ((not (elsa-type-accept type other))
-            (elsa-state-add-error
-             state
-             (elsa-error
-              ""
-              :message (format "Invalid type, has %s, expected %s"
-                               (elsa-type-describe other)
-                               (elsa-type-describe type))
-              :line (line-number-at-pos))))))
-        ;; TODO: handle optional and keyword args
-        (!cdr types)))))
+  (-each args
+    (-lambda (arg)
+      (let ((type (cdar types))
+            (other (elsa--get-expression-type state arg)))
+        (cond
+         ((not (elsa-type-accept type other))
+          (elsa-state-add-error
+           state
+           (elsa-error
+            ""
+            :message (format "Invalid type, has %s, expected %s"
+                             (elsa-type-describe other)
+                             (elsa-type-describe type))
+            :line (line-number-at-pos))))))
+      ;; TODO: handle optional and keyword args
+      (!cdr types))))
 
 (defun elsa-analyse-function-call (state form)
   "Analyse function call FORM in STATE."
   (let ((defuns (oref state defuns)))
     (-when-let (def (gethash (car form) defuns))
-      (elsa-check-function state (oref def args) (cdr form)))))
+      (elsa-check-function state (oref def args) (cdr form))))
+  ;; TODO: map recursively on arguments
+  (-each (cdr form) (lambda (f) (elsa-analyse-form state f))))
 
 (defun elsa-analyse-defun (state name args body &optional declarations)
   "Add function to STATE under NAME.
@@ -134,13 +157,65 @@ BODY is the body of the function which is further analysed."
   (elsa-state-add-defun
    state (elsa-make-defun name args declarations)))
 
-(defun elsa-analyse-form (form state &optional type)
+(defun elsa-analyse-let (state bindings body)
+  "Analyse a `let' form.
+STATE, BINDINGS, BODY."
+  (let ((scope (oref state scope))
+        (new-vars nil))
+    (-each bindings
+      (lambda (binding)
+        (pcase binding
+          (`(,var ,form)
+           (push (elsa-variable
+                  "" :name var :type (elsa--get-expression-type
+                                      state form))
+                 new-vars))
+          (var
+           (push (elsa-variable
+                  "" :name var :type (elsa-make-type 'nil))
+                 new-vars)))))
+    (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
+    (-each body (lambda (f) (elsa-analyse-form state f)))
+    ;; TODO: this is wrong if nested let rebound a variable, we need to "pop!"
+    (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
+
+(defun elsa-analyse-let* (state bindings body)
+  "Analyse a `let*' form.
+STATE, BINDINGS, BODY."
+  (let ((scope (oref state scope))
+        (new-vars nil))
+    (-each bindings
+      (lambda (binding)
+        (let ((variable
+               (pcase binding
+                 (`(,var ,form)
+                  (elsa-variable
+                   "" :name var :type (elsa--get-expression-type
+                                       state form)))
+                 (var (elsa-variable "" :name var :type (elsa-make-type 'nil))))))
+          (elsa-scope-add-variable scope variable)
+          (push variable new-vars))))
+    (-each body (lambda (f) (elsa-analyse-form state f)))
+    ;; TODO: this is wrong if nested let rebound a variable, we need to "pop!"
+    (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
+
+(defun elsa-analyse-symbol (state symbol)
+
+  )
+
+;; There are multiple tasks we need to do:
+;; - crawl the forms and build up scope
+;; - figure out types of expressions (and store those?)
+;; - run the checkers at each "node" (this should be pluggable and
+;;   dynamic)
+;; - update global state with defuns/defvars
+(defun elsa-analyse-form (state form &optional type)
   "Analyse FORM in STATE.
 
 If TYPE is non-nil, force this type on FORM."
   (pcase form
     (`(elsa-cast ,type ,form)
-     (elsa-analyse-form form state (elsa-make-type type)))
+     (elsa-analyse-form state form (elsa-make-type type)))
     ;; TODO: handle type
     (`(defvar ,name . ,_)
      (elsa-state-add-defvar state name (or type (elsa-type-mixed ""))))
@@ -157,8 +232,14 @@ If TYPE is non-nil, force this type on FORM."
      (elsa-analyse-defun state name args body))
     (`(defun ,name ,args . ,body)
      (elsa-analyse-defun state name args body))
+    (`(let ,bindings . ,body)
+     (elsa-analyse-let state bindings body))
+    (`(let* ,bindings . ,body)
+     (elsa-analyse-let* state bindings body))
     (`(,function-name . ,rest)
-     (elsa-analyse-function-call state (cons function-name rest)))))
+     (elsa-analyse-function-call state (cons function-name rest)))
+    ((and (pred symbolp) symbol)
+     (elsa-analyse-symbol state symbol))))
 
 (provide 'elsa)
 ;;; elsa.el ends here
