@@ -137,7 +137,7 @@ This is not accepted by any type because we don't know what it is.")
           :initform nil)))
 
 (defmethod elsa-sum-type-add ((this elsa-sum-type) other)
-  (unless (elsa-type-child-p other) (error "Other must be `elsa-type'"))
+  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (if (elsa-type-nil-p other)
       (oset this nullable t)
     (oset this types (cons other (oref this types)))))
