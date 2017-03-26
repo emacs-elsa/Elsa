@@ -29,7 +29,7 @@
 (require 'dash)
 
 (require 'elsa-types)
-;; (require 'elsa-scope)
+(require 'elsa-scope)
 (require 'elsa-defun)
 (require 'elsa-error)
 
@@ -38,10 +38,13 @@
   (declare (indent 1))
   `(progn ,@forms))
 
+;; TODO: add some methods for looking up variables/defuns, so we don't
+;; directly work with the hashtable
 (defclass elsa-state nil
   ((defvars :initform (make-hash-table))
    (defuns :initform (make-hash-table))
-   (errors :initform nil)))
+   (errors :initform nil)
+   (scope :initform (elsa-scope ""))))
 
 (defclass elsa-defvar nil
   ((name :initarg :name)
