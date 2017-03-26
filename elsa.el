@@ -158,8 +158,16 @@ ARGS is the arglist which might be enriched with types provided
 in DECLARATIONS (or mixed type by default).
 
 BODY is the body of the function which is further analysed."
-  (elsa-state-add-defun
-   state (elsa-make-defun name args declarations)))
+  (let ((def (elsa-make-defun name args declarations))
+        (scope (oref state scope))
+        (vars nil))
+    (elsa-state-add-defun state def)
+    (-each (oref def args)
+      (-lambda ((name . v))
+        (push (elsa-variable "" :name name :type v) vars)))
+    (-each vars (lambda (v) (elsa-scope-add-variable scope v)))
+    (-each body (lambda (f) (elsa-analyse-form state f)))
+    (-each vars (lambda (v) (elsa-scope-remove-variable scope v)))))
 
 (defun elsa-analyse-let (state bindings body)
   "Analyse a `let' form.
