@@ -10,7 +10,7 @@ before_install:
   - evm install $EVM_EMACS --use --skip
   - cask install
 script:
-  - cask exec buttercup -L .
+  - cask exec buttercup -L . -L tests
 
 matrix:
   fast_finish: true

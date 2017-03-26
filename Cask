@@ -7,4 +7,5 @@
 (depends-on "dash")
 
 (development
+ (depends-on "undercover")
  (depends-on "buttercup"))

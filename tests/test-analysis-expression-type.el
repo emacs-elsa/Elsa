@@ -1,5 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
+(require 'elsa-undercover)
 (require 'elsa)
 
 (describe "Expression type resolution"
