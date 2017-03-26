@@ -33,6 +33,9 @@
 (require 'elsa-defun)
 (require 'elsa-error)
 
+(push '(elsa-args (lambda (&rest _) t)) defun-declarations-alist)
+(push '(elsa-return (lambda (&rest _) t)) defun-declarations-alist)
+
 (cl-defmacro elsa-cast (_type &rest forms)
   "Assign TYPE to FORMS"
   (declare (indent 1))
