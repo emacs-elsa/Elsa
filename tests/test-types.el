@@ -93,6 +93,20 @@
         (expect (length (oref sum types)) :to-equal 1))))
 
 
+  (describe "Mixed type"
+
+
+    (it "should accept any proper type"
+      (expect (elsa-type-accept (elsa-make-type 'mixed)
+                                (elsa-make-type 'string))
+              :to-be-truthy))
+
+    (it "should not accept unbound type"
+      (expect (elsa-type-accept (elsa-make-type 'mixed)
+                                (elsa-make-type 'unbound))
+              :not :to-be-truthy)))
+
+
   (describe "Just-nullable type"
 
 

@@ -94,6 +94,14 @@ representing TYPE."
 (defmethod elsa-type-make-nullable ((this elsa-type))
   (make-instance (eieio-object-class this) :nullable t))
 
+(defclass elsa-type-unbound (elsa-type) ()
+  :documentation "Type of an unbound variable.
+
+This is not accepted by any type because we don't know what it is.")
+
+(defmethod elsa-type-describe ((this elsa-type-unbound))
+  "unbound")
+
 (defclass elsa-type-trait-just-nullable nil
   ()
   :abstract t)
@@ -154,8 +162,9 @@ representing TYPE."
 (defmethod elsa-type-describe ((this elsa-type-mixed))
   "mixed")
 
-(defmethod elsa-type-accept ((this elsa-type-mixed) _other)
-  t)
+(defmethod elsa-type-accept ((this elsa-type-mixed) other)
+  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
+  (not (eq (eieio-object-class other) 'elsa-type-unbound)))
 
 (defmethod elsa-type-nullable-p ((this elsa-type-mixed))
   t)
