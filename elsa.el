@@ -234,6 +234,8 @@ If TYPE is non-nil, force this type on FORM."
      (elsa-analyse-defun state name args body declarations))
     (`(defun ,name ,args ,(pred stringp) . ,body)
      (elsa-analyse-defun state name args body))
+    (`(defun ,name ,args (declare . ,declarations) . ,body)
+     (elsa-analyse-defun state name args body declarations))
     (`(defun ,name ,args . ,body)
      (elsa-analyse-defun state name args body))
     (`(let ,bindings . ,body)
