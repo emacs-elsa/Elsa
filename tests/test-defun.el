@@ -10,7 +10,11 @@
     (it "should parse the declarations for return type"
       (let ((type (elsa-defun--get-return-type
                    '((foo bar) (elsa-return string)))))
-        (expect (elsa-type-string-p type) :to-be-truthy))))
+        (expect (elsa-type-string-p type) :to-be-truthy)))
+
+    (it "should use mixed type for missing return type"
+      (let ((type (elsa-defun--get-return-type '((foo bar)))))
+        (expect (elsa-type-mixed-p type) :to-be-truthy))))
 
 
   (describe "Argument types"

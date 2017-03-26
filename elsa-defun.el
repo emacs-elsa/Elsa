@@ -37,8 +37,9 @@
 
 (defun elsa-defun--get-return-type (declarations)
   "Get return type from DECLARATIONS."
-  (-when-let (return-type (cadr (--first (eq (car it) 'elsa-return) declarations)))
-    (elsa-make-type return-type)))
+  (-if-let (return-type (cadr (--first (eq (car it) 'elsa-return) declarations)))
+      (elsa-make-type return-type)
+    (elsa-make-type 'mixed)))
 
 (defun elsa-defun--get-typed-args (args types)
   "Attach types to ARGS according to TYPES."
