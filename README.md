@@ -83,6 +83,7 @@ forms so you don't have to do anything!
 ## Variables defined as `defvar`
 
 Wrap the `defvar` (or `defvar-local`) form in `elsa-type` (see below.)
+`elsa-declare-var`
 
 ## Annotate any form with `elsa-cast`
 

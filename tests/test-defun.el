@@ -15,7 +15,7 @@
 
     (it "should use mixed type for missing return type"
       (let ((type (elsa-defun--get-return-type '((foo bar)))))
-        (expect (elsa-type-mixed-p type) :to-be-truthy))))
+        (expect (elsa-type-accept type (elsa-make-type 'mixed)) :to-be-truthy))))
 
 
   (describe "Argument types"
@@ -28,12 +28,18 @@
     (it "should use as much types as possible and used mixed type for the rest"
       (let ((types (elsa-defun--get-typed-args (list 'a 'b) (list 'string))))
         (expect (elsa-type-string-p (cdr (assq 'a types))) :to-be-truthy)
-        (expect (elsa-type-mixed-p (cdr (assq 'b types))) :to-be-truthy)))
+        (expect (elsa-type-accept (cdr (assq 'b types))
+                                  (elsa-make-type 'mixed))
+                :to-be-truthy)))
 
     (it "should use mixed type for untyped arguments"
       (let ((types (elsa-defun--get-typed-args (list 'a 'b) nil)))
-        (expect (elsa-type-mixed-p (cdr (assq 'a types))) :to-be-truthy)
-        (expect (elsa-type-mixed-p (cdr (assq 'b types))) :to-be-truthy)))
+        (expect (elsa-type-accept (cdr (assq 'a types))
+                                  (elsa-make-type 'mixed))
+                :to-be-truthy)
+        (expect (elsa-type-accept (cdr (assq 'b types))
+                                  (elsa-make-type 'mixed))
+                :to-be-truthy)))
 
     (it "should remember the argument list &-markers"
       (let ((types (elsa-defun--get-typed-args
@@ -41,7 +47,9 @@
                     (list 'string 'string 'mixed))))
         (expect (elsa-type-string-p (cdr (assq 'a types))) :to-be-truthy)
         (expect (elsa-type-string-p (cdr (assq 'b types))) :to-be-truthy)
-        (expect (elsa-type-mixed-p (cdr (assq 'c types))) :to-be-truthy)
+        (expect (elsa-type-accept (cdr (assq 'c types))
+                                  (elsa-make-type 'mixed))
+                :to-be-truthy)
         (expect (nth 1 types) :to-equal (list '&optional))
         (expect (nth 3 types) :to-equal (list '&rest)))))
 

@@ -49,6 +49,7 @@
    (errors :initform nil)
    (scope :initform (elsa-scope ""))))
 
+;; TODO: unify with `elsa-variable'?
 (defclass elsa-defvar nil
   ((name :initarg :name)
    (type :initarg :type)))
@@ -130,6 +131,8 @@ DEFVARS contains the globally defined variables."
       (elsa-make-type 'int))
      ((eq expr nil)
       (elsa-make-type nil))
+     ((eq expr t)
+      (elsa-make-type 'mixed))
      (t (elsa-make-type 'mixed)))))
 
 (defun elsa-check-function (state types args)
@@ -156,6 +159,7 @@ STATE, TYPES, ARGS"
   "Analyse function call FORM in STATE."
   (let ((defuns (oref state defuns)))
     (-when-let (def (gethash (car form) defuns))
+      ;; TODO: make the check a pluggable "rule" for this kind of node
       (elsa-check-function state (oref def args) (cdr form))))
   ;; TODO: map recursively on arguments
   (-each (cdr form) (lambda (f) (elsa-analyse-form state f))))
@@ -197,12 +201,12 @@ STATE, BINDINGS, BODY."
                  new-vars)))))
     (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
     (-each body (lambda (f) (elsa-analyse-form state f)))
-    ;; TODO: this is wrong if nested let rebound a variable, we need to "pop!"
     (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
 
 (defun elsa-analyse-let* (state bindings body)
   "Analyse a `let*' form.
 STATE, BINDINGS, BODY."
+  (declare (elsa-args mixed list list))
   (let ((scope (oref state scope))
         (new-vars nil))
     (-each bindings
@@ -217,8 +221,25 @@ STATE, BINDINGS, BODY."
           (elsa-scope-add-variable scope variable)
           (push variable new-vars))))
     (-each body (lambda (f) (elsa-analyse-form state f)))
-    ;; TODO: this is wrong if nested let rebound a variable, we need to "pop!"
     (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
+
+(defun elsa-analyse-if (state if then else)
+  "Analyse an `if' form.
+STATE, IF, THEN, ELSE."
+  (let ((scope (oref state scope)))
+    (pcase if
+      ((and (pred keywordp) sym) t)
+      ((and (pred symbolp) sym)
+       ;; If the symbol is a variable, restrict it for the `then' branch
+       ;; to be non-nullable and for the `else' to be nil.
+       (-if-let (var (elsa-scope-get-var scope sym))
+           (progn
+             (elsa-variable-surely-not var (elsa-make-type 'nil))
+             (elsa-analyse-form then)
+             (elsa-variable-pop-surely-not var))
+         (elsa-variable-surely var (elsa-make-type 'nil))
+         (elsa-analyse-form else)
+         (elsa-variable-pop-surely var))))))
 
 ;; There are multiple tasks we need to do:
 ;; - crawl the forms and build up scope
@@ -231,17 +252,19 @@ STATE, BINDINGS, BODY."
 
 If TYPE is non-nil, force this type on FORM."
   (pcase form
+    (`(elsa-declare ,function . ,args)
+     (elsa-process-declare function args))
     (`(elsa-cast ,type ,form)
      (elsa-analyse-form state form (elsa-make-type type)))
     ;; TODO: handle type
     (`(defvar ,name . ,_)
-     (elsa-state-add-defvar state name (or type (elsa-type-mixed ""))))
+     (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
     ;; TODO: handle type
     (`(defcustom ,name ,_ ,(pred stringp) . ,_)
-     (elsa-state-add-defvar state name (or type (elsa-type-mixed ""))))
+     (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
     ;; TODO: handle type
     (`(defcustom ,name ,_ . ,_)
-     (elsa-state-add-defvar state name (or type (elsa-type-mixed ""))))
+     (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
     ;; TODO: add type inference to get return type from exit forms
     (`(defun ,name ,args ,(pred stringp) (declare . ,declarations) . ,body)
      (elsa-analyse-defun state name args body declarations))

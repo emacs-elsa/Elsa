@@ -46,14 +46,16 @@
               :to-equal 'elsa-type-nil))
 
     (it "should not recognize t as unbound variable"
-      (expect (eieio-object-class
-               (elsa--get-expression-type (elsa-state "") t))
-              :to-equal 'elsa-type-mixed))
+      (expect (elsa-type-accept
+               (elsa--get-expression-type (elsa-state "") t)
+               (elsa-make-type 'mixed))
+              :to-be-truthy))
 
     (it "should not recognize keywords as unbound variable"
-      (expect (eieio-object-class
-               (elsa--get-expression-type (elsa-state "") :foo))
-              :to-equal 'elsa-type-mixed)))
+      (expect (elsa-type-accept
+               (elsa--get-expression-type (elsa-state "") :foo)
+               (elsa-make-type 'mixed))
+              :to-be-truthy)))
 
 
   (describe "Working with function calls"

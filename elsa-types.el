@@ -26,6 +26,10 @@
 
 (require 'eieio)
 
+(defmacro elsa-declare (function :args arg-types :return return-type)
+  "Macro used at read time to declare argument and return types."
+  nil)
+
 (defun elsa-type--get-class-constructor (type)
   "Return constructor information for TYPE.
 
@@ -50,9 +54,26 @@ representing TYPE."
 
 (defun elsa-make-type (definition)
   "Return instance of class representing DEFINITION."
-  (-let (((&plist :constructor c :nullable n)
-          (elsa-type--get-class-constructor definition)))
-    (make-instance c :nullable n)))
+  (pcase definition
+    ((and (pred vectorp) vector)
+     (let ((definition (append vector nil)))
+       (pcase definition
+         (`(&or . ,types)
+          (let ((sum (elsa-make-type 'sum)))
+            (--each types (elsa-sum-type-add sum (elsa-make-type it)))
+            sum)))))
+    (`sum
+     (make-instance 'elsa-sum-type))
+    (`number-or-marker?
+     (elsa-type-make-nullable (elsa-make-type 'number-or-marker)))
+    (`number-or-marker
+     (elsa-type-combine-with (elsa-make-type 'number) (elsa-make-type 'marker)))
+    (_
+     (-let* (((&plist :constructor c :nullable n)
+              (elsa-type--get-class-constructor definition))
+             (instance (make-instance c))
+             (nullable (or n (eq c 'elsa-type-mixed))))
+       (if nullable (elsa-type-make-nullable instance) instance)))))
 
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
@@ -73,26 +94,44 @@ representing TYPE."
     (not (null
           (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
 
-(defclass elsa-type nil
-  ((nullable :type boolean
-             :initarg :nullable
-             :initform nil))
-  :abstract t)
+(defclass elsa-type nil () :abstract t)
 
 (defmethod elsa-type-describe ((this elsa-type))
+  "Describe THIS type."
+  (declare (elsa-return string))
   (symbol-name (eieio-object-class this)))
 
 (defmethod elsa-type-accept ((this elsa-type) other)
-  (error "Not implemented yet"))
+  "Test if THIS type accepts OTHER.
+
+Accepting in this context means that OTHER can be assigned to
+THIS."
+  (declare (elsa-return bool))
+  (cond
+   ((elsa-instance-of other this))
+   ((and (elsa-sum-type-p other)
+         (-all? (lambda (other-type)
+                  (elsa-type-accept this other-type))
+                (oref other types))))
+   (t nil)))
 
 (defmethod elsa-type-combine-with ((this elsa-type) other)
+  (let ((sum (elsa-make-type 'sum)))
+    (elsa-type-combine-with sum this)
+    (elsa-type-combine-with sum other)
+    sum))
+
+(defmethod elsa-type-restrict-by ((this elsa-type) other)
   (error "Not implemented yet"))
 
 (defmethod elsa-type-nullable-p ((this elsa-type))
-  (oref this nullable))
+  (elsa-type-accept this (elsa-make-type 'nil)))
 
 (defmethod elsa-type-make-nullable ((this elsa-type))
-  (make-instance (eieio-object-class this) :nullable t))
+  (elsa-type-combine-with this (elsa-make-type 'nil)))
+
+(defmethod elsa-type-make-non-nullable ((this elsa-type))
+  (error "Not implemented yet"))
 
 (defclass elsa-type-unbound (elsa-type) ()
   :documentation "Type of an unbound variable.
@@ -102,52 +141,108 @@ This is not accepted by any type because we don't know what it is.")
 (defmethod elsa-type-describe ((this elsa-type-unbound))
   "unbound")
 
-(defclass elsa-type-trait-just-nullable nil
-  ()
-  :abstract t)
+;; (defclass elsa-type-trait-just-nullable nil
+;;   ()
+;;   :abstract t)
 
-(defmethod elsa-type-accept ((this elsa-type-trait-just-nullable) other)
-  (cond
-   ((and (elsa-instance-of other this)
-         (or (elsa-type-nullable-p this)
-             (not (elsa-type-nullable-p other)))))
-   ((and (elsa-type-nullable-p this)
-         (elsa-type-nil-p other)))
-   ((and (elsa-sum-type-p other)
-         (-all? (lambda (other-type)
-                  (elsa-type-accept this other-type))
-                (oref other types))))
-   (t nil)))
+;; (defmethod elsa-type-accept ((this elsa-type-trait-just-nullable) other)
+;;   (cond
+;;    ((and (elsa-instance-of other this)
+;;          (or (elsa-type-nullable-p this)
+;;              (not (elsa-type-nullable-p other)))))
+;;    ((and (elsa-type-nullable-p this)
+;;          (elsa-type-nil-p other)))
+;;    ((and (elsa-sum-type-p other)
+;;          (-all? (lambda (other-type)
+;;                   (elsa-type-accept this other-type))
+;;                 (oref other types))))
+;;    (t nil)))
 
-(defmethod elsa-type-combine-with ((this elsa-type-trait-just-nullable) other)
-  (cond
-   ((elsa-type-nil-p other)
-    (elsa-type-make-nullable this))
-   ((elsa-type))
-   ;; (t (elsa-type-mixed ""))
-   ;; ((elsa-sum-type-p other)
-   ;;  (elsa-sum-type-add other this))
-   ;; ((elsa-type-p other)
-   ;;  (elsa-sum-type "" :types (list this other)))
-   ))
+;; (defmethod elsa-type-combine-with ((this elsa-type-trait-just-nullable) other)
+;;   (cond
+;;    ((elsa-type-nil-p other)
+;;     (elsa-type-make-nullable this))
+;;    ((elsa-type))
+;;    ;; (t (elsa-type-mixed ""))
+;;    ;; ((elsa-sum-type-p other)
+;;    ;;  (elsa-sum-type-add other this))
+;;    ;; ((elsa-type-p other)
+;;    ;;  (elsa-sum-type "" :types (list this other)))
+;;    ))
 
 (defclass elsa-sum-type (elsa-type)
   ((types :type list
           :initarg :types
-          :initform nil)))
+          :initform nil))
+  :documentation "Sum type.
+
+This type is a combination of other types.  It can accept any
+type that is accepted by at least one of its summands.")
 
 (defmethod elsa-sum-type-add ((this elsa-sum-type) other)
+  (elsa-type-combine-with this other))
+
+;; Test that all internal types are non-nullable after combination
+(defmethod elsa-type-combine-with ((this elsa-sum-type) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (if (elsa-type-nil-p other)
-      (oset this nullable t)
-    (oset this types (cons other (oref this types)))))
+  (cond
+   ((elsa-sum-type-p other)
+    (-each (oref other types)
+      (lambda (type)
+        (unless (elsa-type-accept this type)
+          (oset this types
+                (cons
+                 ;; TODO: Add elsa-type-copy here.  For now we only
+                 ;; have simple types but with objects or generics it
+                 ;; will not be enough to copy "by constructor".
+                 (make-instance (eieio-object-class type))
+                 (oref this types)))))))
+   (t
+    (unless (elsa-type-accept this other)
+      (oset this types (cons (make-instance (eieio-object-class other))
+                             (oref this types))))))
+  this)
+
+;; TODO: handle sum types and diff types as arguments
+(defmethod elsa-sum-type-remove ((this elsa-sum-type) other)
+  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
+  (oset this types (--remove (eq (eieio-object-class it)
+                                 (eieio-object-class other))
+                             (oref this types))))
+
+(defmethod elsa-type-make-non-nullable ((this elsa-sum-type))
+  (elsa-sum-type-remove this (elsa-make-type 'nil)))
 
 (defmethod elsa-type-accept ((this elsa-sum-type) other)
-  (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))
+  (cond
+   ((elsa-sum-type-p other)
+    (-all? (lambda (ot) (elsa-type-accept this ot)) (oref other types)))
+   (t (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
 
-(defmethod elsa-type-nullable-p ((this elsa-sum-type))
-  (or (oref this nullable)
-      (-any? 'elsa-type-nullable-p (oref this types))))
+(defclass elsa-diff-type (elsa-type)
+  ((positive :initform (elsa-make-type 'sum))
+   (negative :initform (elsa-make-type 'sum)))
+  :documentation "Diff type.
+
+This type is a combination of positive and negative types.  It
+can accept any type that is accepted by at least one positive
+type and none of the negative types.")
+
+(defmethod elsa-type-accept ((this elsa-diff-type) other)
+  (and (elsa-type-accept (oref this positive) other)
+       (not (elsa-type-accept (oref this negative) other))))
+
+(defmethod elsa-diff-type-add-positive ((this elsa-diff-type) other)
+  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
+  (if (elsa-type-nil-p other)
+      (elsa-type-make-nullable (oref this positive))
+    (elsa-sum-type-add (oref this positive) other)))
+
+(defmethod elsa-diff-type-remove-positive ((this elsa-diff-type) other)
+  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
+  (if (elsa-type-nil-p other)
+      (elsa-type-make-non-nullable (oref this positive))
+    (elsa-sum-type-remove (oref this positive) other)))
 
 (defclass elsa-type-nil (elsa-type) ())
 
@@ -157,6 +252,8 @@ This is not accepted by any type because we don't know what it is.")
 (defmethod elsa-type-describe ((this elsa-type-nil))
   "nil")
 
+;; Mixed type is special in that it is always created nullable.  Mixed
+;; can also serve as bool type in Emacs Lisp.
 (defclass elsa-type-mixed (elsa-type) ())
 
 (defmethod elsa-type-describe ((this elsa-type-mixed))
@@ -164,12 +261,10 @@ This is not accepted by any type because we don't know what it is.")
 
 (defmethod elsa-type-accept ((this elsa-type-mixed) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (not (eq (eieio-object-class other) 'elsa-type-unbound)))
+  (not (memq (eieio-object-class other)
+             '(elsa-type-nil elsa-type-unbound))))
 
-(defmethod elsa-type-nullable-p ((this elsa-type-mixed))
-  t)
-
-(defclass elsa-type-string (elsa-type-trait-just-nullable elsa-type) ())
+(defclass elsa-type-string (elsa-type) ())
 
 (defclass elsa-type-short-string (elsa-type-string) ())
 
@@ -181,7 +276,7 @@ This is not accepted by any type because we don't know what it is.")
 (defmethod elsa-type-describe ((this elsa-type-buffer))
   "buffer")
 
-(defclass elsa-type-number (elsa-type-trait-just-nullable elsa-type) ())
+(defclass elsa-type-number (elsa-type) ())
 
 (defmethod elsa-type-describe ((this elsa-type-number))
   "number")
@@ -196,7 +291,12 @@ This is not accepted by any type because we don't know what it is.")
 (defmethod elsa-type-describe ((this elsa-type-float))
   "float")
 
-(defclass elsa-type-list (elsa-type-trait-just-nullable elsa-type) ())
+(defclass elsa-type-marker (elsa-type) ())
+
+(defmethod elsa-type-describe ((this elsa-type-marker))
+  "marker")
+
+(defclass elsa-type-list (elsa-type) ())
 
 (defmethod elsa-type-describe ((this elsa-type-list))
   "list")

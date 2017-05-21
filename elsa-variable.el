@@ -26,10 +26,42 @@
 
 (require 'eieio)
 
+;; TODO: maybe move the acceptance resolution into an expression type?
 (defclass elsa-variable nil
   ((name :initarg :name)
-   (type :initarg :type))
+   (type :initarg :type
+         :documentation "Type of this variable for assignment.
+
+You can assign to this variable any expression which is accepted
+by this type.")
+   (surely :initform nil
+           :documentation "This variable is surely of this type.")
+   (surely-not :initform nil
+               :documentation "This variable is surely not of this type."))
   :documentation "A lexical variable")
+
+(defmethod elsa-variable-surely ((this elsa-variable) type)
+  (unless (elsa-type-child-p type) (error "Type must be `elsa-type-child-p'"))
+  (oset this surely (cons type (oref this surely))))
+
+(defmethod elsa-variable-pop-surely ((this elsa-variable))
+  (oset this surely (cdr (oref this surely))))
+
+(defmethod elsa-variable-surely-not ((this elsa-variable) type)
+  (unless (elsa-type-child-p type) (error "Type must be `elsa-type-child-p'"))
+  (oset this surely-not (cons type (oref this surely-not))))
+
+(defmethod elsa-variable-pop-surely-not ((this elsa-variable))
+  (oset this surely-not (pop (oref this surely-not))))
+
+(defmethod elsa-variable-is-accepted ((this elsa-variable) type)
+  "Return non-nil if VARIABLE is accepted by TYPE."
+  (unless (elsa-type-child-p type) (error "Type must be `elsa-type-child-p'"))
+  (and (or (not (oref this surely))
+           (elsa-type-accept type (oref this surely)))
+       (or (not (oref this surely-not))
+           (not (elsa-type-accept type (oref this surely-not))))
+       (elsa-type-accept type (oref this type))))
 
 (provide 'elsa-variable)
 ;;; elsa-variable.el ends here

@@ -14,6 +14,14 @@
            (elsa-return string))
   (symbol-name foo))
 
+(let ((a 1)
+      (b a))
+  a)
+
+(let* ((c 1)
+       (d c))
+  a)
+
 ;; form is checked according to the definition of use-foo and foo
 ;; variable
 (use-foo foo "")

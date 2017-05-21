@@ -50,6 +50,8 @@
         (expect (oref (cadr errors) message) :to-equal
                 "Invalid type, has nil, expected int"))))
 
+  ;; TODO: (it "should handle list arguments with no cadr in bindings")
+
   (it "should restore local scope when exiting nested let forms"
     (let ((state (elsa-state "")))
       (elsa-state-add-defun
@@ -121,3 +123,10 @@
       (elsa-analyse-let
        state '((a 1) (b "")) '((let* ((a "")) (fun2 a)) (fun a b)))
       (expect (length (oref state errors)) :to-equal 0))))
+
+
+(describe "Check defun"
+  ;; TODO: testy na &optional atd
+  ;; (it "should ignore &optional from function args-types list")
+  ;; (it "should add function arguments to local scope")
+  )
