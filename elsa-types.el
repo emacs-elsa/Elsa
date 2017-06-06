@@ -60,7 +60,7 @@ representing TYPE."
        (pcase definition
          (`(&or . ,types)
           (let ((sum (elsa-make-type 'sum)))
-            (--each types (elsa-sum-type-add sum (elsa-make-type it)))
+            (--each types (elsa-type-combine-with sum (elsa-make-type it)))
             sum)))))
     (`sum
      (make-instance 'elsa-sum-type))
@@ -165,7 +165,7 @@ This is not accepted by any type because we don't know what it is.")
 ;;    ((elsa-type))
 ;;    ;; (t (elsa-type-mixed ""))
 ;;    ;; ((elsa-sum-type-p other)
-;;    ;;  (elsa-sum-type-add other this))
+;;    ;;  (elsa-type-combine-with other this))
 ;;    ;; ((elsa-type-p other)
 ;;    ;;  (elsa-sum-type "" :types (list this other)))
 ;;    ))
@@ -178,9 +178,6 @@ This is not accepted by any type because we don't know what it is.")
 
 This type is a combination of other types.  It can accept any
 type that is accepted by at least one of its summands.")
-
-(defmethod elsa-sum-type-add ((this elsa-sum-type) other)
-  (elsa-type-combine-with this other))
 
 ;; Test that all internal types are non-nullable after combination
 (defmethod elsa-type-combine-with ((this elsa-sum-type) other)
@@ -236,7 +233,7 @@ type and none of the negative types.")
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (if (elsa-type-nil-p other)
       (elsa-type-make-nullable (oref this positive))
-    (elsa-sum-type-add (oref this positive) other)))
+    (elsa-type-combine-with (oref this positive) other)))
 
 (defmethod elsa-diff-type-remove-positive ((this elsa-diff-type) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
