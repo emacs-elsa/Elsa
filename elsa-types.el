@@ -142,35 +142,6 @@ This is not accepted by any type because we don't know what it is.")
 (defmethod elsa-type-describe ((this elsa-type-unbound))
   "unbound")
 
-;; (defclass elsa-type-trait-just-nullable nil
-;;   ()
-;;   :abstract t)
-
-;; (defmethod elsa-type-accept ((this elsa-type-trait-just-nullable) other)
-;;   (cond
-;;    ((and (elsa-instance-of other this)
-;;          (or (elsa-type-nullable-p this)
-;;              (not (elsa-type-nullable-p other)))))
-;;    ((and (elsa-type-nullable-p this)
-;;          (elsa-type-nil-p other)))
-;;    ((and (elsa-sum-type-p other)
-;;          (-all? (lambda (other-type)
-;;                   (elsa-type-accept this other-type))
-;;                 (oref other types))))
-;;    (t nil)))
-
-;; (defmethod elsa-type-combine-with ((this elsa-type-trait-just-nullable) other)
-;;   (cond
-;;    ((elsa-type-nil-p other)
-;;     (elsa-type-make-nullable this))
-;;    ((elsa-type))
-;;    ;; (t (elsa-type-mixed ""))
-;;    ;; ((elsa-sum-type-p other)
-;;    ;;  (elsa-type-combine-with other this))
-;;    ;; ((elsa-type-p other)
-;;    ;;  (elsa-sum-type "" :types (list this other)))
-;;    ))
-
 (defclass elsa-sum-type (elsa-type)
   ((types :type list
           :initarg :types
