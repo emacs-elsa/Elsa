@@ -78,7 +78,8 @@ representing TYPE."
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
   (cons type
-        (-mapcat 'elsa--eieio-class-parents-recursive (eieio-class-parents type))))
+        (-mapcat 'elsa--eieio-class-parents-recursive
+                 (-map 'eieio-class-name (eieio-class-parents type)))))
 
 ;; TODO: what is the relationship of `a' and `a?'
 (defun elsa-instance-of (this other)
