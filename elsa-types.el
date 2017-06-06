@@ -26,9 +26,9 @@
 
 (require 'eieio)
 
-(defmacro elsa-declare (function :args arg-types :return return-type)
-  "Macro used at read time to declare argument and return types."
-  nil)
+(require 'dash)
+
+(declare-function elsa-type-sum "elsa-type-helpers.el")
 
 (defun elsa-type--get-class-constructor (type)
   "Return constructor information for TYPE.
@@ -52,28 +52,41 @@ representing TYPE."
                    (concat "elsa-type-"  (car name))))))
     (list :constructor class :nullable (equal (cadr name) ""))))
 
-(defun elsa-make-type (definition)
+(defun elsa--make-type (definition)
   "Return instance of class representing DEFINITION."
   (pcase definition
     ((and (pred vectorp) vector)
      (let ((definition (append vector nil)))
        (pcase definition
          (`(&or . ,types)
-          (let ((sum (elsa-make-type 'sum)))
-            (--each types (elsa-type-combine-with sum (elsa-make-type it)))
-            sum)))))
+          (apply 'elsa-make-type types)))))
     (`sum
      (make-instance 'elsa-sum-type))
     (`number-or-marker?
      (elsa-type-make-nullable (elsa-make-type 'number-or-marker)))
     (`number-or-marker
-     (elsa-type-combine-with (elsa-make-type 'number) (elsa-make-type 'marker)))
+     (elsa-type-sum (elsa-make-type 'number) (elsa-make-type 'marker)))
     (_
      (-let* (((&plist :constructor c :nullable n)
               (elsa-type--get-class-constructor definition))
              (instance (make-instance c))
              (nullable (or n (eq c 'elsa-type-mixed))))
        (if nullable (elsa-type-make-nullable instance) instance)))))
+
+(defun elsa-make-type (&rest definitions)
+  "Make a type according to DEFINITIONS.
+
+DEFINITIONS is a list of DEFINITION.
+
+DEFINITION can be a simple type such as 'int or 'string or a
+special FORM.
+
+FORM can be one of:
+- [&or type1 type2 ...] -> Return the sum of type1, type2, ...
+"
+  (if (= (length definitions) 1)
+      (elsa--make-type (car definitions))
+    (-reduce-r 'elsa-type-sum (-map 'elsa--make-type definitions))))
 
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
@@ -116,12 +129,6 @@ THIS."
                 (oref other types))))
    (t nil)))
 
-(defmethod elsa-type-combine-with ((this elsa-type) other)
-  (let ((sum (elsa-make-type 'sum)))
-    (elsa-type-combine-with sum this)
-    (elsa-type-combine-with sum other)
-    sum))
-
 (defmethod elsa-type-restrict-by ((this elsa-type) other)
   (error "Not implemented yet"))
 
@@ -129,7 +136,7 @@ THIS."
   (elsa-type-accept this (elsa-make-type 'nil)))
 
 (defmethod elsa-type-make-nullable ((this elsa-type))
-  (elsa-type-combine-with this (elsa-make-type 'nil)))
+  (elsa-type-sum this (elsa-make-type 'nil)))
 
 (defmethod elsa-type-make-non-nullable ((this elsa-type))
   (error "Not implemented yet"))
@@ -150,27 +157,6 @@ This is not accepted by any type because we don't know what it is.")
 
 This type is a combination of other types.  It can accept any
 type that is accepted by at least one of its summands.")
-
-;; Test that all internal types are non-nullable after combination
-(defmethod elsa-type-combine-with ((this elsa-sum-type) other)
-  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (cond
-   ((elsa-sum-type-p other)
-    (-each (oref other types)
-      (lambda (type)
-        (unless (elsa-type-accept this type)
-          (oset this types
-                (cons
-                 ;; TODO: Add elsa-type-copy here.  For now we only
-                 ;; have simple types but with objects or generics it
-                 ;; will not be enough to copy "by constructor".
-                 (make-instance (eieio-object-class type))
-                 (oref this types)))))))
-   (t
-    (unless (elsa-type-accept this other)
-      (oset this types (cons (make-instance (eieio-object-class other))
-                             (oref this types))))))
-  this)
 
 ;; TODO: handle sum types and diff types as arguments
 (defmethod elsa-sum-type-remove ((this elsa-sum-type) other)
@@ -205,7 +191,7 @@ type and none of the negative types.")
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (if (elsa-type-nil-p other)
       (elsa-type-make-nullable (oref this positive))
-    (elsa-type-combine-with (oref this positive) other)))
+    (elsa-type-sum (oref this positive) other)))
 
 (defmethod elsa-diff-type-remove-positive ((this elsa-diff-type) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
