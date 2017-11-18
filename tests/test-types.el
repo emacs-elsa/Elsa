@@ -64,6 +64,15 @@
 
   (describe "Sum type"
 
+    (it "should not share data with its clone"
+      (let* ((old (elsa-make-type 'int 'string))
+             (new (clone old)))
+        (expect (eq old new) :not :to-be-truthy)
+        (expect (eq (car (oref old types))
+                    (car (oref new types))) :not :to-be-truthy)
+        (oset new types nil)
+        (expect (length (oref old types)) :to-be 2)
+        (expect (length (oref new types)) :to-be 0)))
 
     (it "should be able to hold no types"
       (let ((sum (elsa-sum-type)))
@@ -71,7 +80,9 @@
 
     (it "should accept nothing if empty"
       (let ((sum (elsa-sum-type)))
-        (expect (elsa-type-accept sum (elsa-make-type 'mixed)) :not :to-be-truthy)))
+        (expect (elsa-type-accept sum (elsa-make-type 'mixed)) :not :to-be-truthy)
+        (expect (elsa-type-accept sum (elsa-make-type 'int)) :not :to-be-truthy)
+        (expect (elsa-type-accept sum (elsa-sum-type)) :not :to-be-truthy)))
 
     (it "should be able to hold more types"
       (let ((sum (elsa-type-sum (elsa-make-type 'int) (elsa-make-type 'string))))
@@ -141,6 +152,18 @@
         (expect (elsa-type-accept sumA sumB) :not :to-be-truthy))))
 
 
+  (describe "Diff type"
+
+    (it "should not share data with its clone"
+      (let* ((old (elsa-type-sum (elsa-diff-type) (elsa-make-type 'int)))
+             (new (clone old)))
+        (expect (eq old new) :not :to-be-truthy)
+        (expect (eq (oref old positive) (oref new positive)) :not :to-be-truthy)
+        (oset new positive nil)
+        (expect (length (oref old positive)) :to-be 1)
+        (expect (length (oref new positive)) :to-be 0))))
+
+
   (describe "Mixed type"
 
 
@@ -186,6 +209,11 @@
 
     (it "should not be possible to make non-nullable"
       (expect (elsa-type-make-non-nullable (elsa-make-type 'string)) :to-throw))
+
+    (it "should not share data with its clone"
+      (let* ((old (elsa-make-type 'int))
+             (new (clone old)))
+        (expect (eq old new) :not :to-be-truthy))))
 
 
   (describe "Just-nullable type"
