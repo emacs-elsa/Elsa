@@ -116,6 +116,7 @@ type that is accepted by at least one of its summands.")
 
 (defmethod elsa-type-accept ((this elsa-sum-type) other)
   (cond
+   ((= 0 (length (oref this types))) nil)
    ((elsa-sum-type-p other)
     (-all? (lambda (ot) (elsa-type-accept this ot)) (oref other types)))
    (t (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
