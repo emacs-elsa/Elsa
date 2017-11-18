@@ -28,8 +28,6 @@
 
 (require 'dash)
 
-(declare-function elsa-type-sum "elsa-type-helpers.el")
-
 (defun elsa-type--get-class-constructor (type)
   "Return constructor information for TYPE.
 
@@ -51,62 +49,6 @@ representing TYPE."
                      (car name)
                    (concat "elsa-type-"  (car name))))))
     (list :constructor class :nullable (equal (cadr name) ""))))
-
-(defun elsa--make-type (definition)
-  "Return instance of class representing DEFINITION."
-  (pcase definition
-    ((and (pred vectorp) vector)
-     (let ((definition (append vector nil)))
-       (pcase definition
-         (`(&or . ,types)
-          (apply 'elsa-make-type types)))))
-    (`sum
-     (make-instance 'elsa-sum-type))
-    (`number-or-marker?
-     (elsa-type-make-nullable (elsa-make-type 'number-or-marker)))
-    (`number-or-marker
-     (elsa-type-sum (elsa-make-type 'number) (elsa-make-type 'marker)))
-    (_
-     (-let* (((&plist :constructor c :nullable n)
-              (elsa-type--get-class-constructor definition))
-             (instance (make-instance c))
-             (nullable (or n (eq c 'elsa-type-mixed))))
-       (if nullable (elsa-type-make-nullable instance) instance)))))
-
-(defun elsa-make-type (&rest definitions)
-  "Make a type according to DEFINITIONS.
-
-DEFINITIONS is a list of DEFINITION.
-
-DEFINITION can be a simple type such as 'int or 'string or a
-special FORM.
-
-FORM can be one of:
-- [&or type1 type2 ...] -> Return the sum of type1, type2, ...
-"
-  (if (= (length definitions) 1)
-      (elsa--make-type (car definitions))
-    (-reduce-r 'elsa-type-sum (-map 'elsa--make-type definitions))))
-
-(defun elsa--eieio-class-parents-recursive (type)
-  "Return all parents of TYPE."
-  (cons type
-        (-mapcat 'elsa--eieio-class-parents-recursive
-                 (-map 'eieio-class-name (eieio-class-parents type)))))
-
-;; TODO: what is the relationship of `a' and `a?'
-(defun elsa-instance-of (this other)
-  "Non-nil if THIS is instance of OTHER."
-  (let ((this-type
-         (if (symbolp this)
-             (plist-get (elsa-type--get-class-constructor this) :constructor)
-           (eieio-object-class this)))
-        (other-type
-         (if (symbolp other)
-             (plist-get (elsa-type--get-class-constructor other) :constructor)
-           (eieio-object-class other))))
-    (not (null
-          (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
 
 (defclass elsa-type nil () :abstract t)
 
@@ -132,12 +74,6 @@ THIS."
 (defmethod elsa-type-restrict-by ((this elsa-type) other)
   (error "Not implemented yet"))
 
-(defmethod elsa-type-nullable-p ((this elsa-type))
-  (elsa-type-accept this (elsa-make-type 'nil)))
-
-(defmethod elsa-type-make-nullable ((this elsa-type))
-  (elsa-type-sum this (elsa-make-type 'nil)))
-
 (defmethod elsa-type-make-non-nullable ((this elsa-type))
   (error "Not implemented yet"))
 
@@ -158,6 +94,16 @@ This is not accepted by any type because we don't know what it is.")
 This type is a combination of other types.  It can accept any
 type that is accepted by at least one of its summands.")
 
+(defmethod elsa-type-describe ((this elsa-sum-type))
+  (mapconcat 'elsa-type-describe (oref this types) " | "))
+
+(cl-defmethod clone ((this elsa-sum-type))
+  "Make a deep copy of a sum type."
+  (let ((types (-map 'clone (oref this types)))
+        (new (cl-call-next-method this)))
+    (oset new types types)
+    new))
+
 ;; TODO: handle sum types and diff types as arguments
 (defmethod elsa-sum-type-remove ((this elsa-sum-type) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
@@ -166,7 +112,7 @@ type that is accepted by at least one of its summands.")
                              (oref this types))))
 
 (defmethod elsa-type-make-non-nullable ((this elsa-sum-type))
-  (elsa-sum-type-remove this (elsa-make-type 'nil)))
+  (elsa-sum-type-remove this (elsa-type-nil)))
 
 (defmethod elsa-type-accept ((this elsa-sum-type) other)
   (cond
@@ -175,29 +121,38 @@ type that is accepted by at least one of its summands.")
    (t (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
 
 (defclass elsa-diff-type (elsa-type)
-  ((positive :initform (elsa-make-type 'sum))
-   (negative :initform (elsa-make-type 'sum)))
+  ((positive :initform (elsa-sum-type) :initarg :positive)
+   (negative :initform (elsa-sum-type) :initarg :negative))
   :documentation "Diff type.
 
 This type is a combination of positive and negative types.  It
 can accept any type that is accepted by at least one positive
 type and none of the negative types.")
 
-(defmethod elsa-type-accept ((this elsa-diff-type) other)
+(cl-defmethod clone ((this elsa-diff-type))
+  "Make a deep copy of a diff type."
+  (let ((positive (clone (oref this positive)))
+        (negative (clone (oref this negative)))
+        (new (cl-call-next-method this)))
+    (oset new positive positive)
+    (oset new negative negative)
+    new))
+
+(cl-defmethod elsa-type-accept ((this elsa-diff-type) (other elsa-type))
   (and (elsa-type-accept (oref this positive) other)
        (not (elsa-type-accept (oref this negative) other))))
 
-(defmethod elsa-diff-type-add-positive ((this elsa-diff-type) other)
-  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (if (elsa-type-nil-p other)
-      (elsa-type-make-nullable (oref this positive))
-    (elsa-type-sum (oref this positive) other)))
+;; (cl-defmethod elsa-diff-type-add-positive ((this elsa-diff-type) (other elsa-type))
+;;   (let ((re (clone this :positive :negative))))
+;;   (elsa-type-sum (oref this positive) other))
 
 (defmethod elsa-diff-type-remove-positive ((this elsa-diff-type) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (if (elsa-type-nil-p other)
       (elsa-type-make-non-nullable (oref this positive))
     (elsa-sum-type-remove (oref this positive) other)))
+
+(defclass elsa-type-t (elsa-type) ())
 
 (defclass elsa-type-nil (elsa-type) ())
 
@@ -251,10 +206,34 @@ type and none of the negative types.")
 (defmethod elsa-type-describe ((this elsa-type-marker))
   "marker")
 
-(defclass elsa-type-list (elsa-type) ())
+(defclass elsa-type-keyword (elsa-type) ())
+
+(defmethod elsa-type-describe ((this elsa-type-keyword))
+  "keyword")
+
+(defclass elsa-type-list (elsa-type)
+  ((item-type :type elsa-type
+              :initarg :item-type
+              :initform (elsa-sum-type
+                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
 (defmethod elsa-type-describe ((this elsa-type-list))
-  "list")
+  (format "[%s]" (elsa-type-describe (oref this item-type))))
+
+(defclass elsa-function-type (elsa-type)
+  ((args :type list :initarg :args)
+   (return :type elsa-type :initarg :return)))
+
+(defmethod elsa-type-describe ((this elsa-function-type))
+  (mapconcat 'elsa-type-describe
+             (-snoc (oref this args) (oref this return))
+             " -> "))
+
+(defclass elsa-generic-type (elsa-type)
+  ((label :type symbol :initarg :label)))
+
+(defmethod elsa-type-describe ((this elsa-generic-type))
+  (symbol-name (oref this label)))
 
 ;; TODO: add a function type, then use it in defuns and variables
 ;; which are lambdas
