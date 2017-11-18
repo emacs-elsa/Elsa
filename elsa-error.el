@@ -32,7 +32,8 @@
    (col-start :initarg :col-start
               :initform nil)
    (col-end :initarg :col-end
-            :initform nil))
+            :initform nil)
+   (expression :initarg :expression))
   :abstract t
   :documentation "Base class representing a message: result of the analysis.
 
