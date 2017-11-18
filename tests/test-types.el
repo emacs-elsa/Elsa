@@ -20,9 +20,7 @@
         (expect (elsa-type-nullable-p type) :to-be-truthy)))
 
     (it "should not make unknown type"
-      (expect (lambda ()
-                (elsa-make-type 'ratherimporbablenameofatype))
-              :to-throw))
+      (expect (elsa-make-type 'ratherimporbablenameofatype) :to-throw))
 
     (it "should make a sum type from an &or definition"
       (let ((type (elsa-make-type [&or string int])))
@@ -187,9 +185,7 @@
 
 
     (it "should not be possible to make non-nullable"
-      (expect (lambda ()
-                (elsa-type-make-non-nullable (elsa-make-type 'string)))
-              :to-throw)))
+      (expect (elsa-type-make-non-nullable (elsa-make-type 'string)) :to-throw))
 
 
   (describe "Just-nullable type"
