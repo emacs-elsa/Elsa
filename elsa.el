@@ -203,6 +203,8 @@ STATE, BINDINGS, BODY."
     (-each body (lambda (f) (elsa-analyse-form state f)))
     (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
 
+;; This in fact implements dynamic scoping.  If the body is a function
+;; call the scope from here is still available there.
 (defun elsa-analyse-let* (state bindings body)
   "Analyse a `let*' form.
 STATE, BINDINGS, BODY."

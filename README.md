@@ -23,6 +23,8 @@ the analysis.
 
 ## How to construct the "type" name
 
+TODO: Look into the (info "(elisp) Generic Functions") for types
+
 The types are symbols constructed according to the following guidelines:
 
 - For built-in types with test predicates, drop the `p` or `-p` suffix to get the type:

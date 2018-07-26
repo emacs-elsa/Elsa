@@ -1,0 +1,133 @@
+* NEXT Clarify in readme how to construct "type" annotations
+- built-in predicates -> drop =-p= or =p= at the end.
+- cl-defstruct -> its name
+  - there should be some way to annotate the fields
+- (eieio) defclass -> its name (or some supertype etc)
+  - there should be some way to annotate the fields (better than the bult-in :type)
+- alist, plist (as subtype of list?)
+- list[int] ... this is going to be quite difficult to figure out properly
+
+* IDEA use docstrings and =@param= syntax?
+#+BEGIN_SRC elisp
+(defvar foo nil
+  "This is foo.
+
+@var string")
+
+(defun foo (a b c)
+  "This is foo
+
+@param a string
+@param b int
+@param c string")
+#+END_SRC
+
+* TODO Track where the error occurs
+
+Note down the top-level position, then for each "drill-down" note the
+list operations required to get to that place, e.g. =forward-sexp=,
+=down-list=, =forward-sexp=.  Then replay this on top of the file and
+get the actual position.
+
+You can differentiate on a "word" errors and "line" errors so that we
+can subline better in flycheck.
+* TODO Allow Emacs/Package version tracking in the annotations
+Support reading the data from Cask/pkg files
+* Stages
+
+There are these distinct operations:
+
+- Reflection: we get a piece of code and we want to know its capabilities
+  - is it a callable function?
+  - is it a variable? (i.e. does the symbol possibly hold a value)
+  - but beware, maybe this is not really relevant to a LISP
+- Type: given an expression, get its type
+- Rule: crawl the code and fire the checkers on "interesting" nodes
+* Some possibilities for the notation
+#+BEGIN_SRC elisp
+(elsa-type sp-thing = (plist :key-type keyword ;; optional, default sexp
+                             :value-type sexp ;; optional, default sexp
+                             :options (
+                                       (:beg integer)
+                                       (:end integer)
+                                       (:op string)
+                                       (:cl string)?
+                                       ))) ;; explicit list
+
+(plist-member x :foo) -> x is a plist with :options (:foo sexp) ...
+
+(elsa-type ziplist a = (repeat a))
+(elsa-type person = (cl-defstruct foo (name :type string) (age :type int)))
+
+(type :: struct a -> a)
+
+(cl-defstruct my-foo (name "" :read-only t))
+
+(setq my-x (make-my-foo :name "x"))
+
+(setf (my-foo-name my-x ) "a")
+
+
+(defun my-type-test (a int)
+  (type :: a -> int -> int)
+  ...
+  )
+
+(defun my-consumer (x)
+  (type :: ziplist a -> int)
+  (my-type-test x 1))
+#+END_SRC
+* Forms
+
+- [X] atoms
+  - [X] number
+    - [X] float
+    - [X] integer
+  - [X] keyword (is a symbol)
+  - [X] symbol
+  - [X] sequences
+    - [X] vector
+    - [X] string
+- [X] cons
+  - [X] list
+  - [X] improper list
+- [ ] special reader forms (what are those?)
+
+* Expressions
+
+- special forms
+  - and
+  - catch
+  - cond
+  - condition-case
+  - defconst
+  - defvar
+  - function
+  - if
+  - interactive
+  - lambda
+  - let
+  - let*
+  - or
+  - prog1
+  - prog2
+  - progn
+  - quote
+  - save-current-buffer
+  - save-excursion
+  - save-restriction
+  - setq
+  - setq-default
+  - track-mouse
+  - unwind-protect
+  - while
+- primitives
+  - string
+  - number
+  - symbol
+  - keyword (is a symbol)
+- special expressions
+  - t
+  - nil (when to treat as boolean and when as a list?)
+- function application
+- macros
