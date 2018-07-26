@@ -18,12 +18,14 @@
 
 (defclass elsa-expression-atom (elsa-expression) ())
 (defclass elsa-expression-var (elsa-expression) ())
+(defclass elsa-expression-quote (elsa-expression) ())
 
 (defclass elsa-expression-app (elsa-expression)
-  ((expression :initarg :expression)))
+  ((arguments :initarg :arguments)))
 
-(defclass elsa-expression-let (elsa-expression-app)
-  ((bindings :initarg :bindings)))
+(defclass elsa-expression-let (elsa-expression)
+  ((bindings :initarg :bindings)
+   (body :initarg :body)))
 
 (defclass elsa-expression-if (elsa-expression)
   ((condition :initarg :condition)
@@ -31,11 +33,13 @@
    (else :initarg :else)))
 
 (defun elsa--get-var-type (var scope decls)
-  (let ((declaration (elsa-scope-get-var decls var))
+  (let (
+        ;; TODO: ignores lexical binding
+        ;; (declaration (elsa-scope-get-var decls var))
         (current (elsa-scope-get-var scope var)))
     (cond
-     ((and current declaration)
-      (clone (oref declaration type)))
+     ;; ((and current declaration)
+     ;;  (clone (oref declaration type)))
      (current
       (clone (oref current type)))
      (t (elsa-make-type 'unbound)))))
@@ -48,8 +52,8 @@
       (`elsa-expression-app
        (pcase (oref (oref (oref condition form) name) name)
          (`numberp
-          (-let* ((type (oref (car (oref condition expression)) type))
-                  (name (oref (oref (car (oref condition expression)) form) name))
+          (-let* ((type (oref (car (oref condition arguments)) type))
+                  (name (oref (oref (car (oref condition arguments)) form) name))
                   ((positive-type . negative-type)
                    (if (eq (eieio-object-class type) 'elsa-type-unbound)
                        (cons type type)
@@ -71,6 +75,12 @@
                             :type (elsa-make-type 'nil)) neg)))
     (cons pos neg)))
 
+(defun elsa--infer-symbol (form scope)
+  (cond
+   ((eq (oref form name) t) (elsa-make-type 't))
+   ((eq (oref form name) nil) (elsa-make-type 'nil))
+   (t (elsa--get-var-type (oref form name) scope :--placeholder--))))
+
 (defun elsa--infer-let (form scope decls)
   (let ((new-vars nil)
         (binding-exprs nil))
@@ -78,23 +88,22 @@
       (lambda (binding)
         (pcase binding
           (`(,var ,form)
-           (push (elsa-variable
-                  :name (oref var name) :type
-                   ;; TODO: save the annotated binding expressions somewhere
-                   (oref (elsa--infer-form form scope decls) type))
-                 new-vars)
-           (push (elsa--infer-form form scope decls) binding-exprs))
+           (let ((binding-expr (elsa--infer-form form scope decls)))
+             (push (elsa-variable
+                    :name (oref var name) :type (oref binding-expr type))
+                   new-vars)
+             (push binding-expr binding-exprs)))
           (var
            (push (elsa-variable :name (oref var name) :type (elsa-make-type nil))
                  new-vars)))))
     (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
-    (let ((expressions
+    (let ((body
            (-map (lambda (x) (elsa--infer-form x scope decls))
                  (oref form body))))
       (prog1 (elsa-expression-let
-              :type (oref (-last-item expressions) type)
+              :type (oref (-last-item body) type)
               :form form
-              :expression expressions
+              :body body
               :bindings (nreverse binding-exprs))
         (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))))
 
@@ -106,22 +115,21 @@
         (let ((variable
                (pcase binding
                  (`(,var ,form)
-                  (push (elsa--infer-form form scope decls) binding-exprs)
-                  (elsa-variable
-                   :name (oref var name) :type
-                    ;; TODO: save the annotated binding expressions somewhere
-                    (oref (elsa--infer-form form scope decls) type)))
+                  (let ((binding-expr (elsa--infer-form form scope decls)))
+                    (push binding-expr  binding-exprs)
+                    (elsa-variable :name (oref var name)
+                                   :type (oref binding-expr type))))
                  (var
                   (elsa-variable :name (oref var name) :type (elsa-make-type nil))))))
           (elsa-scope-add-variable scope variable)
           (push variable new-vars))))
-    (let ((expressions
+    (let ((body
            (-map (lambda (x) (elsa--infer-form x scope decls))
                  (oref form body))))
       (prog1 (elsa-expression-let
-              :type (oref (-last-item expressions) type)
+              :type (oref (-last-item body) type)
               :form form
-              :expression expressions
+              :body body
               :bindings (nreverse binding-exprs))
         (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))))
 
@@ -149,22 +157,6 @@
 
 (defun elsa--infer-form (form scope decls)
   (pcase (eieio-object-class form)
-    (`elsa-form-string
-     (elsa-expression-atom
-      :type (elsa-make-type 'string)
-      :form form))
-    (`elsa-form-integer
-     (elsa-expression-atom
-      :type (elsa-make-type 'int)
-      :form form))
-    (`elsa-form-keyword
-     (elsa-expression-atom
-      :type (elsa-make-type 'keyword)
-      :form form))
-    (`elsa-form-quote
-     (elsa-expression-app
-      :type (elsa-make-type 'mixed)
-      :form form))
     (`elsa-form-symbol
      (cond
       ((eq (oref form name) t)
@@ -176,12 +168,12 @@
         :type (elsa--get-var-type (oref form name) scope decls)
         :form form))))
     (`elsa-form-progn
-     (let ((expressions (-map (lambda (x) (elsa--infer-form x scope decls))
-                              (oref form body))))
+     (let ((arguments (-map (lambda (x) (elsa--infer-form x scope decls))
+                            (oref form body))))
        (elsa-expression-app
-        :type (oref (-last-item expressions) type)
+        :type (oref (-last-item arguments) type)
         :form form
-        :expression expressions)))
+        :arguments arguments)))
     (`elsa-form-let (elsa--infer-let form scope decls))
     (`elsa-form-let* (elsa--infer-let* form scope decls))
     (`elsa-form-if (elsa--infer-if form scope decls))
@@ -189,11 +181,12 @@
      (elsa-expression-app
       :type (elsa-make-type nil)
       :form form
-      :expression (-map (lambda (x) (elsa--infer-form x scope decls))
-                        (oref form args))))))
+      :arguments (-map (lambda (x) (elsa--infer-form x scope decls))
+                       (oref form args))))))
 
 (defun elsa-infer-types (form scope decls)
   (setq elsa-infer-errors nil)
-  (elsa--infer-form form scope decls))
+  (prog1 (elsa--infer-form form scope decls)
+    (setq elsa-infer-errors (nreverse elsa-infer-errors))))
 
 (provide 'elsa-infer)

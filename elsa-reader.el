@@ -4,6 +4,9 @@
 (require 'pcase)
 (require 'backquote)
 
+(require 'elsa-types)
+(require 'elsa-type-helpers)
+
 (defun elsa--skip-whitespace-forward ()
   (skip-chars-forward " \t\n\r"))
 
@@ -29,7 +32,9 @@
 
 (defclass elsa-form nil
   ((start :type integer :initarg :start)
-   (end :type integer :initarg :end))
+   (end :type integer :initarg :end)
+   (type :type elsa-type :initarg :type :initform (elsa-make-type 'mixed))
+   (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 
 (cl-defmethod elsa-form-length ((this elsa-form))
@@ -55,6 +60,7 @@
 (defun elsa--read-keyword (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-keyword
+   :type (elsa-make-type 'keyword)
    :start (point)
    :name form
    :end (elsa--forward-symbol)))
@@ -68,6 +74,7 @@
 (defun elsa--read-integer (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-integer
+   :type (elsa-make-type 'int)
    :start (point)
    :value form
    :end (elsa--forward-symbol)))
@@ -78,6 +85,7 @@
 (defun elsa--read-float (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-float
+   :type (elsa-make-type 'float)
    :start (point)
    :value form
    :end (elsa--forward-symbol)))
@@ -93,6 +101,7 @@
 (defun elsa--read-string (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-string
+   :type (elsa-make-type 'string)
    :start (point)
    :end (elsa--forward-sexp)
    :sequence form))
@@ -103,6 +112,7 @@
 (defun elsa--read-vector (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-vector
+   :type (elsa-make-type 'vector)
    :start (prog1 (point) (down-list))
    :sequence (apply 'vector (-map 'elsa--read-form form))
    :end (progn (up-list) (point))))
@@ -132,6 +142,7 @@
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
       (elsa-form-improper-list
+       :type (elsa-make-type 'list)
        :start (prog1 (point) (down-list))
        :conses (prog1 (nconc (-map 'elsa--read-form
                                    (-take (safe-length form) form))
@@ -147,6 +158,7 @@
 (defun elsa--read-quote (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-list
+   :type (elsa-make-type 'symbol)
    :start (point)
    :sequence (cons
               (elsa-form-symbol

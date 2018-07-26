@@ -212,6 +212,12 @@ type and none of the negative types.")
 (defmethod elsa-type-describe ((this elsa-type-keyword))
   "keyword")
 
+(defclass elsa-type-symbol (elsa-type) ()
+  :documentation "Quoted symbol")
+
+(defmethod elsa-type-describe ((this elsa-type-symbol))
+  "symbol")
+
 (defclass elsa-type-list (elsa-type)
   ((item-type :type elsa-type
               :initarg :item-type
@@ -220,6 +226,15 @@ type and none of the negative types.")
 
 (defmethod elsa-type-describe ((this elsa-type-list))
   (format "[%s]" (elsa-type-describe (oref this item-type))))
+
+(defclass elsa-type-vector (elsa-type)
+  ((item-type :type elsa-type
+              :initarg :item-type
+              :initform (elsa-sum-type
+                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
+
+(defmethod elsa-type-describe ((this elsa-type-vector))
+  (format "(vector %s)" (elsa-type-describe (oref this item-type))))
 
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
