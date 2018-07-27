@@ -60,7 +60,7 @@
 ;; TODO: take defvar directly? For consistency
 (defmethod elsa-state-add-defvar ((this elsa-state) name type)
   (let ((defvars (oref this defvars)))
-    (puthash name (elsa-defvar "" :name name :type type) defvars)))
+    (puthash name (elsa-defvar :name name :type type) defvars)))
 
 (defmethod elsa-state-add-defun ((this elsa-state) defun)
   (unless (elsa-defun-p defun) (error "defun must be `elsa-defun-p'"))
@@ -73,7 +73,7 @@
 (defun elsa-process-file (file)
   "Process FILE."
   (let ((buffer (find-file-noselect file))
-        (state (elsa-state ""))
+        (state (elsa-state))
         (form))
     (with-current-buffer buffer
       (save-excursion
@@ -122,7 +122,7 @@ DEFVARS contains the globally defined variables."
       ;; TODO: should we mutate the state here with an error???
       (elsa-state-add-error
        state (elsa-error
-              "" :message (format "Unbound variable `%s'" (symbol-name expr))
+              :message (format "Unbound variable `%s'" (symbol-name expr))
               :line (line-number-at-pos)))
       (elsa-make-type 'unbound))
      ((stringp expr)
@@ -147,7 +147,6 @@ STATE, TYPES, ARGS"
             (elsa-state-add-error
              state
              (elsa-error
-              ""
               :message (format "Invalid type, has %s, expected %s"
                                (elsa-type-describe other)
                                (elsa-type-describe type))
@@ -177,7 +176,7 @@ BODY is the body of the function which is further analysed."
     (elsa-state-add-defun state def)
     (-each (oref def args)
       (-lambda ((name . v))
-        (push (elsa-variable "" :name name :type v) vars)))
+        (push (elsa-variable :name name :type v) vars)))
     (-each vars (lambda (v) (elsa-scope-add-variable scope v)))
     (-each body (lambda (f) (elsa-analyse-form state f)))
     (-each vars (lambda (v) (elsa-scope-remove-variable scope v)))))
@@ -192,12 +191,12 @@ STATE, BINDINGS, BODY."
         (pcase binding
           (`(,var ,form)
            (push (elsa-variable
-                  "" :name var :type (elsa--get-expression-type
+                  :name var :type (elsa--get-expression-type
                                       state form))
                  new-vars))
           (var
            (push (elsa-variable
-                  "" :name var :type (elsa-make-type 'nil))
+                  :name var :type (elsa-make-type 'nil))
                  new-vars)))))
     (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
     (-each body (lambda (f) (elsa-analyse-form state f)))
@@ -217,9 +216,9 @@ STATE, BINDINGS, BODY."
                (pcase binding
                  (`(,var ,form)
                   (elsa-variable
-                   "" :name var :type (elsa--get-expression-type
+                   :name var :type (elsa--get-expression-type
                                        state form)))
-                 (var (elsa-variable "" :name var :type (elsa-make-type 'nil))))))
+                 (var (elsa-variable :name var :type (elsa-make-type 'nil))))))
           (elsa-scope-add-variable scope variable)
           (push variable new-vars))))
     (-each body (lambda (f) (elsa-analyse-form state f)))

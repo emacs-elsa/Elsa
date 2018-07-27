@@ -8,10 +8,10 @@
 
 
   (it "should update local scope with let-bound variables"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-analyse-let
@@ -19,10 +19,10 @@
       (expect (length (oref state errors)) :to-equal 0)))
 
   (it "should update local scope in parallel"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-analyse-let
@@ -35,10 +35,10 @@
                 "Unbound variable `a'"))))
 
   (it "should handle non-list arguments in bindings"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-analyse-let
@@ -53,15 +53,15 @@
   ;; TODO: (it "should handle list arguments with no cadr in bindings")
 
   (it "should restore local scope when exiting nested let forms"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun2 :args `((x . ,(elsa-make-type 'string)))
+              :name 'fun2 :args `((x . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-analyse-let
        state '((a 1) (b "")) '((let ((a "")) (fun2 a)) (fun a b)))
@@ -72,10 +72,10 @@
 
 
   (it "should update local scope with let-bound variables"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-analyse-let*
@@ -83,10 +83,10 @@
       (expect (length (oref state errors)) :to-equal 0)))
 
   (it "should update local scope in sequence"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'int)))
               :return-type nil))
       (elsa-analyse-let*
@@ -94,10 +94,10 @@
       (expect (length (oref state errors)) :to-equal 0)))
 
   (it "should handle non-list arguments in bindings"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-analyse-let*
@@ -110,15 +110,15 @@
                 "Invalid type, has nil, expected int"))))
 
   (it "should restore local scope when exiting nested let* forms"
-    (let ((state (elsa-state "")))
+    (let ((state (elsa-state)))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun :args `((x . ,(elsa-make-type 'int))
+              :name 'fun :args `((x . ,(elsa-make-type 'int))
                                     (y . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-state-add-defun
        state (elsa-defun
-              "" :name 'fun2 :args `((x . ,(elsa-make-type 'string)))
+              :name 'fun2 :args `((x . ,(elsa-make-type 'string)))
               :return-type nil))
       (elsa-analyse-let
        state '((a 1) (b "")) '((let* ((a "")) (fun2 a)) (fun a b)))

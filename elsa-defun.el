@@ -58,7 +58,6 @@
 (defun elsa-make-defun (name args declarations)
   "Make a new defun."
   (elsa-defun
-   ""
    :name name
    :args (elsa-defun--get-typed-args
           args (cdr (--first (eq (car it) 'elsa-args) declarations)))
