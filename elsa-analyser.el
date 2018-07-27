@@ -111,7 +111,7 @@
                   ((elsa-type-accept arg-type (elsa-type-string))
                    (elsa-make-type 't?))
                   (t (elsa-type-nil))))))))
-    errors))
+    (-flatten errors)))
 
 (defun elsa--analyse-list (form scope)
   ;; handle special forms
