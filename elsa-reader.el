@@ -57,6 +57,12 @@
 
 (defclass elsa-form-keyword (elsa-form-symbol) ())
 
+(cl-defgeneric elsa-form-name (this)
+  nil)
+
+(cl-defmethod elsa-form-name ((this elsa-form-symbol))
+  (oref this name))
+
 (defun elsa--read-keyword (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-keyword
@@ -128,6 +134,10 @@
 
 (cl-defmethod elsa-form-cdr ((this elsa-form-list))
   (cdr (oref this sequence)))
+
+(cl-defmethod elsa-form-name ((this elsa-form-list))
+  (-when-let (head (elsa-form-car this))
+    (oref head name)))
 
 (defclass elsa-form-improper-list (elsa-form-cons)
   ((conses :type list :initarg :conses)))
