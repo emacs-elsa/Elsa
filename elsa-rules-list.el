@@ -1,15 +1,10 @@
 (require 'elsa-error)
 (require 'elsa-check)
 
-(defun elsa-check--if-p (form)
-  "Check if FORM is an `if' form."
-  (and (elsa-form-list-p form)
-       (eq 'if (elsa-form-name form))))
-
 (defclass elsa-check-if (elsa-check) ())
 
 (cl-defmethod elsa-check-should-run ((_ elsa-check-if) form)
-  (elsa-check--if-p form))
+  (elsa-form-function-call-p form 'if))
 
 (defclass elsa-check-if-useless-condition (elsa-check-if) ())
 
