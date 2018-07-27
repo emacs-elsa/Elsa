@@ -57,7 +57,7 @@
         (false-body (nth 3 (oref form sequence))))
     (elsa--analyse-form condition scope)
     (elsa--analyse-form true-body scope)
-    (elsa--analyse-form false-body scope)))
+    (when false-body (elsa--analyse-form false-body scope))))
 
 (defun elsa--analyse-function-call (form scope)
   (let* ((errors)
