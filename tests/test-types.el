@@ -215,6 +215,25 @@
              (new (clone old)))
         (expect (eq old new) :not :to-be-truthy))))
 
+  (describe "Bool type"
+
+    (it "should accept t"
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-type-t)) :to-be-truthy))
+
+    (it "should accept nil"
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-type-t)) :to-be-truthy))
+
+    (it "should accept t?"
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type 't?)) :to-be-truthy))
+
+    (it "should accept bool"
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-type-bool)) :to-be-truthy))
+
+    (it "should not accept int|bool"
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type [&or int bool])) :not :to-be-truthy))
+
+    (it "should not accept int|t"
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type [&or int t])) :not :to-be-truthy)))
 
   (describe "Just-nullable type"
 

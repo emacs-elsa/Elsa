@@ -166,6 +166,12 @@ type and none of the negative types.")
 (defmethod elsa-type-describe ((this elsa-type-nil))
   "nil")
 
+(defclass elsa-type-bool (elsa-type) ())
+
+(defmethod elsa-type-accept ((this elsa-type-bool) other)
+  (or (elsa-type-bool-p other)
+      (elsa-type-accept (elsa-make-type [&or t nil]) other)))
+
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
 (defclass elsa-type-mixed (elsa-type) ())
