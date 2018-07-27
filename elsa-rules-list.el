@@ -66,4 +66,29 @@
 
 (add-to-list 'elsa-checks (elsa-check-if-to-when))
 
+(defclass elsa-check-symbol (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-symbol) form)
+  (elsa-form-symbol-p form))
+
+(defclass elsa-check-symbol-naming (elsa-check-symbol) ())
+
+(cl-defmethod elsa-check-check ((_ elsa-check-symbol-naming) form)
+  (let ((name (symbol-name (elsa-form-name form)))
+        (errors))
+    (when (string-match-p ".+_" name)
+      (push (elsa-warning
+             :expression form
+             :message "Use lisp-case for naming symbol instead of snake_case.")
+            errors))
+    (let ((case-fold-search nil))
+      (when (string-match-p ".+[a-z][A-Z]" name)
+        (push (elsa-warning
+               :expression form
+               :message "Use lisp-case for naming symbol instead of camelCase.")
+              errors)))
+    errors))
+
+(add-to-list 'elsa-checks (elsa-check-symbol-naming))
+
 (provide 'elsa-rules-list)
