@@ -138,12 +138,14 @@
 
 (cl-defmethod elsa-form-name ((this elsa-form-list))
   (-when-let (head (elsa-form-car this))
-    (oref head name)))
+    (and (elsa-form-symbol-p head)
+         (oref head name))))
 
 (cl-defmethod elsa-form-function-call-p ((this elsa-form-list) &optional name)
-  (if name
-      (eq (oref (elsa-form-car this) name) name)
-    (<= 1 (length (oref this sequence)))))
+  (-when-let (head (elsa-form-car this))
+    (and (elsa-form-symbol-p head)
+         (or (not name)
+             (eq (oref head name) name)))))
 
 (defclass elsa-form-improper-list (elsa-form-cons)
   ((conses :type list :initarg :conses)))
