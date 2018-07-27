@@ -227,7 +227,15 @@ type and none of the negative types.")
 (defmethod elsa-type-describe ((this elsa-type-symbol))
   "symbol")
 
-(defclass elsa-type-list (elsa-type)
+(defclass elsa-type-cons (elsa-type)
+  ((car-type :type elsa-type :initarg :car-type
+             :initform (elsa-sum-type
+                        :types (list (elsa-type-mixed) (elsa-type-nil))))
+   (cdr-type :type elsa-type :initarg :car-type
+             :initform (elsa-sum-type
+                        :types (list (elsa-type-mixed) (elsa-type-nil))))))
+
+(defclass elsa-type-list (elsa-type-cons)
   ((item-type :type elsa-type
               :initarg :item-type
               :initform (elsa-sum-type
