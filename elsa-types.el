@@ -155,6 +155,9 @@ type and none of the negative types.")
 
 (defclass elsa-type-t (elsa-type) ())
 
+(defmethod elsa-type-describe ((this elsa-type-t))
+  "t")
+
 (defclass elsa-type-nil (elsa-type) ())
 
 (defmethod elsa-type-accept ((this elsa-type-nil) other)
