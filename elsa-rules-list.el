@@ -91,4 +91,29 @@
 
 (add-to-list 'elsa-checks (elsa-check-symbol-naming))
 
+(defclass elsa-check-error-message (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-error-message) form)
+  (elsa-form-function-call-p form 'error))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-error-message) form)
+  (let ((error-message (nth 1 (oref form sequence)))
+        (errors))
+    (when (elsa-form-string-p error-message)
+      (let ((msg (oref error-message sequence)))
+        (when (equal (substring msg -1) ".")
+          (push (elsa-warning
+                 :expression error-message
+                 :message "Error messages should not end with a period.")
+                errors))
+        (let ((case-fold-search nil))
+          (unless (string-match-p "[A-Z]" msg)
+            (push (elsa-warning
+                   :expression error-message
+                   :message "Error messages should start with a capital letter.")
+                  errors)))))
+    errors))
+
+(add-to-list 'elsa-checks (elsa-check-error-message))
+
 (provide 'elsa-rules-list)
