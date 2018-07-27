@@ -143,6 +143,6 @@ FORM is a result of `elsa-read-form'."
      ((elsa-form-list-p form) (elsa--analyse-list form scope))
      ((elsa-form-improper-list-p form) (elsa--analyse-improper-list form scope))
      (t (error "Invalid form")))
-    (--map (when (funcall (oref it predicate) form)
-             (funcall (oref it check) form))
+    (--map (when (elsa-check-should-run it form)
+             (elsa-check-check it form))
            elsa-checks))))
