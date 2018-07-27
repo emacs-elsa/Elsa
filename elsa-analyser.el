@@ -7,6 +7,8 @@
 (require 'elsa-error)
 (require 'elsa-types)
 
+(require 'elsa-typed-builtin)
+
 (defun elsa--analyse-float (form scope)
   nil)
 
@@ -58,10 +60,35 @@
     (elsa--analyse-form false-body scope)))
 
 (defun elsa--analyse-function-call (form scope)
-  (let* ((head (elsa-form-car form))
+  (let* ((errors)
+         (head (elsa-form-car form))
          (name (oref head name))
-         (args (cdr (oref form sequence))))
-    (--map (elsa--analyse-form it scope) args)
+         (args (cdr (oref form sequence)))
+         (type (get name 'elsa-type)))
+    (push (--map (elsa--analyse-form it scope) args) errors)
+    ;; check the types
+    (when type
+      ;; analyse the arguments
+      (cl-mapc
+       (lambda (expected actual argument-form index)
+         (unless (elsa-type-accept expected actual)
+           (push
+            (elsa-error
+             :message (format "Argument %d accepts type %s but received %s"
+                              index
+                              (elsa-type-describe expected)
+                              (elsa-type-describe actual))
+             :expression argument-form)
+            errors)))
+       (oref type args)
+       (-map (lambda (a) (oref a type)) args)
+       args
+       (number-sequence 1 (length args)))
+
+      ;; set the return type of the form according to the return type
+      ;; of the function's declaration
+      (oset form type (oref type return)))
+
     (pcase name
       (`not
        (let ((arg-type (oref (car args) type)))
@@ -83,7 +110,8 @@
                   ;; sometimes to true and sometimes to false
                   ((elsa-type-accept arg-type (elsa-type-string))
                    (elsa-make-type 't?))
-                  (t (elsa-type-nil))))))))))
+                  (t (elsa-type-nil))))))))
+    errors))
 
 (defun elsa--analyse-list (form scope)
   ;; handle special forms
