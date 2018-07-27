@@ -38,10 +38,14 @@
           (cond
            ((elsa-form-list-p binding)
             (-let [(var source) (oref binding sequence)]
-              (push (elsa--analyse-form source scope) errors)
-              (push (elsa-variable
-                     :name (oref var name) :type (oref source type))
-                    new-vars)))
+              (if (not source)
+                  (push (elsa-variable
+                         :name (oref var name) :type (elsa-type-nil))
+                        new-vars)
+                (push (elsa--analyse-form source scope) errors)
+                (push (elsa-variable
+                       :name (oref var name) :type (oref source type))
+                      new-vars))))
            ((elsa-form-symbol-p binding)
             (push (elsa-variable :name (oref binding name) :type (elsa-make-type nil))
                   new-vars)))))
