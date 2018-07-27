@@ -50,23 +50,40 @@
     (-flatten errors)))
 
 (defun elsa--analyse-if (form scope)
-  (let (errors)
-    (let ((condition (nth 1 (oref form sequence)))
-          (true-body (nth 2 (oref form sequence)))
-          (false-body (nth 3 (oref form sequence))))
-      (elsa--analyse-form condition scope)
-      ;; TODO: This is not analysis but a rule, move it to the checks
-      (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
-          (push (elsa-warning
-                 :expression condition
-                 :message "Else clause will never be executed.")
-                errors)
-        (when (elsa-type-accept (elsa-type-nil) (oref condition type))
-          (push (elsa-warning
-                 :expression condition
-                 :message "Then clause will never be executed.")
-                errors))))
-    (-flatten errors)))
+  (let ((condition (nth 1 (oref form sequence)))
+        (true-body (nth 2 (oref form sequence)))
+        (false-body (nth 3 (oref form sequence))))
+    (elsa--analyse-form condition scope)
+    (elsa--analyse-form true-body scope)
+    (elsa--analyse-form false-body scope)))
+
+(defun elsa--analyse-function-call (form scope)
+  (let* ((head (elsa-form-car form))
+         (name (oref head name))
+         (args (cdr (oref form sequence))))
+    (--map (elsa--analyse-form it scope) args)
+    (pcase name
+      (`not
+       (let ((arg-type (oref (car args) type)))
+         (cond
+          ((elsa-type-accept (elsa-type-nil) arg-type) ;; definitely false
+           (oset form type (elsa-type-t)))
+          ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
+           (oset form type (elsa-type-nil)))
+          (t (oset form type (elsa-make-type 't?))))))
+      (`stringp
+       (oset form type
+             (elsa--infer-unary-fn form
+               (lambda (arg-type)
+                 (cond
+                  ((elsa-type-accept (elsa-type-string) arg-type)
+                   (elsa-type-t))
+                  ;; if the arg-type has string as a component, for
+                  ;; example int | string, then it might evaluate
+                  ;; sometimes to true and sometimes to false
+                  ((elsa-type-accept arg-type (elsa-type-string))
+                   (elsa-make-type 't?))
+                  (t (elsa-type-nil))))))))))
 
 (defun elsa--analyse-list (form scope)
   ;; handle special forms
@@ -75,9 +92,9 @@
       (let ((name (oref head name)))
         (pcase name
           (`let (elsa--analyse-let form scope))
-          (`if (elsa--analyse-if form scope))))))
-  ;; (-non-nil (-map 'elsa--analyse-form (oref form sequence)))
-  )
+          (`if (elsa--analyse-if form scope))
+          ;; function call
+          (_ (elsa--analyse-function-call form scope)))))))
 
 (defun elsa--analyse-improper-list (form scope)
   nil)

@@ -81,6 +81,11 @@
    ((eq (oref form name) nil) (elsa-make-type 'nil))
    (t (elsa--get-var-type (oref form name) scope :--placeholder--))))
 
+(defun elsa--infer-unary-fn (form handler)
+  (declare (indent 1))
+  (let ((arg1-type (oref (cadr (oref form sequence)) type)))
+    (funcall handler arg1-type)))
+
 (defun elsa--infer-let (form scope decls)
   (let ((new-vars nil)
         (binding-exprs nil))
