@@ -28,7 +28,7 @@
 
 (defclass elsa-message ()
   ((message :initarg :message)
-   (line :initarg :line)
+   (line :initarg :line :initform nil)
    (col-start :initarg :col-start
               :initform nil)
    (col-end :initarg :col-end

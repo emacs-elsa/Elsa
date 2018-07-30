@@ -150,3 +150,5 @@ FORM is a result of `elsa-read-form'."
     (--map (when (elsa-check-should-run it form)
              (elsa-check-check it form))
            elsa-checks))))
+
+(provide 'elsa-analyser)

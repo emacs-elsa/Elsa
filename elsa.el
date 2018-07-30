@@ -32,6 +32,8 @@
 (require 'elsa-scope)
 (require 'elsa-defun)
 (require 'elsa-error)
+(require 'elsa-analyser)
+(require 'elsa-reader)
 
 (push '(elsa-args (lambda (&rest _) t)) defun-declarations-alist)
 (push '(elsa-return (lambda (&rest _) t)) defun-declarations-alist)
@@ -47,7 +49,7 @@
   ((defvars :initform (make-hash-table))
    (defuns :initform (make-hash-table))
    (errors :initform nil)
-   (scope :initform (elsa-scope ""))))
+   (scope :initform (elsa-scope))))
 
 ;; TODO: unify with `elsa-variable'?
 (defclass elsa-defvar nil
@@ -74,20 +76,21 @@
   "Process FILE."
   (let ((buffer (find-file-noselect file))
         (state (elsa-state))
-        (form))
+        (form)
+        (errors))
     (with-current-buffer buffer
       (save-excursion
         (save-restriction
           (widen)
           (goto-char (point-min))
           (condition-case _err
-              (while (setq form (read buffer))
-                (elsa-analyse-form state form))
+              (while (setq form (elsa-read-form))
+                (setq errors (-concat (elsa-analyse-form state form) errors)))
             (end-of-file t)))))
-    (oset state errors (nreverse (oref state errors)))
+    (oset state errors (nreverse errors))
     state))
 
-(defun elsa-flycheck ()
+(defun elsa-run ()
   "Run `elsa-process-file' and output errors to stdout for flycheck."
   (let* ((file (car command-line-args-left))
          (state (elsa-process-file file))
@@ -252,35 +255,37 @@ STATE, IF, THEN, ELSE."
   "Analyse FORM in STATE.
 
 If TYPE is non-nil, force this type on FORM."
-  (pcase form
-    (`(elsa-declare ,function . ,args)
-     (elsa-process-declare function args))
-    (`(elsa-cast ,type ,form)
-     (elsa-analyse-form state form (elsa-make-type type)))
-    ;; TODO: handle type
-    (`(defvar ,name . ,_)
-     (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
-    ;; TODO: handle type
-    (`(defcustom ,name ,_ ,(pred stringp) . ,_)
-     (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
-    ;; TODO: handle type
-    (`(defcustom ,name ,_ . ,_)
-     (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
-    ;; TODO: add type inference to get return type from exit forms
-    (`(defun ,name ,args ,(pred stringp) (declare . ,declarations) . ,body)
-     (elsa-analyse-defun state name args body declarations))
-    (`(defun ,name ,args ,(pred stringp) . ,body)
-     (elsa-analyse-defun state name args body))
-    (`(defun ,name ,args (declare . ,declarations) . ,body)
-     (elsa-analyse-defun state name args body declarations))
-    (`(defun ,name ,args . ,body)
-     (elsa-analyse-defun state name args body))
-    (`(let ,bindings . ,body)
-     (elsa-analyse-let state bindings body))
-    (`(let* ,bindings . ,body)
-     (elsa-analyse-let* state bindings body))
-    (`(,function-name . ,rest)
-     (elsa-analyse-function-call state (cons function-name rest)))))
+  (elsa--analyse-form form (oref state scope))
+  ;; (pcase form
+  ;;   (`(elsa-declare ,function . ,args)
+  ;;    (elsa-process-declare function args))
+  ;;   (`(elsa-cast ,type ,form)
+  ;;    (elsa-analyse-form state form (elsa-make-type type)))
+  ;;   ;; TODO: handle type
+  ;;   (`(defvar ,name . ,_)
+  ;;    (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
+  ;;   ;; TODO: handle type
+  ;;   (`(defcustom ,name ,_ ,(pred stringp) . ,_)
+  ;;    (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
+  ;;   ;; TODO: handle type
+  ;;   (`(defcustom ,name ,_ . ,_)
+  ;;    (elsa-state-add-defvar state name (or type (elsa-make-type 'mixed))))
+  ;;   ;; TODO: add type inference to get return type from exit forms
+  ;;   (`(defun ,name ,args ,(pred stringp) (declare . ,declarations) . ,body)
+  ;;    (elsa-analyse-defun state name args body declarations))
+  ;;   (`(defun ,name ,args ,(pred stringp) . ,body)
+  ;;    (elsa-analyse-defun state name args body))
+  ;;   (`(defun ,name ,args (declare . ,declarations) . ,body)
+  ;;    (elsa-analyse-defun state name args body declarations))
+  ;;   (`(defun ,name ,args . ,body)
+  ;;    (elsa-analyse-defun state name args body))
+  ;;   (`(let ,bindings . ,body)
+  ;;    (elsa-analyse-let state bindings body))
+  ;;   (`(let* ,bindings . ,body)
+  ;;    (elsa-analyse-let* state bindings body))
+  ;;   (`(,function-name . ,rest)
+  ;;    (elsa-analyse-function-call state (cons function-name rest))))
+  )
 
 (provide 'elsa)
 ;;; elsa.el ends here
