@@ -131,3 +131,10 @@ There are these distinct operations:
   - nil (when to treat as boolean and when as a list?)
 - function application
 - macros
+* How to run
+
+To run locally in the dev repo
+
+#+BEGIN_SRC sh
+./bin/elsa -L . -L /home/matus/.emacs.d/projects/Elsa/.cask/25.2/elpa/dash-20180726.513 <file>
+#+END_SRC
