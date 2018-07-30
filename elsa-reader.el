@@ -10,12 +10,6 @@
 (defun elsa--skip-whitespace-forward ()
   (skip-chars-forward " \t\n\r"))
 
-(defun elsa--forward-symbol (&optional n)
-  "Skip `forward-symbol' N times and return `point'."
-  (setq n (or n 1))
-  (forward-symbol n)
-  (point))
-
 (defun elsa--improper-list-p (cell)
   "Return non-nil if CELL is an improper list."
   (let ((len (safe-length cell)))
@@ -33,6 +27,8 @@
 (defclass elsa-form nil
   ((start :type integer :initarg :start)
    (end :type integer :initarg :end)
+   (line :type integer :initarg :line)
+   (column :type integer :initarg :column)
    (type :type elsa-type :initarg :type :initform (elsa-make-type 'mixed))
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
@@ -53,7 +49,7 @@
   (elsa-form-symbol
    :start (point)
    :name form
-   :end (elsa--forward-symbol)))
+   :end (elsa--forward-sexp)))
 
 (defclass elsa-form-keyword (elsa-form-symbol) ())
 
@@ -70,7 +66,7 @@
    :type (elsa-make-type 'keyword)
    :start (point)
    :name form
-   :end (elsa--forward-symbol)))
+   :end (elsa--forward-sexp)))
 
 (defclass elsa-form-number (elsa-form-atom)
   ((value :type number :initarg :value)))
@@ -84,7 +80,7 @@
    :type (elsa-make-type 'int)
    :start (point)
    :value form
-   :end (elsa--forward-symbol)))
+   :end (elsa--forward-sexp)))
 
 (defclass elsa-form-float (elsa-form-number)
   ((value :initarg :value)))
@@ -95,7 +91,7 @@
    :type (elsa-make-type 'float)
    :start (point)
    :value form
-   :end (elsa--forward-symbol)))
+   :end (elsa--forward-sexp)))
 
 ;;;; Sequences
 (defclass elsa-form-seq (elsa-form-atom)
@@ -187,20 +183,26 @@
    :end (point)))
 
 (defun elsa--read-form (form)
-  (cond
-   ((floatp form) (elsa--read-float form))
-   ((integerp form) (elsa--read-integer form))
-   ((keywordp form) (elsa--read-keyword form))
-   ((symbolp form) (elsa--read-symbol form))
-   ((vectorp form) (elsa--read-vector form))
-   ((stringp form) (elsa--read-string form))
-   ((consp form)
-    ;; special care needs to be taken about the "reader macros" '`,
-    (cond
-     ((eq (car form) 'quote)
-      (elsa--read-quote form))
-     (t (elsa--read-cons form))))
-   (t (error "Invalid form"))))
+  (let ((reader-form
+         (cond
+          ((floatp form) (elsa--read-float form))
+          ((integerp form) (elsa--read-integer form))
+          ((keywordp form) (elsa--read-keyword form))
+          ((symbolp form) (elsa--read-symbol form))
+          ((vectorp form) (elsa--read-vector form))
+          ((stringp form) (elsa--read-string form))
+          ((consp form)
+           ;; special care needs to be taken about the "reader macros" '`,
+           (cond
+            ((eq (car form) 'quote)
+             (elsa--read-quote form))
+            (t (elsa--read-cons form))))
+          (t (error "Invalid form")))))
+    (oset reader-form line (line-number-at-pos (oref reader-form start)))
+    (oset reader-form column (save-excursion
+                               (goto-char (oref reader-form start))
+                               (current-column)))
+    reader-form))
 
 (defun elsa-read-form ()
   "Read form at point."
