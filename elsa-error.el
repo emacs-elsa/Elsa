@@ -29,10 +29,8 @@
 (defclass elsa-message ()
   ((message :initarg :message)
    (line :initarg :line :initform nil)
-   (col-start :initarg :col-start
-              :initform nil)
-   (col-end :initarg :col-end
-            :initform nil)
+   (column :initarg :column
+           :initform nil)
    (expression :initarg :expression))
   :abstract t
   :documentation "Base class representing a message: result of the analysis.

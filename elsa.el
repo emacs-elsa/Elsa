@@ -95,8 +95,9 @@
   (let* ((file (car command-line-args-left))
          (state (elsa-process-file file))
          (errors (oref state errors)))
-    (--each errors (princ (format "%s:%s\n"
+    (--each errors (princ (format "%s:%s:%s\n"
                                   (oref it line)
+                                  (or (oref it column) "?")
                                   (oref it message))))))
 
 (defun elsa--get-expression-type (state expr)
