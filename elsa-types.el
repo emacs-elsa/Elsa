@@ -95,7 +95,9 @@ This type is a combination of other types.  It can accept any
 type that is accepted by at least one of its summands.")
 
 (defmethod elsa-type-describe ((this elsa-sum-type))
-  (mapconcat 'elsa-type-describe (oref this types) " | "))
+  (if (elsa-type-accept this (elsa-type-mixed))
+      "mixed"
+    (mapconcat 'elsa-type-describe (oref this types) " | ")))
 
 (cl-defmethod clone ((this elsa-sum-type))
   "Make a deep copy of a sum type."
@@ -234,6 +236,11 @@ type and none of the negative types.")
    (cdr-type :type elsa-type :initarg :car-type
              :initform (elsa-sum-type
                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
+
+(defmethod elsa-type-describe ((this elsa-type-cons))
+  (format "(%s . %s)"
+          (elsa-type-describe (oref this car-type))
+          (elsa-type-describe (oref this cdr-type))))
 
 (defclass elsa-type-list (elsa-type-cons)
   ((item-type :type elsa-type
