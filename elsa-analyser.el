@@ -104,6 +104,10 @@
           ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
            (oset form type (elsa-type-nil)))
           (t (oset form type (elsa-make-type 't?))))))
+      (`car
+       (let ((arg (oref (car args) type)))
+         (when (elsa-type-list-p arg)
+           (oset form type (elsa-type-make-nullable (oref arg item-type))))))
       (`stringp
        (oset form type
              (elsa--infer-unary-fn form
