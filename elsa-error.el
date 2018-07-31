@@ -68,8 +68,22 @@ In general, we recognize three states: error, warning, notice
           (elsa-message-type this)
           (oref this message)))
 
+(defun elsa-make-error (message expression)
+  (elsa-error
+   :expression expression
+   :message message
+   :line (oref expression line)
+   :column (oref expression column)))
+
 (defun elsa-make-warning (message expression)
   (elsa-warning
+   :expression expression
+   :message message
+   :line (oref expression line)
+   :column (oref expression column)))
+
+(defun elsa-make-notice (message expression)
+  (elsa-notice
    :expression expression
    :message message
    :line (oref expression line)
