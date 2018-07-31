@@ -90,6 +90,24 @@
       (elsa--analyse-form true-body scope)
       (when false-body (--map (elsa--analyse-form it scope) false-body))))))
 
+(defun elsa--analyse-progn (form scope)
+  (let* ((body (cdr (oref form sequence)))
+         (last (-last-item (oref form sequence)))
+         (errors (--map (elsa--analyse-form it scope) body)))
+    (if body
+        (oset form type (oref last type))
+      (oset form type (elsa-type-nil)))
+    (-flatten errors)))
+
+(defun elsa--analyse-prog1 (form scope)
+  (let* ((body (cdr (oref form sequence)))
+         (first (car body))
+         (errors (--map (elsa--analyse-form it scope) body)))
+    (if first
+        (oset form type (oref first type))
+      (oset form type (elsa-type-unbound)))
+    (-flatten errors)))
+
 (defun elsa--analyse-defun (form scope)
   (let* (;; (head (elsa-form-car form))
          ;; (name (oref head name))
@@ -177,6 +195,8 @@
           (`let (elsa--analyse-let form scope))
           (`let* (elsa--analyse-let* form scope))
           (`if (elsa--analyse-if form scope))
+          (`progn (elsa--analyse-progn form scope))
+          (`prog1 (elsa--analyse-prog1 form scope))
           (`defun (elsa--analyse-defun form scope))
           ;; function call
           (_ (elsa--analyse-function-call form scope)))))))
