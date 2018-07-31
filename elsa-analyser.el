@@ -55,6 +55,31 @@
       (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v))))
     (-flatten errors)))
 
+(defun elsa--analyse-let* (form scope)
+  (let (errors)
+    (let ((new-vars nil)
+          (bindings (oref (cadr (oref form sequence)) sequence))
+          (body (cddr (oref form sequence))))
+      (-each bindings
+        (lambda (binding)
+          (let (variable)
+            (cond
+             ((elsa-form-list-p binding)
+              (-let [(var source) (oref binding sequence)]
+                (if (not source)
+                    (setq variable (elsa-variable
+                                    :name (oref var name) :type (elsa-type-nil)))
+                  (push (elsa--analyse-form source scope) errors)
+                  (setq variable (elsa-variable
+                                  :name (oref var name) :type (oref source type))))))
+             ((elsa-form-symbol-p binding)
+              (setq variable (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))))
+            (elsa-scope-add-variable scope variable))))
+      (push (--map (elsa--analyse-form it scope) body) errors)
+      (oset form type (oref (-last-item body) type))
+      (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v))))
+    (-flatten errors)))
+
 (defun elsa--analyse-if (form scope)
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
@@ -130,6 +155,7 @@
       (let ((name (oref head name)))
         (pcase name
           (`let (elsa--analyse-let form scope))
+          (`let* (elsa--analyse-let* form scope))
           (`if (elsa--analyse-if form scope))
           ;; function call
           (_ (elsa--analyse-function-call form scope)))))))
