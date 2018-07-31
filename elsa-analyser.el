@@ -200,8 +200,9 @@ FORM is a result of `elsa-read-form'."
      ((elsa-form-list-p form) (elsa--analyse-list form scope))
      ((elsa-form-improper-list-p form) (elsa--analyse-improper-list form scope))
      (t (error "Invalid form")))
-    (--map (when (elsa-check-should-run it form)
-             (elsa-check-check it form))
-           elsa-checks))))
+    (-flatten
+     (--map (when (elsa-check-should-run it form scope)
+              (elsa-check-check it form scope))
+            elsa-checks)))))
 
 (provide 'elsa-analyser)

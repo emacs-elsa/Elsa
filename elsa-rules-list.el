@@ -1,14 +1,15 @@
 (require 'elsa-error)
 (require 'elsa-check)
+(require 'elsa-scope)
 
 (defclass elsa-check-if (elsa-check) ())
 
-(cl-defmethod elsa-check-should-run ((_ elsa-check-if) form)
+(cl-defmethod elsa-check-should-run ((_ elsa-check-if) form scope)
   (elsa-form-function-call-p form 'if))
 
 (defclass elsa-check-if-useless-condition (elsa-check-if) ())
 
-(cl-defmethod elsa-check-check ((_ elsa-check-if-useless-condition) form)
+(cl-defmethod elsa-check-check ((_ elsa-check-if-useless-condition) form scope)
   (let ((condition (cadr (oref form sequence)))
         (errors))
     (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
@@ -23,7 +24,7 @@
 
 (defclass elsa-check-if-useless-then-progn (elsa-check-if) ())
 
-(cl-defmethod elsa-check-check ((_ elsa-check-if-useless-then-progn) form)
+(cl-defmethod elsa-check-check ((_ elsa-check-if-useless-then-progn) form scope)
   (let ((then-body (nth 2 (oref form sequence))))
     (when (and (eq (elsa-form-name then-body) 'progn)
                (= 2 (length (oref then-body sequence))))
@@ -35,7 +36,7 @@
 
 (defclass elsa-check-if-useless-else-progn (elsa-check-if) ())
 
-(cl-defmethod elsa-check-check ((_ elsa-check-if-useless-else-progn) form)
+(cl-defmethod elsa-check-check ((_ elsa-check-if-useless-else-progn) form scope)
   (let ((else-body (nth 3 (oref form sequence))))
     (when (eq (elsa-form-name else-body) 'progn)
       (elsa-warning
@@ -46,7 +47,7 @@
 
 (defclass elsa-check-if-to-when (elsa-check-if) ())
 
-(cl-defmethod elsa-check-check ((_ elsa-check-if-to-when) form)
+(cl-defmethod elsa-check-check ((_ elsa-check-if-to-when) form scope)
   (let ((then-body (nth 2 (oref form sequence)))
         (else-body (nth 3 (oref form sequence))))
     (unless else-body
@@ -59,12 +60,12 @@
 
 (defclass elsa-check-symbol (elsa-check) ())
 
-(cl-defmethod elsa-check-should-run ((_ elsa-check-symbol) form)
+(cl-defmethod elsa-check-should-run ((_ elsa-check-symbol) form scope)
   (elsa-form-symbol-p form))
 
 (defclass elsa-check-symbol-naming (elsa-check-symbol) ())
 
-(cl-defmethod elsa-check-check ((_ elsa-check-symbol-naming) form)
+(cl-defmethod elsa-check-check ((_ elsa-check-symbol-naming) form scope)
   (let ((name (symbol-name (elsa-form-name form)))
         (errors))
     (when (string-match-p ".+_" name)
@@ -84,10 +85,10 @@
 
 (defclass elsa-check-error-message (elsa-check) ())
 
-(cl-defmethod elsa-check-should-run ((_ elsa-check-error-message) form)
+(cl-defmethod elsa-check-should-run ((_ elsa-check-error-message) form scope)
   (elsa-form-function-call-p form 'error))
 
-(cl-defmethod elsa-check-check ((_ elsa-check-error-message) form)
+(cl-defmethod elsa-check-check ((_ elsa-check-error-message) form scope)
   (let ((error-message (nth 1 (oref form sequence)))
         (errors))
     (when (elsa-form-string-p error-message)

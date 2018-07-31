@@ -7,8 +7,8 @@
 
 (defclass elsa-check () () :abstract t)
 
-(cl-defgeneric elsa-check-should-run ((this elsa-check) form) nil)
+(cl-defgeneric elsa-check-should-run ((this elsa-check) form scope) nil)
 
-(cl-defgeneric elsa-check-check ((this elsa-check) form) nil)
+(cl-defgeneric elsa-check-check ((this elsa-check) form scope) nil)
 
 (provide 'elsa-check)
