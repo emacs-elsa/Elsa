@@ -83,8 +83,8 @@
                               (elsa-type-describe expected)
                               (elsa-type-describe actual))
              :expression argument-form
-             :line (oref argument-form line)
-             :column (oref argument-form column))
+             :line (oref head line)
+             :column (oref head column))
             errors)))
        (oref type args)
        (-map (lambda (a) (oref a type)) args)
