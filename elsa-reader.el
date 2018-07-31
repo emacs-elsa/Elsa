@@ -27,6 +27,7 @@
 (defclass elsa-form nil
   ((start :type integer :initarg :start)
    (end :type integer :initarg :end)
+   (quote-type :type symbol :initarg :quote-type :initform nil)
    (line :type integer :initarg :line)
    (column :type integer :initarg :column)
    (type :type elsa-type :initarg :type :initform (elsa-make-type 'mixed))
@@ -172,12 +173,15 @@
 (defun elsa--read-quote (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-list
-   :type (elsa-make-type 'symbol)
+   :quote-type (car form)
    :start (point)
    :sequence (cons
               (elsa-form-symbol
-               :start (prog1 (point) (forward-char))
-               :name 'quote
+               :start (prog1 (point)
+                        (if (looking-at-p "'")
+                            (forward-char 1)
+                          (forward-char (length (symbol-name (car form))))))
+               :name (car form)
                :end (point))
               (-map 'elsa--read-form (cdr form)))
    :end (point)))
@@ -194,7 +198,7 @@
           ((consp form)
            ;; special care needs to be taken about the "reader macros" '`,
            (cond
-            ((eq (car form) 'quote)
+            ((memq (car form) (list 'quote backquote-backquote-symbol backquote-unquote-symbol backquote-splice-symbol))
              (elsa--read-quote form))
             (t (elsa--read-cons form))))
           (t (error "Invalid form")))))
