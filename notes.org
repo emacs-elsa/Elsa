@@ -22,6 +22,21 @@
 @param c string")
 #+END_SRC
 
+There are some options for the sequence types
+#+BEGIN_SRC elisp
+;; cons
+(elsa-make-type (int . int) -> int)
+
+;; list
+(elsa-make-type (int) -> int)
+
+;; function or list of functions?
+(elsa-make-type (int -> string) -> int)
+
+;; vector
+(elsa-make-type [int] -> int)
+#+END_SRC
+
 * TODO Track where the error occurs
 
 Note down the top-level position, then for each "drill-down" note the
