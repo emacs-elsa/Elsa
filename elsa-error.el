@@ -48,7 +48,7 @@ In general, we recognize three states: error, warning, notice
 (defclass elsa-warning (elsa-message) ())
 (defclass elsa-notice (elsa-message) ())
 
-(cl-defgeneric elsa-message-type ((this elsa-message))
+(cl-defmethod elsa-message-type ((this elsa-message))
   "message")
 
 (cl-defmethod elsa-message-type ((this elsa-error))
@@ -60,7 +60,7 @@ In general, we recognize three states: error, warning, notice
 (cl-defmethod elsa-message-type ((this elsa-notice))
   "notice")
 
-(cl-defgeneric elsa-message-format ((this elsa-message))
+(cl-defmethod elsa-message-format ((this elsa-message))
   "Format an `elsa-message'."
   (format "%s:%s:%s:%s\n"
           (oref this line)
