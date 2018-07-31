@@ -28,9 +28,7 @@
   (let ((then-body (nth 2 (oref form sequence))))
     (when (and (eq (elsa-form-name then-body) 'progn)
                (= 2 (length (oref then-body sequence))))
-      (elsa-warning
-       :expression then-body
-       :message "Useless `progn' around body of then branch."))))
+      (elsa-make-notice "Useless `progn' around body of then branch." (elsa-form-car then-body)))))
 
 (add-to-list 'elsa-checks (elsa-check-if-useless-then-progn))
 
@@ -39,9 +37,7 @@
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-else-progn) form scope)
   (let ((else-body (nth 3 (oref form sequence))))
     (when (eq (elsa-form-name else-body) 'progn)
-      (elsa-warning
-       :expression else-body
-       :message "Useless `progn' around body of else branch."))))
+      (elsa-make-notice "Useless `progn' around body of else branch." (elsa-form-car else-body)))))
 
 (add-to-list 'elsa-checks (elsa-check-if-useless-else-progn))
 
@@ -52,9 +48,7 @@
         (else-body (nth 3 (oref form sequence))))
     (unless else-body
       (when (eq (elsa-form-name then-body) 'progn)
-        (elsa-warning
-         :expression then-body
-         :message "Use `when' instead of `if' with the then branch wrapped in `progn'")))))
+        (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-form-car form))))))
 
 (add-to-list 'elsa-checks (elsa-check-if-to-when))
 
@@ -69,15 +63,11 @@
   (let ((name (symbol-name (elsa-form-name form)))
         (errors))
     (when (string-match-p ".+_" name)
-      (push (elsa-warning
-             :expression form
-             :message "Use lisp-case for naming symbol instead of snake_case.")
+      (push (elsa-make-notice "Use lisp-case for naming symbol instead of snake_case." form)
             errors))
     (let ((case-fold-search nil))
       (when (string-match-p ".+[a-z][A-Z]" name)
-        (push (elsa-warning
-               :expression form
-               :message "Use lisp-case for naming symbol instead of camelCase.")
+        (push (elsa-make-notice "Use lisp-case for naming symbol instead of camelCase." form)
               errors)))
     errors))
 
