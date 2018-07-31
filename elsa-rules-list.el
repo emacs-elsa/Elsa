@@ -12,14 +12,10 @@
   (let ((condition (cadr (oref form sequence)))
         (errors))
     (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
-        (push (elsa-warning
-               :expression condition
-               :message "Condition always evaluates to true.")
+        (push (elsa-make-warning "Condition always evaluates to true." condition)
               errors)
       (when (elsa-type-accept (elsa-type-nil) (oref condition type))
-        (push (elsa-warning
-               :expression condition
-               :message "Condition always evaluates to false.")
+        (push (elsa-make-warning "Condition always evaluates to false." condition)
               errors)))
     errors))
 
