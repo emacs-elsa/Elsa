@@ -88,6 +88,24 @@
     (elsa--analyse-form true-body scope)
     (when false-body (elsa--analyse-form false-body scope))))
 
+(defun elsa--analyse-defun (form scope)
+  (let* (;; (head (elsa-form-car form))
+         ;; (name (oref head name))
+         (args (nth 2 (oref form sequence)))
+         (body (nthcdr 3 (oref form sequence)))
+         ;; (type (get name 'elsa-type))
+         (vars))
+    (when (elsa-form-list-p args)
+      (-each (oref args sequence)
+        (lambda (arg)
+          (let ((var (elsa-variable
+                      :name (elsa-form-name arg)
+                      :type (elsa-make-type 'mixed))))
+            (push var vars)
+            (elsa-scope-add-variable scope var)))))
+    (prog1 (-flatten (--map (elsa--analyse-form it scope) body))
+      (--each vars (elsa-scope-remove-variable scope it)))))
+
 (defun elsa--analyse-function-call (form scope)
   (let* ((errors)
          (head (elsa-form-car form))
@@ -157,6 +175,7 @@
           (`let (elsa--analyse-let form scope))
           (`let* (elsa--analyse-let* form scope))
           (`if (elsa--analyse-if form scope))
+          (`defun (elsa--analyse-defun form scope))
           ;; function call
           (_ (elsa--analyse-function-call form scope)))))))
 
