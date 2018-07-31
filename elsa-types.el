@@ -95,9 +95,19 @@ This type is a combination of other types.  It can accept any
 type that is accepted by at least one of its summands.")
 
 (defmethod elsa-type-describe ((this elsa-sum-type))
-  (if (elsa-type-accept this (elsa-type-mixed))
-      "mixed"
-    (mapconcat 'elsa-type-describe (oref this types) " | ")))
+  (cond
+   ((elsa-type-accept this (elsa-type-mixed))
+    "mixed")
+   ((and (= 2 (length (oref this types))))
+    (-let [(type1 type2) (oref this types)]
+      (cond
+       ((elsa-type-nil-p type1)
+        (concat (elsa-type-describe type2) "?"))
+       ((elsa-type-nil-p type2)
+        (concat (elsa-type-describe type1) "?"))
+       (t (mapconcat 'elsa-type-describe (oref this types) " | ")))))
+   (t
+    (mapconcat 'elsa-type-describe (oref this types) " | "))))
 
 (cl-defmethod clone ((this elsa-sum-type))
   "Make a deep copy of a sum type."
