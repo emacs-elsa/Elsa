@@ -83,10 +83,12 @@
 (defun elsa--analyse-if (form scope)
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
-        (false-body (nth 3 (oref form sequence))))
-    (elsa--analyse-form condition scope)
-    (elsa--analyse-form true-body scope)
-    (when false-body (elsa--analyse-form false-body scope))))
+        (false-body (nthcdr 3 (oref form sequence))))
+    (-flatten
+     (-concat
+      (elsa--analyse-form condition scope)
+      (elsa--analyse-form true-body scope)
+      (when false-body (--map (elsa--analyse-form it scope) false-body))))))
 
 (defun elsa--analyse-defun (form scope)
   (let* (;; (head (elsa-form-car form))
