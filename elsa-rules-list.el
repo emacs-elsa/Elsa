@@ -94,4 +94,22 @@
 
 (add-to-list 'elsa-checks (elsa-check-error-message))
 
+(defclass elsa-check-unbound-variable (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-unbound-variable) form scope)
+  (and (elsa-form-symbol-p form)
+       (not (elsa-form-keyword-p form))))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-unbound-variable) form scope)
+  (let* ((name (elsa-form-name form))
+         (var (elsa-scope-get-var scope name)))
+    (unless (or (eq name 't)
+                (eq name 'nil)
+                var)
+      (elsa-make-error
+       (format "Reference to free variable `%s'." (symbol-name name))
+       form))))
+
+(add-to-list 'elsa-checks (elsa-check-unbound-variable))
+
 (provide 'elsa-rules-list)
