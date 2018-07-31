@@ -38,7 +38,8 @@
      (let ((definition (append vector nil)))
        (pcase definition
          (`(&or . ,types)
-          (apply 'elsa-make-type types)))))
+          (apply 'elsa-make-type types))
+         (`(,type) (elsa-type-list :item-type (elsa-make-type type))))))
     (`sum
      (make-instance 'elsa-sum-type))
     (`number-or-marker?
