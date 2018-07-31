@@ -19,9 +19,12 @@
 
 ;; list functions
 (put 'list 'elsa-type (elsa-make-type-fn mixed -> list)) ;; TODO: variadic args?
-(put 'car 'elsa-type (elsa-make-type-fn cons -> mixed))
-(put 'cdr 'elsa-type (elsa-make-type-fn cons -> mixed))
+(put 'car 'elsa-type (elsa-make-type-fn [&or cons nil] -> mixed))
+(put 'cdr 'elsa-type (elsa-make-type-fn [&or cons nil] -> mixed))
 (put 'nth 'elsa-type (elsa-make-type-fn int -> list -> mixed))
+
+;; string functions
+(put 'split-string'elsa-type (elsa-make-type-fn string -> string -> [string]))
 
 ;; sequence functions
 
