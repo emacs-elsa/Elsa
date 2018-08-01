@@ -126,6 +126,18 @@
     (prog1 (-flatten (--map (elsa--analyse-form it scope) body))
       (--each vars (elsa-scope-remove-variable scope it)))))
 
+(defun elsa--analyse-quote (form scope)
+  nil)
+
+(defun elsa--analyse-backquote (form scope)
+  nil)
+
+(defun elsa--analyse-unquote (form scope)
+  nil)
+
+(defun elsa--analyse-splice (form scope)
+  nil)
+
 (defun elsa--analyse-function-call (form scope)
   (let* ((errors)
          (head (elsa-form-car form))
@@ -198,6 +210,10 @@
           (`progn (elsa--analyse-progn form scope))
           (`prog1 (elsa--analyse-prog1 form scope))
           (`defun (elsa--analyse-defun form scope))
+          (`quote (elsa--analyse-quote form scope))
+          (`\` (elsa--analyse-backquote form scope))
+          (`\, (elsa--analyse-unquote form scope))
+          (`\,@ (elsa--analyse-splice form scope))
           ;; function call
           (_ (elsa--analyse-function-call form scope)))))))
 
