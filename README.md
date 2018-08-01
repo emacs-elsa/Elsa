@@ -20,7 +20,7 @@ If you use [flycheck](https://github.com/flycheck/flycheck) you can use the foll
 
 ``` emacs-lisp
 (flycheck-define-checker emacs-lisp-elsa
-  "Checker for PHPStan"
+  "Checker for Elsa."
   :command ("<path-to-cask-binary>" ;; usuall something like "/home/matus/.cask/bin/cask"
             "exec"
             "elsa"
