@@ -84,11 +84,11 @@
     (when (elsa-form-string-p error-message)
       (let ((msg (oref error-message sequence)))
         (when (equal (substring msg -1) ".")
-          (push (elsa-make-warning "Error messages should not end with a period." error-message)
+          (push (elsa-make-notice "Error messages should not end with a period." (elsa-form-car form))
                 errors))
         (let ((case-fold-search nil))
           (unless (string-match-p "[A-Z]" msg)
-            (push (elsa-make-warning "Error messages should start with a capital letter." error-message)
+            (push (elsa-make-notice "Error messages should start with a capital letter." (elsa-form-car form))
                   errors)))))
     errors))
 
