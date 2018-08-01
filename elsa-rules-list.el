@@ -105,7 +105,9 @@
          (var (elsa-scope-get-var scope name)))
     (unless (or (eq name 't)
                 (eq name 'nil)
-                var)
+                var
+                ;; global variable defined in emacs core as a `defvar'
+                (boundp name))
       (elsa-make-error
        (format "Reference to free variable `%s'." (symbol-name name))
        form))))
