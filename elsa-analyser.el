@@ -31,7 +31,7 @@
 (defun elsa--analyse-let (form scope)
   (let (errors)
     (let ((new-vars nil)
-          (bindings (oref (cadr (oref form sequence)) sequence))
+          (bindings (elsa-form-sequence (cadr (oref form sequence))))
           (body (cddr (oref form sequence))))
       (-each bindings
         (lambda (binding)

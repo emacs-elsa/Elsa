@@ -45,6 +45,11 @@
 (defclass elsa-form-symbol (elsa-form-atom)
   ((name :type symbol :initarg :name)))
 
+(cl-defmethod elsa-form-sequence ((this elsa-form-symbol))
+  (if (eq (elsa-form-name this) 'nil)
+      nil
+    (error "Can not get sequence out of symbol form.")))
+
 (defun elsa--read-symbol (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-symbol
@@ -132,6 +137,9 @@
 
 (cl-defmethod elsa-form-cdr ((this elsa-form-list))
   (cdr (oref this sequence)))
+
+(cl-defmethod elsa-form-sequence ((this elsa-form-list))
+  (oref this sequence))
 
 (cl-defmethod elsa-form-name ((this elsa-form-list))
   (-when-let (head (elsa-form-car this))
