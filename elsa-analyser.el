@@ -33,6 +33,7 @@
     (let ((new-vars nil)
           (bindings (elsa-form-sequence (cadr (oref form sequence))))
           (body (cddr (oref form sequence))))
+      ;; TODO: move this to extension?
       (-each bindings
         (lambda (binding)
           (cond
@@ -143,8 +144,23 @@
          (head (elsa-form-car form))
          (name (oref head name))
          (args (cdr (oref form sequence)))
-         (type (get name 'elsa-type)))
+         (type (get name 'elsa-type))
+         (new-vars))
+    ;; Run the scope-updaters here before we analyse the
+    ;; sub-forms... any function can in principle update the scope,
+    ;; generate new bindings etc.
+    (cond
+     ;; TODO: move this to extension
+     ((memq name `(--map --first --remove))
+      (push (elsa-variable
+             :name 'it
+              ;; TODO: derive type based on the list argument type
+             :type (elsa-make-type 'mixed))
+            new-vars)))
+    (--each new-vars (elsa-scope-add-variable scope it))
     (push (--map (elsa--analyse-form it scope) args) errors)
+    (--each new-vars (elsa-scope-remove-variable scope it))
+    ;; Don't forget to remove the bindings here
     ;; check the types
     (when type
       ;; analyse the arguments
