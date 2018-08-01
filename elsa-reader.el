@@ -186,8 +186,8 @@
    :sequence (cons
               (elsa-form-symbol
                :start (prog1 (point)
-                        (if (looking-at-p "'")
-                            (forward-char 1)
+                        (if (looking-at-p "#?'")
+                            (skip-syntax-forward "'")
                           (forward-char (length (symbol-name (car form))))))
                :name (car form)
                :end (point))
@@ -206,7 +206,7 @@
           ((consp form)
            ;; special care needs to be taken about the "reader macros" '`,
            (cond
-            ((memq (car form) (list 'quote backquote-backquote-symbol backquote-unquote-symbol backquote-splice-symbol))
+            ((memq (car form) (list 'function 'quote backquote-backquote-symbol backquote-unquote-symbol backquote-splice-symbol))
              (elsa--read-quote form))
             (t (elsa--read-cons form))))
           (t (error "Invalid form")))))
