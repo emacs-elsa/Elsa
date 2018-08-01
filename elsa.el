@@ -182,67 +182,6 @@ BODY is the body of the function which is further analysed."
     (-each body (lambda (f) (elsa-analyse-form state f)))
     (-each vars (lambda (v) (elsa-scope-remove-variable scope v)))))
 
-(defun elsa-analyse-let (state bindings body)
-  "Analyse a `let' form.
-STATE, BINDINGS, BODY."
-  (let ((scope (oref state scope))
-        (new-vars nil))
-    (-each bindings
-      (lambda (binding)
-        (pcase binding
-          (`(,var ,form)
-           (push (elsa-variable
-                  :name var :type (elsa--get-expression-type
-                                      state form))
-                 new-vars))
-          (var
-           (push (elsa-variable
-                  :name var :type (elsa-make-type 'nil))
-                 new-vars)))))
-    (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
-    (-each body (lambda (f) (elsa-analyse-form state f)))
-    (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
-
-;; This in fact implements dynamic scoping.  If the body is a function
-;; call the scope from here is still available there.
-(defun elsa-analyse-let* (state bindings body)
-  "Analyse a `let*' form.
-STATE, BINDINGS, BODY."
-  (declare (elsa-args mixed list list))
-  (let ((scope (oref state scope))
-        (new-vars nil))
-    (-each bindings
-      (lambda (binding)
-        (let ((variable
-               (pcase binding
-                 (`(,var ,form)
-                  (elsa-variable
-                   :name var :type (elsa--get-expression-type
-                                       state form)))
-                 (var (elsa-variable :name var :type (elsa-make-type 'nil))))))
-          (elsa-scope-add-variable scope variable)
-          (push variable new-vars))))
-    (-each body (lambda (f) (elsa-analyse-form state f)))
-    (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
-
-(defun elsa-analyse-if (state if then else)
-  "Analyse an `if' form.
-STATE, IF, THEN, ELSE."
-  (let ((scope (oref state scope)))
-    (pcase if
-      ((and (pred keywordp) sym) t)
-      ((and (pred symbolp) sym)
-       ;; If the symbol is a variable, restrict it for the `then' branch
-       ;; to be non-nullable and for the `else' to be nil.
-       (-if-let (var (elsa-scope-get-var scope sym))
-           (progn
-             (elsa-variable-surely-not var (elsa-make-type 'nil))
-             (elsa-analyse-form then)
-             (elsa-variable-pop-surely-not var))
-         (elsa-variable-surely var (elsa-make-type 'nil))
-         (elsa-analyse-form else)
-         (elsa-variable-pop-surely var))))))
-
 ;; There are multiple tasks we need to do:
 ;; - crawl the forms and build up scope
 ;; - figure out types of expressions (and store those?)
