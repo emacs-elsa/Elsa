@@ -9,6 +9,29 @@
 
 (require 'elsa-typed-builtin)
 
+(defun elsa--arglist-to-arity (arglist)
+  "Return minimal and maximal number of arguments ARGLIST supports.
+
+If there is a &rest argument we represent the upper infinite
+number by symbol 'many."
+  (let ((min 0)
+        (max 0))
+    (while (and arglist (not (memq (car arglist) '(&optional &rest))))
+      (incf min)
+      (!cdr arglist))
+    (when (eq (car arglist) '&optional)
+      (!cdr arglist))
+    (setq max min)
+    (while (and arglist (not (eq (car arglist) '&rest)))
+      (incf max)
+      (!cdr arglist))
+    (when (eq (car arglist) '&rest)
+      (setq max 'many))
+    (cons min max)))
+
+(defun elsa-fn-arity (fn)
+  (elsa--arglist-to-arity (help-function-arglist fn)))
+
 (defun elsa--analyse-float (form scope)
   nil)
 
