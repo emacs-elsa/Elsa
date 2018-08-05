@@ -69,7 +69,7 @@ number by symbol 'many."
     (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))
    (t "Error while analysing variable binding")))
 
-(defun elsa--analyse-let (form scope state)
+(defun elsa--analyse:let (form scope state)
   (let ((new-vars nil)
         (bindings (elsa-form-sequence (cadr (oref form sequence))))
         (body (cddr (oref form sequence))))
@@ -82,7 +82,7 @@ number by symbol 'many."
     (oset form type (oref (-last-item body) type))
     (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
 
-(defun elsa--analyse-let* (form scope state)
+(defun elsa--analyse:let* (form scope state)
   (let ((new-vars nil)
         (bindings (oref (cadr (oref form sequence)) sequence))
         (body (cddr (oref form sequence))))
@@ -95,7 +95,7 @@ number by symbol 'many."
     (oset form type (oref (-last-item body) type))
     (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
 
-(defun elsa--analyse-if (form scope state)
+(defun elsa--analyse:if (form scope state)
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
         (false-body (nthcdr 3 (oref form sequence))))
@@ -105,7 +105,7 @@ number by symbol 'many."
       (elsa--analyse-form true-body scope state)
       (when false-body (--map (elsa--analyse-form it scope state) false-body))))))
 
-(defun elsa--analyse-progn (form scope state)
+(defun elsa--analyse:progn (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (last (-last-item (oref form sequence))))
     (--each body (elsa--analyse-form it scope state))
@@ -113,7 +113,7 @@ number by symbol 'many."
         (oset form type (oref last type))
       (oset form type (elsa-type-nil)))))
 
-(defun elsa--analyse-prog1 (form scope state)
+(defun elsa--analyse:prog1 (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (first (car body)))
     (--each body (elsa--analyse-form it scope state))
@@ -121,7 +121,7 @@ number by symbol 'many."
         (oset form type (oref first type))
       (oset form type (elsa-type-unbound)))))
 
-(defun elsa--analyse-defun (form scope state)
+(defun elsa--analyse:defun (form scope state)
   (let* (;; (head (elsa-form-car form))
          ;; (name (oref head name))
          (args (nth 2 (oref form sequence)))
@@ -139,7 +139,7 @@ number by symbol 'many."
     (--each body (elsa--analyse-form it scope state))
     (--each vars (elsa-scope-remove-variable scope it))))
 
-(defun elsa--analyse-quote (form scope state)
+(defun elsa--analyse:quote (form scope state)
   (let ((arg (cadr (oref form sequence))))
     (cond
      ((elsa-form-list-p arg)
@@ -224,7 +224,7 @@ number by symbol 'many."
   (let ((head (elsa-form-car form)))
     (when (elsa-form-symbol-p head)
       (let* ((name (oref head name))
-             (analyse-fn-name (intern (concat "elsa--analyse-" (symbol-name name)))))
+             (analyse-fn-name (intern (concat "elsa--analyse:" (symbol-name name)))))
         (pcase name
           ((guard (functionp analyse-fn-name))
            (funcall analyse-fn-name form scope state))
