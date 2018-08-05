@@ -55,6 +55,20 @@ number by symbol 'many."
 (defun elsa--analyse-string (form scope state)
   nil)
 
+(defun elsa--analyse-variable-from-binding (binding scope state)
+  (cond
+   ((elsa-form-list-p binding)
+    (-let [(var source) (oref binding sequence)]
+      (if (not source)
+          (elsa-variable
+           :name (oref var name) :type (elsa-type-nil))
+        (elsa--analyse-form source scope state)
+        (elsa-variable
+         :name (oref var name) :type (oref source type)))))
+   ((elsa-form-symbol-p binding)
+    (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))
+   (t "Error while analysing variable binding")))
+
 (defun elsa--analyse-let (form scope state)
   (let ((new-vars nil)
         (bindings (elsa-form-sequence (cadr (oref form sequence))))
@@ -62,20 +76,7 @@ number by symbol 'many."
     ;; TODO: move this to extension?
     (-each bindings
       (lambda (binding)
-        (cond
-         ((elsa-form-list-p binding)
-          (-let [(var source) (oref binding sequence)]
-            (if (not source)
-                (push (elsa-variable
-                       :name (oref var name) :type (elsa-type-nil))
-                      new-vars)
-              (elsa--analyse-form source scope state)
-              (push (elsa-variable
-                     :name (oref var name) :type (oref source type))
-                    new-vars))))
-         ((elsa-form-symbol-p binding)
-          (push (elsa-variable :name (oref binding name) :type (elsa-make-type nil))
-                new-vars)))))
+        (push (elsa--analyse-variable-from-binding binding scope state) new-vars)))
     (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
     (--each body (elsa--analyse-form it scope state))
     (oset form type (oref (-last-item body) type))
@@ -87,18 +88,8 @@ number by symbol 'many."
         (body (cddr (oref form sequence))))
     (-each bindings
       (lambda (binding)
-        (let (variable)
-          (cond
-           ((elsa-form-list-p binding)
-            (-let [(var source) (oref binding sequence)]
-              (if (not source)
-                  (setq variable (elsa-variable
-                                  :name (oref var name) :type (elsa-type-nil)))
-                (elsa--analyse-form source scope state)
-                (setq variable (elsa-variable
-                                :name (oref var name) :type (oref source type))))))
-           ((elsa-form-symbol-p binding)
-            (setq variable (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))))
+        (let ((variable (elsa--analyse-variable-from-binding binding scope state)))
+          (push variable new-vars)
           (elsa-scope-add-variable scope variable))))
     (--each body (elsa--analyse-form it scope state))
     (oset form type (oref (-last-item body) type))
