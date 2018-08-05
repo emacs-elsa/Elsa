@@ -1,3 +1,6 @@
+(require 'dash)
+
+(require 'elsa-reader)
 (require 'elsa-error)
 (require 'elsa-check)
 (require 'elsa-scope)
