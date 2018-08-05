@@ -30,6 +30,7 @@
 
 (require 'elsa-types)
 (require 'elsa-scope)
+(require 'elsa-state)
 (require 'elsa-defun)
 (require 'elsa-error)
 (require 'elsa-analyser)
@@ -47,14 +48,6 @@
   (declare (indent 1))
   `(progn ,@forms))
 
-;; TODO: add some methods for looking up variables/defuns, so we don't
-;; directly work with the hashtable
-(defclass elsa-state nil
-  ((defvars :initform (make-hash-table))
-   (defuns :initform (make-hash-table))
-   (errors :initform nil)
-   (scope :initform (elsa-scope))))
-
 ;; TODO: unify with `elsa-variable'?
 (defclass elsa-defvar nil
   ((name :initarg :name)
@@ -63,25 +56,11 @@
 (defclass elsa-expression nil
   ((type :initarg :type)))
 
-;; TODO: take defvar directly? For consistency
-(defmethod elsa-state-add-defvar ((this elsa-state) name type)
-  (let ((defvars (oref this defvars)))
-    (puthash name (elsa-defvar :name name :type type) defvars)))
-
-(defmethod elsa-state-add-defun ((this elsa-state) defun)
-  (unless (elsa-defun-p defun) (error "defun must be `elsa-defun-p'"))
-  (let ((defuns (oref this defuns)))
-    (puthash (oref defun name) defun defuns)))
-
-(defmethod elsa-state-add-error ((this elsa-state) error)
-  (oset this errors (cons error (oref this errors))))
-
 (defun elsa-process-file (file)
   "Process FILE."
   (let ((buffer (find-file-noselect file))
         (state (elsa-state))
-        (form)
-        (errors))
+        (form))
     (with-current-buffer buffer
       (save-excursion
         (save-restriction
@@ -89,9 +68,8 @@
           (goto-char (point-min))
           (condition-case _err
               (while (setq form (elsa-read-form))
-                (setq errors (-concat (elsa-analyse-form state form) errors)))
+                (elsa-analyse-form state form))
             (end-of-file t)))))
-    (oset state errors (nreverse errors))
     state))
 
 (defun elsa-load-config ()
@@ -116,7 +94,7 @@
   (elsa-load-config)
   (let* ((file (car command-line-args-left))
          (state (elsa-process-file file))
-         (errors (oref state errors)))
+         (errors (reverse (oref state errors))))
     (--each errors (princ (elsa-message-format it)))))
 
 (defun elsa--get-expression-type (state expr)

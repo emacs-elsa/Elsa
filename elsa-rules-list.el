@@ -1,6 +1,7 @@
 (require 'elsa-error)
 (require 'elsa-check)
 (require 'elsa-scope)
+(require 'elsa-state)
 
 (defclass elsa-check-if (elsa-check) ())
 
@@ -10,15 +11,13 @@
 (defclass elsa-check-if-useless-condition (elsa-check-if) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-condition) form scope state)
-  (let ((condition (cadr (oref form sequence)))
-        (errors))
+  (let ((condition (cadr (oref form sequence))))
     (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
-        (push (elsa-make-warning "Condition always evaluates to true." condition)
-              errors)
+        (elsa-state-add-error state
+          (elsa-make-warning "Condition always evaluates to true." condition))
       (when (elsa-type-accept (elsa-type-nil) (oref condition type))
-        (push (elsa-make-warning "Condition always evaluates to false." condition)
-              errors)))
-    errors))
+        (elsa-state-add-error state
+          (elsa-make-warning "Condition always evaluates to false." condition))))))
 
 (defclass elsa-check-if-useless-then-progn (elsa-check-if) ())
 
@@ -26,14 +25,16 @@
   (let ((then-body (nth 2 (oref form sequence))))
     (when (and (eq (elsa-form-name then-body) 'progn)
                (= 2 (length (oref then-body sequence))))
-      (elsa-make-notice "Useless `progn' around body of then branch." (elsa-form-car then-body)))))
+      (elsa-state-add-error state
+        (elsa-make-notice "Useless `progn' around body of then branch." (elsa-form-car then-body))))))
 
 (defclass elsa-check-if-useless-else-progn (elsa-check-if) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-else-progn) form scope state)
   (let ((else-body (nth 3 (oref form sequence))))
     (when (eq (elsa-form-name else-body) 'progn)
-      (elsa-make-notice "Useless `progn' around body of else branch." (elsa-form-car else-body)))))
+      (elsa-state-add-error state
+        (elsa-make-notice "Useless `progn' around body of else branch." (elsa-form-car else-body))))))
 
 (defclass elsa-check-if-to-when (elsa-check-if) ())
 
@@ -42,7 +43,8 @@
         (else-body (nth 3 (oref form sequence))))
     (unless else-body
       (when (eq (elsa-form-name then-body) 'progn)
-        (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-form-car form))))))
+        (elsa-state-add-error state
+          (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-form-car form)))))))
 
 (defclass elsa-check-symbol (elsa-check) ())
 
@@ -52,16 +54,14 @@
 (defclass elsa-check-symbol-naming (elsa-check-symbol) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-symbol-naming) form scope state)
-  (let ((name (symbol-name (elsa-form-name form)))
-        (errors))
+  (let ((name (symbol-name (elsa-form-name form))))
     (when (string-match-p ".+_" name)
-      (push (elsa-make-notice "Use lisp-case for naming symbol instead of snake_case." form)
-            errors))
+      (elsa-state-add-error state
+        (elsa-make-notice "Use lisp-case for naming symbol instead of snake_case." form)))
     (let ((case-fold-search nil))
       (when (string-match-p ".+[a-z][A-Z]" name)
-        (push (elsa-make-notice "Use lisp-case for naming symbol instead of camelCase." form)
-              errors)))
-    errors))
+        (elsa-state-add-error state
+          (elsa-make-notice "Use lisp-case for naming symbol instead of camelCase." form))))))
 
 (defclass elsa-check-error-message (elsa-check) ())
 
@@ -69,18 +69,16 @@
   (elsa-form-function-call-p form 'error))
 
 (cl-defmethod elsa-check-check ((_ elsa-check-error-message) form scope state)
-  (let ((error-message (nth 1 (oref form sequence)))
-        (errors))
+  (let ((error-message (nth 1 (oref form sequence))))
     (when (elsa-form-string-p error-message)
       (let ((msg (oref error-message sequence)))
         (when (equal (substring msg -1) ".")
-          (push (elsa-make-notice "Error messages should not end with a period." (elsa-form-car form))
-                errors))
+          (elsa-state-add-error state
+            (elsa-make-notice "Error messages should not end with a period." (elsa-form-car form))))
         (let ((case-fold-search nil))
           (unless (string-match-p "[A-Z]" msg)
-            (push (elsa-make-notice "Error messages should start with a capital letter." (elsa-form-car form))
-                  errors)))))
-    errors))
+            (elsa-state-add-error state
+              (elsa-make-notice "Error messages should start with a capital letter." (elsa-form-car form)))))))))
 
 (defclass elsa-check-unbound-variable (elsa-check) ())
 
@@ -96,8 +94,9 @@
                 var
                 ;; global variable defined in emacs core as a `defvar'
                 (boundp name))
-      (elsa-make-error
-       (format "Reference to free variable `%s'." (symbol-name name))
-       form))))
+      (elsa-state-add-error state
+        (elsa-make-error
+         (format "Reference to free variable `%s'." (symbol-name name))
+         form)))))
 
 (provide 'elsa-rules-list)
