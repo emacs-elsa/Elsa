@@ -1,9 +1,12 @@
 (register-extensions
  dash
- eieio)
+ eieio
+ cl
+ )
 
 (register-ruleset
  if
  symbol
  error
- variables)
+ variables
+ )
