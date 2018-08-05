@@ -83,8 +83,9 @@
 
 (defun elsa--infer-unary-fn (form handler)
   (declare (indent 1))
-  (let ((arg1-type (oref (cadr (oref form sequence)) type)))
-    (funcall handler arg1-type)))
+  (-when-let (arg (cadr (oref form sequence)))
+    (let ((arg1-type (oref arg type)))
+      (funcall handler arg1-type))))
 
 (defun elsa--infer-let (form scope decls)
   (let ((new-vars nil)
