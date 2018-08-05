@@ -155,6 +155,10 @@ number by symbol 'many."
       (--each vars (elsa-scope-remove-variable scope it)))))
 
 (defun elsa--analyse-quote (form scope)
+  (let ((arg (cadr (oref form sequence))))
+    (cond
+     ((elsa-form-list-p arg)
+      (oset form type (elsa-type-list)))))
   nil)
 
 (defun elsa--analyse-backquote (form scope)
