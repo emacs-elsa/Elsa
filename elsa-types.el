@@ -243,7 +243,7 @@ type and none of the negative types.")
   ((car-type :type elsa-type :initarg :car-type
              :initform (elsa-sum-type
                         :types (list (elsa-type-mixed) (elsa-type-nil))))
-   (cdr-type :type elsa-type :initarg :car-type
+   (cdr-type :type elsa-type :initarg :cdr-type
              :initform (elsa-sum-type
                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
