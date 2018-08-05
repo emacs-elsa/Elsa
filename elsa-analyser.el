@@ -154,12 +154,26 @@ number by symbol 'many."
 (defun elsa--analyse-splice (form scope state)
   nil)
 
-(defun elsa--analyse-function-call (form scope state)
+(defun elsa--analyse-macro (form spec scope state)
+  (setq
+   spec
+   (cond
+    ((eq spec t)
+     (-repeat (1- (length form)) t))
+    ((eq (-last-item spec) 'body)
+     (-concat (-butlast spec)
+              (-repeat (- (1- (length form))
+                          (1- (length spec)))
+                       t)))
+    (t spec)))
   (let* ((head (elsa-form-car form))
          (name (oref head name))
          (args (cdr (oref form sequence)))
          (type (get name 'elsa-type)))
-    (--each args (elsa--analyse-form it scope state))
+    (-each (-zip args spec)
+      (-lambda ((arg . analysep))
+        (when analysep
+          (elsa--analyse-form arg scope state))))
     ;; check arity
     (-let (((min . max) (elsa-fn-arity name))
            (num-of-args (length args)))
@@ -201,6 +215,9 @@ number by symbol 'many."
       ;; set the return type of the form according to the return type
       ;; of the function's declaration
       (oset form type (oref type return)))))
+
+(defun elsa--analyse-function-call (form scope state)
+  (elsa--analyse-macro form t scope state))
 
 (defun elsa--analyse-list (form scope state)
   ;; handle special forms
