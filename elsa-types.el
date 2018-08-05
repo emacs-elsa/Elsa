@@ -280,7 +280,7 @@ type and none of the negative types.")
              " -> "))
 
 (defmacro elsa-make-type-fn (&rest types)
-  (let ((types (-flatten (-split-on '-> types))))
+  (let ((types (-flatten-n 1 (-split-on '-> types))))
     `(elsa-function-type
       :args (list ,@(-map 'elsa-make-type (-butlast types)))
       :return ,(elsa-make-type (-last-item types)))))
