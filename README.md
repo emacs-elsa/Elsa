@@ -44,6 +44,18 @@ By default Elsa core comes with very little built-in logic, only
 understanding the elisp [special
 forms](https://www.gnu.org/software/emacs/manual/html_node/elisp/Special-Forms.html).
 
+There are multiple ways to extend the capabilities of Elsa.
+
+## Analysis extension
+
+One is by providing special analysis rules for more forms and
+functions where we can exploit the knowledge of how the function
+behaves to narrow the analysis down more.
+
+For example, we can say that if the input of `not` is `t`, the return
+value is always `nil`.  This encodes our domain knowledge in form of
+an analysis rule.
+
 All the rules are added in form of extensions.  Elsa has few core
 extensions for most common built-in functions such as list
 manupulation (`car`, `nth`...), predicates (`stringp`, `atomp`...),
@@ -64,6 +76,33 @@ your `Elsafile.el` the `register-extensions` form, like so
 
 The `Elsafile.el` should be located next to the `Cask` file of your project.
 
+## Rulesets
+
+After analysis of the forms is done we have all the type information
+and the AST ready to be further processed by various checks and rules.
+
+These can be:
+
+* Stylistic, such as checking that a variable uses lisp-case for
+  naming instead of snake_case.
+* Syntactic, such as checking we are not wrapping the else branch of
+  `if` with a useless `progn`.
+* Semantic, such as checking that the condition of `if` does not
+  always evaluate to `non-nil` (in which case the `if` form is
+  useless).
+
+Elsa provides some built-in rulesets and more can also be used by loading extensions.
+
+To register a ruleset, add the following form to `Elsafile.el`
+
+``` emacs-lisp
+(register-ruleset
+ if
+ symbol
+ ;; more rulesets here
+ )
+```
+
 # How can I contribute to this project
 
 Open an issue if you want to work on something (not necessarily listed
@@ -78,3 +117,5 @@ open an issue so we can discuss how to model things.
 # For developers
 
 ## How to write an extension for <package>
+
+## How to write a ruleset

@@ -20,8 +20,6 @@
               errors)))
     errors))
 
-(add-to-list 'elsa-checks (elsa-check-if-useless-condition))
-
 (defclass elsa-check-if-useless-then-progn (elsa-check-if) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-then-progn) form scope)
@@ -30,16 +28,12 @@
                (= 2 (length (oref then-body sequence))))
       (elsa-make-notice "Useless `progn' around body of then branch." (elsa-form-car then-body)))))
 
-(add-to-list 'elsa-checks (elsa-check-if-useless-then-progn))
-
 (defclass elsa-check-if-useless-else-progn (elsa-check-if) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-else-progn) form scope)
   (let ((else-body (nth 3 (oref form sequence))))
     (when (eq (elsa-form-name else-body) 'progn)
       (elsa-make-notice "Useless `progn' around body of else branch." (elsa-form-car else-body)))))
-
-(add-to-list 'elsa-checks (elsa-check-if-useless-else-progn))
 
 (defclass elsa-check-if-to-when (elsa-check-if) ())
 
@@ -49,8 +43,6 @@
     (unless else-body
       (when (eq (elsa-form-name then-body) 'progn)
         (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-form-car form))))))
-
-(add-to-list 'elsa-checks (elsa-check-if-to-when))
 
 (defclass elsa-check-symbol (elsa-check) ())
 
@@ -71,8 +63,6 @@
               errors)))
     errors))
 
-(add-to-list 'elsa-checks (elsa-check-symbol-naming))
-
 (defclass elsa-check-error-message (elsa-check) ())
 
 (cl-defmethod elsa-check-should-run ((_ elsa-check-error-message) form scope)
@@ -92,8 +82,6 @@
                   errors)))))
     errors))
 
-(add-to-list 'elsa-checks (elsa-check-error-message))
-
 (defclass elsa-check-unbound-variable (elsa-check) ())
 
 (cl-defmethod elsa-check-should-run ((_ elsa-check-unbound-variable) form scope)
@@ -111,7 +99,5 @@
       (elsa-make-error
        (format "Reference to free variable `%s'." (symbol-name name))
        form))))
-
-(add-to-list 'elsa-checks (elsa-check-unbound-variable))
 
 (provide 'elsa-rules-list)

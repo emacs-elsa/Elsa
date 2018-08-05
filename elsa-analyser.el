@@ -1,7 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
 (require 'elsa-reader)
-(require 'elsa-rules-list)
 (require 'elsa-check)
 (require 'elsa-infer)
 (require 'elsa-error)

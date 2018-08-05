@@ -35,6 +35,8 @@
 (require 'elsa-analyser)
 (require 'elsa-reader)
 
+(require 'elsa-ruleset)
+
 (require 'elsa-extension-builtin)
 
 (push '(elsa-args (lambda (&rest _) t)) defun-declarations-alist)
@@ -102,7 +104,11 @@
             (pcase form
               (`(register-extensions . ,extensions)
                (--each extensions
-                 (require (intern (concat "elsa-extension-" (symbol-name it))))))))
+                 (require (intern (concat "elsa-extension-" (symbol-name it))))))
+              (`(register-ruleset . ,rulesets)
+               (--each rulesets
+                 (elsa-ruleset-load
+                  (funcall (intern (concat "elsa-ruleset-" (symbol-name it)))))))))
         (end-of-file t)))))
 
 (defun elsa-run ()
