@@ -7,10 +7,14 @@
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset))
   "Load a ruleset.")
 
-(defclass elsa-ruleset-if (elsa-ruleset) ())
+(defclass elsa-ruleset-dead-code (elsa-ruleset) ())
 
-(cl-defmethod elsa-ruleset-load ((this elsa-ruleset-if))
-  (add-to-list 'elsa-checks (elsa-check-if-useless-condition))
+(cl-defmethod elsa-ruleset-load ((this elsa-ruleset-dead-code))
+  (add-to-list 'elsa-checks (elsa-check-if-useless-condition)))
+
+(defclass elsa-ruleset-style (elsa-ruleset) ())
+
+(cl-defmethod elsa-ruleset-load ((this elsa-ruleset-style))
   (add-to-list 'elsa-checks (elsa-check-if-useless-then-progn))
   (add-to-list 'elsa-checks (elsa-check-if-useless-else-progn))
   (add-to-list 'elsa-checks (elsa-check-if-to-when)))

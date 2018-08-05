@@ -5,7 +5,8 @@
  )
 
 (register-ruleset
- if
+ dead-code
+ style
  symbol
  error
  variables
