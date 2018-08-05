@@ -28,4 +28,7 @@
 
 ;; sequence functions
 
+;; built-in variables
+(put 'command-line-args-left 'elsa-type-var (elsa-make-type [&or [string] nil]))
+
 (provide 'elsa-typed-builtin)

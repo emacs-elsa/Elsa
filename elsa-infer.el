@@ -42,6 +42,7 @@
      ;;  (clone (oref declaration type)))
      (current
       (clone (oref current type)))
+     ((get var 'elsa-type-var))
      (t (elsa-make-type 'unbound)))))
 
 (defun elsa--narrow-type (condition)
