@@ -114,6 +114,23 @@ number by symbol 'many."
                (oref (-last-item false-body) type))))
       (oset form type result-type))))
 
+(defun elsa--analyse:cond (form scope state)
+  (let ((branches (cdr (oref form sequence)))
+        return-type)
+    (-each branches
+      (lambda (branch)
+        (--each (oref branch sequence)
+          (elsa--analyse-form it scope state))
+        (let ((last-item (-last-item (oref branch sequence))))
+          (setq
+           return-type
+           (if (eq return-type nil)
+               (clone (oref last-item type))
+             (elsa-type-sum
+              return-type
+              (oref last-item type)))))))
+    (oset form type return-type)))
+
 (defun elsa--analyse:progn (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (last (-last-item (oref form sequence))))

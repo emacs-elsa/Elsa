@@ -102,4 +102,22 @@
          (format "Reference to free variable `%s'." (symbol-name name))
          form)))))
 
+(defclass elsa-check-cond-useless-condition (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-cond-useless-condition) form scope state)
+  (elsa-form-function-call-p form 'cond))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-cond-useless-condition) form scope state)
+  (let ((branches (cdr (oref form sequence))))
+    (-each branches
+      (lambda (branch)
+        (let* ((sequence (oref branch sequence))
+               (first-item (-first-item sequence)))
+          (if (not (elsa-type-accept (oref first-item type) (elsa-type-nil)))
+              (elsa-state-add-error state
+                (elsa-make-warning "Condition always evaluates to true." first-item))
+            (when (elsa-type-accept (elsa-type-nil) (oref first-item type))
+              (elsa-state-add-error state
+                (elsa-make-warning "Condition always evaluates to false." first-item)))))))))
+
 (provide 'elsa-rules-list)
