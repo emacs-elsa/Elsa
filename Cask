@@ -10,5 +10,6 @@
 (depends-on "emacs" "25.1")
 
 (development
+ (depends-on "elsa")
  (depends-on "undercover")
  (depends-on "buttercup"))
