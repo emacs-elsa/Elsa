@@ -6,6 +6,7 @@
 (require 'elsa-infer)
 (require 'elsa-error)
 (require 'elsa-types)
+(require 'elsa-english)
 
 (require 'elsa-typed-builtin)
 
@@ -177,6 +178,28 @@ number by symbol 'many."
          (args (cdr (oref form sequence)))
          (type (get name 'elsa-type)))
     (push (--map (elsa--analyse-form it scope) args) errors)
+    ;; check arity
+    (-let (((min . max) (elsa-fn-arity name))
+           (num-of-args (length args)))
+      (if (< num-of-args min)
+          (push
+           (elsa-make-error
+            (format "Function `%s' expects at least %d %s but received %d"
+                    name min
+                    (elsa-pluralize "argument" min)
+                    num-of-args)
+            head)
+           errors))
+      (if (and (not (eq max 'many))
+               (> num-of-args max))
+          (push
+           (elsa-make-error
+            (format "Function `%s' expects at most %d %s but received %d"
+                    name max
+                    (elsa-pluralize "argument" max)
+                    num-of-args)
+            head)
+           errors)))
     ;; check the types
     (when type
       ;; analyse the arguments
