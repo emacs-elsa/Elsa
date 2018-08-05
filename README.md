@@ -178,6 +178,10 @@ open an issue so we can discuss how to model things.
 
 # For developers
 
-## How to write an extension for <package>
+After calling `(require 'elsa-font-lock)` there is a function
+`elsa-setup-font-lock` which can be called from `emacs-lisp-mode-hook`
+to set up some additional font-locking for Elsa types.
+
+## How to write an extension for your-favourite-package
 
 ## How to write a ruleset
