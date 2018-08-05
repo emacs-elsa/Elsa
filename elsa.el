@@ -35,6 +35,9 @@
 (require 'elsa-analyser)
 (require 'elsa-reader)
 
+(require 'elsa-extension-dash)
+(require 'elsa-extension-builtin)
+
 (push '(elsa-args (lambda (&rest _) t)) defun-declarations-alist)
 (push '(elsa-return (lambda (&rest _) t)) defun-declarations-alist)
 
