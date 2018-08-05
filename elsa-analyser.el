@@ -247,4 +247,7 @@ FORM is a result of `elsa-read-form'."
     (when (elsa-check-should-run it form scope state)
       (elsa-check-check it form scope state))))
 
+(defun elsa--analyse-body (body scope state)
+  (--each body (elsa--analyse-form it scope state)))
+
 (provide 'elsa-analyser)
