@@ -18,6 +18,17 @@
     (elsa--analyse-function-call form scope state)
     (elsa-dash--restore-anaphora-scope it-var scope)))
 
+(defun elsa--analyse--when-let (form scope state)
+  (let ((binding (cadr (oref form sequence)))
+        (body (cddr (oref form sequence)))
+        (var))
+    (when binding
+      (setq var (elsa--analyse-variable-from-binding binding scope state))
+      (elsa-scope-add-variable scope var))
+    (elsa--analyse-body body scope state)
+    (when var
+      (elsa-scope-remove-variable scope var))))
+
 (defun elsa--analyse---> (form scope state)
   (elsa-dash--analyse-anaphora form scope state))
 
