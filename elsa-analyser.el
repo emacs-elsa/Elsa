@@ -201,33 +201,6 @@ number by symbol 'many."
       ;; set the return type of the form according to the return type
       ;; of the function's declaration
       (oset form type (oref type return)))
-
-    (pcase name
-      (`not
-       (let ((arg-type (oref (car args) type)))
-         (cond
-          ((elsa-type-accept (elsa-type-nil) arg-type) ;; definitely false
-           (oset form type (elsa-type-t)))
-          ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
-           (oset form type (elsa-type-nil)))
-          (t (oset form type (elsa-make-type 't?))))))
-      (`car
-       (let ((arg (oref (car args) type)))
-         (when (elsa-type-list-p arg)
-           (oset form type (elsa-type-make-nullable (oref arg item-type))))))
-      (`stringp
-       (oset form type
-             (elsa--infer-unary-fn form
-               (lambda (arg-type)
-                 (cond
-                  ((elsa-type-accept (elsa-type-string) arg-type)
-                   (elsa-type-t))
-                  ;; if the arg-type has string as a component, for
-                  ;; example int | string, then it might evaluate
-                  ;; sometimes to true and sometimes to false
-                  ((elsa-type-accept arg-type (elsa-type-string))
-                   (elsa-make-type 't?))
-                  (t (elsa-type-nil))))))))
     (-flatten errors)))
 
 (defun elsa--analyse-list (form scope)
