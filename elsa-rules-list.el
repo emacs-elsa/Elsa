@@ -93,6 +93,9 @@
                 (eq name 'nil)
                 var
                 ;; global variable defined in emacs core as a `defvar'
+                ;; FIXME: this actually includes the variables bound
+                ;; during analysis, so this is not the proper way to
+                ;; check.
                 (boundp name))
       (elsa-state-add-error state
         (elsa-make-error
