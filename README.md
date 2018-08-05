@@ -103,6 +103,53 @@ To register a ruleset, add the following form to `Elsafile.el`
  )
 ```
 
+# Type annotations
+
+In Elisp users are not required to provide type annotations to their
+code.  While at many places the types can be inferred there are
+places, especially in user-defined functions, where we can not guess
+the correct type (we can only infer what we see during runtime).
+
+Users can annotate their `defun` definitions like this:
+
+``` emacs-lisp
+;; (elsa :: string -> int -> string)
+(defun elsa-pluralize (word n)
+  "Return singular or plural of WORD based on N."
+  (if (= n 1)
+      word
+    (concat word "s")))
+```
+
+The `(elsa ...)` inside a comment form provides additional information
+to the Elsa analysis.  Here we say that the function following such a
+comment takes two arguments, string and int, and returns a string.
+
+The syntax of the type annotation is somewhat modeled after Haskell
+but there are some special constructs available to Elsa
+
+Here are general guidelines on how the types are constructed.
+
+- For built-in types with test predicates, drop the `p` or `-p` suffix to get the type:
+    - `stringp` → `string`
+    - `integerp` → `integer` (`int` is also accepted)
+    - `markerp` → `marker`
+    - `hash-table-p` → `hash-table`
+- Sum types can be specified with `&or` syntax similar to `edebug`
+  instrumentation, so `[&or string integer]` is a type accepting both
+  strings or integers.
+- Cons types are specified by wrapping the `car` and `cdr` types in a
+  `(cons)` constructor, so `(cons int int)` is a type where the `car`
+  is an int and `cdr` is also an int, for example `(1 . 3)`.
+- List types are specified by wrapping a type in a vector `[]`
+  constructor, so `[int]` is a list of integers and `[[&or string
+  int]]` is a list of items where each item is either a string or an
+  integer.
+- Function types are created by separating argument types and the
+  return type with `->` token.
+- To mark type as nullable you can attach `?` to the end of it, so
+  that `int?` accepts any integer and also a `nil`.
+
 # How can I contribute to this project
 
 Open an issue if you want to work on something (not necessarily listed
