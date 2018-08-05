@@ -158,11 +158,11 @@ number by symbol 'many."
          (function-type (get name 'elsa-type))
          (arg-types (or (and function-type
                              (oref function-type args))
-                        (-repeat (length (oref args sequence))
+                        (-repeat (length (elsa-form-sequence args))
                                  (elsa-make-type 'mixed))))
          (vars))
     (when (elsa-form-list-p args)
-      (-each-indexed (oref args sequence)
+      (-each-indexed (elsa-form-sequence args)
         (lambda (index arg)
           (let ((var (elsa-variable
                       :name (elsa-form-name arg)
