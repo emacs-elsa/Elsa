@@ -123,21 +123,39 @@ number by symbol 'many."
       (oset form type (elsa-type-unbound)))))
 
 (defun elsa--analyse:defun (form scope state)
-  (let* (;; (head (elsa-form-car form))
-         ;; (name (oref head name))
-         (args (nth 2 (oref form sequence)))
-         (body (nthcdr 3 (oref form sequence)))
-         ;; (type (get name 'elsa-type))
+  (let* ((sequence (oref form sequence))
+         (name (elsa-form-name (nth 1 sequence)))
+         (args (nth 2 sequence))
+         (body (nthcdr 3 sequence))
+         (function-type (get name 'elsa-type))
+         (arg-types (or (and function-type
+                             (oref function-type args))
+                        (-repeat (length (oref args sequence))
+                                 (elsa-make-type 'mixed))))
          (vars))
     (when (elsa-form-list-p args)
-      (-each (oref args sequence)
-        (lambda (arg)
+      (-each-indexed (oref args sequence)
+        (lambda (index arg)
           (let ((var (elsa-variable
                       :name (elsa-form-name arg)
-                      :type (elsa-make-type 'mixed))))
+                      :type (nth index arg-types))))
             (push var vars)
             (elsa-scope-add-variable scope var)))))
     (--each body (elsa--analyse-form it scope state))
+    ;; check if return type of defun corresponds with the last form of
+    ;; the body
+    (let* ((body-return-type (oref (-last-item body) type))
+           (function-return-type
+            (or (and function-type
+                     (oref function-type return))
+                (elsa-make-type 'mixed))))
+      (unless (elsa-type-accept function-return-type body-return-type)
+        (elsa-state-add-error state
+          (elsa-make-error
+           (format "Function is expected to return %s but returns %s."
+                   (elsa-type-describe function-return-type)
+                   (elsa-type-describe body-return-type))
+           (elsa-form-car form)))))
     (--each vars (elsa-scope-remove-variable scope it))))
 
 (defun elsa--analyse:quote (form scope state)
