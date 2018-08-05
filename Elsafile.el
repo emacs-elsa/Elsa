@@ -1,5 +1,6 @@
 (register-extensions
- dash)
+ dash
+ eieio)
 
 (register-ruleset
  if
