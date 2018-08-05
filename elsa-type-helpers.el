@@ -45,6 +45,8 @@
                      :cdr-type (elsa-make-type second)))
     (`sum
      (make-instance 'elsa-sum-type))
+    (`integer
+     (elsa-type-int))
     (`number-or-marker?
      (elsa-type-make-nullable (elsa-make-type 'number-or-marker)))
     (`number-or-marker
