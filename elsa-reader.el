@@ -215,6 +215,9 @@
                                (goto-char (oref reader-form start))
                                (current-column)))
     ;; check if there is a comment atached to this form
+    ;; TODO: this is really inefficient because it checks the same
+    ;; line multiple times.  We should only do this parsing for the
+    ;; first form on a line.
     (save-excursion
       (goto-char (oref reader-form start))
       (forward-line -1)
