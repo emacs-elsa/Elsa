@@ -6,6 +6,7 @@
 (require 'elsa-error)
 (require 'elsa-types)
 (require 'elsa-english)
+(require 'elsa-state)
 
 (require 'elsa-typed-builtin)
 
