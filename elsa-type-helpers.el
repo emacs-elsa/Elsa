@@ -40,6 +40,9 @@
          (`(&or . ,types)
           (apply 'elsa-make-type types))
          (`(,type) (elsa-type-list :item-type (elsa-make-type type))))))
+    (`(cons ,first ,second)
+     (elsa-type-cons :car-type (elsa-make-type first)
+                     :cdr-type (elsa-make-type second)))
     (`sum
      (make-instance 'elsa-sum-type))
     (`number-or-marker?
