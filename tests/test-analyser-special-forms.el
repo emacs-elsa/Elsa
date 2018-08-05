@@ -2,6 +2,7 @@
 
 (require 'elsa-analyser)
 (require 'elsa-types)
+(require 'elsa-rules-list)
 
 (require 'elsa-test-helpers)
 

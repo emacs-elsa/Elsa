@@ -4,7 +4,7 @@
 (require 'elsa)
 
 
-(describe "let form analysis"
+(xdescribe "let form analysis"
 
 
   (it "should update local scope with let-bound variables"
@@ -68,7 +68,7 @@
       (expect (length (oref state errors)) :to-equal 0))))
 
 
-(describe "let* form analysis"
+(xdescribe "let* form analysis"
 
 
   (it "should update local scope with let-bound variables"
@@ -125,7 +125,7 @@
       (expect (length (oref state errors)) :to-equal 0))))
 
 
-(describe "Check defun"
+(xdescribe "Check defun"
   ;; TODO: testy na &optional atd
   ;; (it "should ignore &optional from function args-types list")
   ;; (it "should add function arguments to local scope")

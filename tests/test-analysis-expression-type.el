@@ -3,7 +3,7 @@
 (require 'elsa-undercover)
 (require 'elsa)
 
-(describe "Expression type resolution"
+(xdescribe "Expression type resolution"
 
 
   (describe "Working with variables"

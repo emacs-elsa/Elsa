@@ -1,17 +1,11 @@
 ;; -*- lexical-binding: t -*-
 
-(require 'elsa-check-if)
+;; (require 'elsa-check-if)
 (require 'elsa-reader)
 
-(defmacro elsa-test-with-buffer (initial &rest body)
-  (declare (indent 1))
-  `(with-temp-buffer
-     (insert ,initial)
-     (goto-char (point-min))
-     (re-search-forward "|" nil t)
-     ,@body))
+(require 'elsa-test-helpers)
 
-(describe "Elsa check if"
+(xdescribe "Elsa check if"
 
   (describe "Unreachable branch"
 

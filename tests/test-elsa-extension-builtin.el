@@ -2,6 +2,7 @@
 
 (require 'elsa-reader)
 (require 'elsa-types)
+(require 'elsa-extension-builtin)
 
 (require 'elsa-test-helpers)
 
