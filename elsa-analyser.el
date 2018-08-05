@@ -10,6 +10,7 @@
 
 (require 'elsa-typed-builtin)
 
+;; (elsa :: [symbol] -> (cons int [&or int symbol]))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
@@ -34,6 +35,7 @@ number by symbol 'many."
         (setq max 'many))
       (cons min max)))))
 
+;; (elsa :: symbol -> (cons int [&or int symbol]))
 (defun elsa-fn-arity (fn)
   (elsa--arglist-to-arity (help-function-arglist fn)))
 

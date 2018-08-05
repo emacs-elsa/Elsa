@@ -31,4 +31,7 @@
 ;; built-in variables
 (put 'command-line-args-left 'elsa-type-var (elsa-make-type [&or [string] nil]))
 
+;; help.el
+(put 'help-function-arglist 'elsa-type (elsa-make-type-fn symbol -> [symbol]))
+
 (provide 'elsa-typed-builtin)
