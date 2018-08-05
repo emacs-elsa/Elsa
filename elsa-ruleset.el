@@ -10,28 +10,33 @@
 (defclass elsa-ruleset-dead-code (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-dead-code))
-  (add-to-list 'elsa-checks (elsa-check-if-useless-condition)))
+  (add-to-list 'elsa-checks (elsa-check-if-useless-condition))
+  )
 
 (defclass elsa-ruleset-style (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-style))
   (add-to-list 'elsa-checks (elsa-check-if-useless-then-progn))
   (add-to-list 'elsa-checks (elsa-check-if-useless-else-progn))
-  (add-to-list 'elsa-checks (elsa-check-if-to-when)))
+  (add-to-list 'elsa-checks (elsa-check-if-to-when))
+  )
 
 (defclass elsa-ruleset-symbol (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-symbol))
-  (add-to-list 'elsa-checks (elsa-check-symbol-naming)))
+  (add-to-list 'elsa-checks (elsa-check-symbol-naming))
+  )
 
 (defclass elsa-ruleset-error (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-error))
-  (add-to-list 'elsa-checks (elsa-check-error-message)))
+  (add-to-list 'elsa-checks (elsa-check-error-message))
+  )
 
 (defclass elsa-ruleset-variables (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-variables))
-  (add-to-list 'elsa-checks (elsa-check-unbound-variable)))
+  (add-to-list 'elsa-checks (elsa-check-unbound-variable))
+  )
 
 (provide 'elsa-ruleset)
