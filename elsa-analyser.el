@@ -20,7 +20,10 @@ number by symbol 'many."
   (let ((min 0)
         (max 0))
     (cond
-     ((eq arglist t)
+     ;; TODO: this is a dumb fallback to basically mixed... -> mixed
+     ;; This should be solved once we do the recursive `require' walks.
+     ((or (eq arglist t)
+          (stringp arglist))
       (cons 0 'many))
      (t
       (while (and arglist (not (memq (car arglist) '(&optional &rest))))
