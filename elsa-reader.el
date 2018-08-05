@@ -214,6 +214,30 @@
     (oset reader-form column (save-excursion
                                (goto-char (oref reader-form start))
                                (current-column)))
+    ;; check if there is a comment atached to this form
+    (save-excursion
+      (goto-char (oref reader-form start))
+      (forward-line -1)
+      (elsa--skip-whitespace-forward)
+      (let ((line-end (line-end-position)))
+        (when (and (search-forward "(elsa" line-end t)
+                   (nth 4 (syntax-ppss)))
+          ;; we are inside a comment and inside a form starting with
+          ;; (elsa
+          (search-backward "(elsa")
+          (let ((comment-form (read (current-buffer))))
+            ;; we must end on the same line, that way we can be sure
+            ;; the entire read form was inside a comment.
+            (when (<= (point) line-end)
+              ;; handle defun type declaration
+              (cond
+               ((and (elsa-form-function-call-p reader-form 'defun)
+                     (eq (car comment-form) 'elsa)
+                     (eq (cadr comment-form) ::))
+                (put (elsa-form-name (cadr (oref reader-form sequence)))
+                     'elsa-type
+                     ;; TODO: get rid of eval
+                     (eval `(elsa-make-type-fn ,@(cddr comment-form)))))))))))
     reader-form))
 
 (defun elsa-read-form ()
