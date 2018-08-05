@@ -9,6 +9,12 @@ Elsa is a tool that analyses your code without loading or running it.
 It can track types and provide helpful hints when things don't match
 up before you even try to run the code.
 
+# State of the project
+
+We are currently in a very early *ALPHA* phase.  API is somewhat
+stable but the type system and annotations are under constant
+development.  Things might break at any point.
+
 # How do I run it
 
 Currently we only support running Elsa with Cask.
