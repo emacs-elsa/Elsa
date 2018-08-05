@@ -36,26 +36,26 @@ number by symbol 'many."
 (defun elsa-fn-arity (fn)
   (elsa--arglist-to-arity (help-function-arglist fn)))
 
-(defun elsa--analyse-float (form scope)
+(defun elsa--analyse-float (form scope state)
   nil)
 
-(defun elsa--analyse-integer (form scope)
+(defun elsa--analyse-integer (form scope state)
   nil)
 
-(defun elsa--analyse-keyword (form scope)
+(defun elsa--analyse-keyword (form scope state)
   nil)
 
-(defun elsa--analyse-symbol (form scope)
+(defun elsa--analyse-symbol (form scope state)
   (oset form type (elsa--infer-symbol form scope))
   nil)
 
-(defun elsa--analyse-vector (form scope)
+(defun elsa--analyse-vector (form scope state)
   nil)
 
-(defun elsa--analyse-string (form scope)
+(defun elsa--analyse-string (form scope state)
   nil)
 
-(defun elsa--analyse-let (form scope)
+(defun elsa--analyse-let (form scope state)
   (let (errors)
     (let ((new-vars nil)
           (bindings (elsa-form-sequence (cadr (oref form sequence))))
@@ -70,7 +70,7 @@ number by symbol 'many."
                   (push (elsa-variable
                          :name (oref var name) :type (elsa-type-nil))
                         new-vars)
-                (push (elsa--analyse-form source scope) errors)
+                (push (elsa--analyse-form source scope state) errors)
                 (push (elsa-variable
                        :name (oref var name) :type (oref source type))
                       new-vars))))
@@ -78,12 +78,12 @@ number by symbol 'many."
             (push (elsa-variable :name (oref binding name) :type (elsa-make-type nil))
                   new-vars)))))
       (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
-      (push (--map (elsa--analyse-form it scope) body) errors)
+      (push (--map (elsa--analyse-form it scope state) body) errors)
       (oset form type (oref (-last-item body) type))
       (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v))))
     (-flatten errors)))
 
-(defun elsa--analyse-let* (form scope)
+(defun elsa--analyse-let* (form scope state)
   (let (errors)
     (let ((new-vars nil)
           (bindings (oref (cadr (oref form sequence)) sequence))
@@ -97,46 +97,46 @@ number by symbol 'many."
                 (if (not source)
                     (setq variable (elsa-variable
                                     :name (oref var name) :type (elsa-type-nil)))
-                  (push (elsa--analyse-form source scope) errors)
+                  (push (elsa--analyse-form source scope state) errors)
                   (setq variable (elsa-variable
                                   :name (oref var name) :type (oref source type))))))
              ((elsa-form-symbol-p binding)
               (setq variable (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))))
             (elsa-scope-add-variable scope variable))))
-      (push (--map (elsa--analyse-form it scope) body) errors)
+      (push (--map (elsa--analyse-form it scope state) body) errors)
       (oset form type (oref (-last-item body) type))
       (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v))))
     (-flatten errors)))
 
-(defun elsa--analyse-if (form scope)
+(defun elsa--analyse-if (form scope state)
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
         (false-body (nthcdr 3 (oref form sequence))))
     (-flatten
      (-concat
-      (elsa--analyse-form condition scope)
-      (elsa--analyse-form true-body scope)
-      (when false-body (--map (elsa--analyse-form it scope) false-body))))))
+      (elsa--analyse-form condition scope state)
+      (elsa--analyse-form true-body scope state)
+      (when false-body (--map (elsa--analyse-form it scope state) false-body))))))
 
-(defun elsa--analyse-progn (form scope)
+(defun elsa--analyse-progn (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (last (-last-item (oref form sequence)))
-         (errors (--map (elsa--analyse-form it scope) body)))
+         (errors (--map (elsa--analyse-form it scope state) body)))
     (if body
         (oset form type (oref last type))
       (oset form type (elsa-type-nil)))
     (-flatten errors)))
 
-(defun elsa--analyse-prog1 (form scope)
+(defun elsa--analyse-prog1 (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (first (car body))
-         (errors (--map (elsa--analyse-form it scope) body)))
+         (errors (--map (elsa--analyse-form it scope state) body)))
     (if first
         (oset form type (oref first type))
       (oset form type (elsa-type-unbound)))
     (-flatten errors)))
 
-(defun elsa--analyse-defun (form scope)
+(defun elsa--analyse-defun (form scope state)
   (let* (;; (head (elsa-form-car form))
          ;; (name (oref head name))
          (args (nth 2 (oref form sequence)))
@@ -151,32 +151,32 @@ number by symbol 'many."
                       :type (elsa-make-type 'mixed))))
             (push var vars)
             (elsa-scope-add-variable scope var)))))
-    (prog1 (-flatten (--map (elsa--analyse-form it scope) body))
+    (prog1 (-flatten (--map (elsa--analyse-form it scope state) body))
       (--each vars (elsa-scope-remove-variable scope it)))))
 
-(defun elsa--analyse-quote (form scope)
+(defun elsa--analyse-quote (form scope state)
   (let ((arg (cadr (oref form sequence))))
     (cond
      ((elsa-form-list-p arg)
       (oset form type (elsa-type-list)))))
   nil)
 
-(defun elsa--analyse-backquote (form scope)
+(defun elsa--analyse-backquote (form scope state)
   nil)
 
-(defun elsa--analyse-unquote (form scope)
+(defun elsa--analyse-unquote (form scope state)
   nil)
 
-(defun elsa--analyse-splice (form scope)
+(defun elsa--analyse-splice (form scope state)
   nil)
 
-(defun elsa--analyse-function-call (form scope)
+(defun elsa--analyse-function-call (form scope state)
   (let* ((errors)
          (head (elsa-form-car form))
          (name (oref head name))
          (args (cdr (oref form sequence)))
          (type (get name 'elsa-type)))
-    (push (--map (elsa--analyse-form it scope) args) errors)
+    (push (--map (elsa--analyse-form it scope state) args) errors)
     ;; check arity
     (-let (((min . max) (elsa-fn-arity name))
            (num-of-args (length args)))
@@ -225,7 +225,7 @@ number by symbol 'many."
       (oset form type (oref type return)))
     (-flatten errors)))
 
-(defun elsa--analyse-list (form scope)
+(defun elsa--analyse-list (form scope state)
   ;; handle special forms
   (let ((head (elsa-form-car form)))
     (when (elsa-form-symbol-p head)
@@ -233,35 +233,35 @@ number by symbol 'many."
              (analyse-fn-name (intern (concat "elsa--analyse-" (symbol-name name)))))
         (pcase name
           ((guard (functionp analyse-fn-name))
-           (funcall analyse-fn-name form scope))
-          (`\` (elsa--analyse-backquote form scope))
-          (`\, (elsa--analyse-unquote form scope))
-          (`\,@ (elsa--analyse-splice form scope))
+           (funcall analyse-fn-name form scope state))
+          (`\` (elsa--analyse-backquote form scope state))
+          (`\, (elsa--analyse-unquote form scope state))
+          (`\,@ (elsa--analyse-splice form scope state))
           ;; function call
-          (_ (elsa--analyse-function-call form scope)))))))
+          (_ (elsa--analyse-function-call form scope state)))))))
 
-(defun elsa--analyse-improper-list (form scope)
+(defun elsa--analyse-improper-list (form scope state)
   nil)
 
-(defun elsa--analyse-form (form scope)
+(defun elsa--analyse-form (form scope state)
   "Analyse FORM.
 
 FORM is a result of `elsa-read-form'."
   (-non-nil
    (-concat
     (cond
-     ((elsa-form-float-p form) (elsa--analyse-float form scope))
-     ((elsa-form-integer-p form) (elsa--analyse-integer form scope))
-     ((elsa-form-keyword-p form) (elsa--analyse-keyword form scope))
-     ((elsa-form-symbol-p form) (elsa--analyse-symbol form scope))
-     ((elsa-form-vector-p form) (elsa--analyse-vector form scope))
-     ((elsa-form-string-p form) (elsa--analyse-string form scope))
-     ((elsa-form-list-p form) (elsa--analyse-list form scope))
-     ((elsa-form-improper-list-p form) (elsa--analyse-improper-list form scope))
+     ((elsa-form-float-p form) (elsa--analyse-float form scope state))
+     ((elsa-form-integer-p form) (elsa--analyse-integer form scope state))
+     ((elsa-form-keyword-p form) (elsa--analyse-keyword form scope state))
+     ((elsa-form-symbol-p form) (elsa--analyse-symbol form scope state))
+     ((elsa-form-vector-p form) (elsa--analyse-vector form scope state))
+     ((elsa-form-string-p form) (elsa--analyse-string form scope state))
+     ((elsa-form-list-p form) (elsa--analyse-list form scope state))
+     ((elsa-form-improper-list-p form) (elsa--analyse-improper-list form scope state))
      (t (error "Invalid form")))
     (-flatten
-     (--map (when (elsa-check-should-run it form scope)
-              (elsa-check-check it form scope))
+     (--map (when (elsa-check-should-run it form scope state)
+              (elsa-check-check it form scope state))
             elsa-checks)))))
 
 (provide 'elsa-analyser)

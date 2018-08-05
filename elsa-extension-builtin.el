@@ -2,8 +2,8 @@
 (require 'elsa-infer)
 
 ;; * boolean functions
-(defun elsa--analyse-not (form scope)
-  (let ((errors (elsa--analyse-function-call form scope))
+(defun elsa--analyse-not (form scope state)
+  (let ((errors (elsa--analyse-function-call form scope state))
         (args (cdr (oref form sequence))))
     (let ((arg-type (oref (car args) type)))
       (cond
@@ -15,8 +15,8 @@
     errors))
 
 ;; * list functions
-(defun elsa--analyse-car (form scope)
-  (let* ((errors (elsa--analyse-function-call form scope)))
+(defun elsa--analyse-car (form scope state)
+  (let* ((errors (elsa--analyse-function-call form scope state)))
     (-when-let* ((arg (cadr (oref form sequence)))
                  (arg-type (oref arg type)))
       (when (elsa-type-list-p arg-type)
@@ -24,8 +24,8 @@
     errors))
 
 ;; * predicates
-(defun elsa--analyse-stringp (form scope)
-  (let ((errors (elsa--analyse-function-call form scope)))
+(defun elsa--analyse-stringp (form scope state)
+  (let ((errors (elsa--analyse-function-call form scope state)))
     (oset form type
           (elsa--infer-unary-fn form
             (lambda (arg-type)

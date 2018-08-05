@@ -214,7 +214,7 @@ BODY is the body of the function which is further analysed."
   "Analyse FORM in STATE.
 
 If TYPE is non-nil, force this type on FORM."
-  (elsa--analyse-form form (oref state scope))
+  (elsa--analyse-form form (oref state scope) state)
   ;; (pcase form
   ;;   (`(elsa-declare ,function . ,args)
   ;;    (elsa-process-declare function args))
