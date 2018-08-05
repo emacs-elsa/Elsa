@@ -38,6 +38,32 @@ If you use [flycheck](https://github.com/flycheck/flycheck) you can use the foll
 Then in the buffer (must be inside a `cask` powered project) you might
 need to enable the checker with `C-u C-c ! x`.
 
+# Configuration
+
+By default Elsa core comes with very little built-in logic, only
+understanding the elisp [special
+forms](https://www.gnu.org/software/emacs/manual/html_node/elisp/Special-Forms.html).
+
+All the rules are added in form of extensions.  Elsa has few core
+extensions for most common built-in functions such as list
+manupulation (`car`, `nth`...), predicates (`stringp`, `atomp`...),
+logical functions (`not`, ...) and so on.  These are automatically
+loaded because the functions are so common virtually every project is
+going to use them.
+
+Additional extensions are provided for popular external packages such
+as [dash.el](https://github.com/magnars/dash.el).  To use them, add to
+your `Elsafile.el` the `register-extensions` form, like so
+
+``` emacs-lisp
+(register-extensions
+ dash
+ ;; more extensions here
+ )
+```
+
+The `Elsafile.el` should be located next to the `Cask` file of your project.
+
 # How can I contribute to this project
 
 Open an issue if you want to work on something (not necessarily listed
@@ -48,3 +74,7 @@ You can provide type definitions for built-in functions by extending
 `elsa-typed-builtin.el`.  There is plenty to go.  Some of the types
 necessary to express what we want might not exist or be supported yet,
 open an issue so we can discuss how to model things.
+
+# For developers
+
+## How to write an extension for <package>

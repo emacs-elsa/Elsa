@@ -35,7 +35,6 @@
 (require 'elsa-analyser)
 (require 'elsa-reader)
 
-(require 'elsa-extension-dash)
 (require 'elsa-extension-builtin)
 
 (push '(elsa-args (lambda (&rest _) t)) defun-declarations-alist)
@@ -93,8 +92,22 @@
     (oset state errors (nreverse errors))
     state))
 
+(defun elsa-load-config ()
+  "Load config and register extensions."
+  (let ((config-buffer (find-file-noselect "Elsafile.el"))
+        form)
+    (with-current-buffer config-buffer
+      (condition-case _err
+          (while (setq form (read (current-buffer)))
+            (pcase form
+              (`(register-extensions . ,extensions)
+               (--each extensions
+                 (require (intern (concat "elsa-extension-" (symbol-name it))))))))
+        (end-of-file t)))))
+
 (defun elsa-run ()
   "Run `elsa-process-file' and output errors to stdout for flycheck."
+  (elsa-load-config)
   (let* ((file (car command-line-args-left))
          (state (elsa-process-file file))
          (errors (oref state errors)))
