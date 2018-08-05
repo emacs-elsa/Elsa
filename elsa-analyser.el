@@ -5,6 +5,7 @@
 (require 'elsa-infer)
 (require 'elsa-error)
 (require 'elsa-types)
+(require 'elsa-type-helpers)
 (require 'elsa-english)
 (require 'elsa-state)
 
@@ -102,11 +103,16 @@ number by symbol 'many."
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
         (false-body (nthcdr 3 (oref form sequence))))
-    (-flatten
-     (-concat
-      (elsa--analyse-form condition scope state)
-      (elsa--analyse-form true-body scope state)
-      (when false-body (--map (elsa--analyse-form it scope state) false-body))))))
+    (elsa--analyse-form condition scope state)
+    (elsa--analyse-form true-body scope state)
+    (elsa--analyse-body false-body scope state)
+    (let ((result-type (oref true-body type)))
+      (when false-body
+        (setq result-type
+              (elsa-type-sum
+               result-type
+               (oref (-last-item false-body) type))))
+      (oset form type result-type))))
 
 (defun elsa--analyse:progn (form scope state)
   (let* ((body (cdr (oref form sequence)))
