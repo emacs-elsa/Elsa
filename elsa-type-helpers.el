@@ -31,47 +31,54 @@
 
 (require 'elsa-types)
 
+;; (defun elsa--make-type (definition)
+;;   "Return instance of class representing DEFINITION."
+;;   (pcase definition
+;;     ((and (pred vectorp) vector)
+;;      (let ((definition (append vector nil)))
+;;        (pcase definition
+;;          (`(&or . ,types)
+;;           (apply 'elsa-make-type types))
+;;          (`(,type) (elsa-type-list :item-type (elsa-make-type type))))))
+;;     (`(cons ,first ,second)
+;;      (elsa-type-cons :car-type (elsa-make-type first)
+;;                      :cdr-type (elsa-make-type second)))
+;;     (`sum
+;;      (make-instance 'elsa-sum-type))
+;;     (`integer
+;;      (elsa-type-int))
+;;     (`number-or-marker?
+;;      (elsa-type-make-nullable (elsa-make-type 'number-or-marker)))
+;;     (`number-or-marker
+;;      (elsa-type-sum (elsa-make-type 'number) (elsa-make-type 'marker)))
+;;     (_
+;;      (-let* (((&plist :constructor c :nullable n)
+;;               (elsa-type--get-class-constructor definition))
+;;              (instance (make-instance c))
+;;              (nullable (or n (eq c 'elsa-type-mixed))))
+;;        (if nullable (elsa-type-make-nullable instance) instance)))))
+
 (defun elsa--make-type (definition)
-  "Return instance of class representing DEFINITION."
-  (pcase definition
-    ((and (pred vectorp) vector)
-     (let ((definition (append vector nil)))
-       (pcase definition
-         (`(&or . ,types)
-          (apply 'elsa-make-type types))
-         (`(,type) (elsa-type-list :item-type (elsa-make-type type))))))
-    (`(cons ,first ,second)
-     (elsa-type-cons :car-type (elsa-make-type first)
-                     :cdr-type (elsa-make-type second)))
-    (`sum
-     (make-instance 'elsa-sum-type))
-    (`integer
-     (elsa-type-int))
-    (`number-or-marker?
-     (elsa-type-make-nullable (elsa-make-type 'number-or-marker)))
-    (`number-or-marker
-     (elsa-type-sum (elsa-make-type 'number) (elsa-make-type 'marker)))
-    (_
-     (-let* (((&plist :constructor c :nullable n)
-              (elsa-type--get-class-constructor definition))
-             (instance (make-instance c))
-             (nullable (or n (eq c 'elsa-type-mixed))))
-       (if nullable (elsa-type-make-nullable instance) instance)))))
+  `',definition)
 
-(defun elsa-make-type (&rest definitions)
-  "Make a type according to DEFINITIONS.
+(elsa-make-type Int -> Foo -> Cons (Int | String) Buffer)
+(elsa-make-type Int | Float)
 
-DEFINITIONS is a list of DEFINITION.
+(defmacro elsa-make-type (&rest definition)
+  "Make a type according to DEFINITION.
 
-DEFINITION can be a simple type such as 'int or 'string or a
-special FORM.
 
-FORM can be one of:
-- [&or type1 type2 ...] -> Return the sum of type1, type2, ...
+The grammar is as follows (in eBNF):
+
+<TYPE> ::= <BASE>
+         | '(', <TYPE>, ')'
+         | <CONSTRUCTOR>, {<TYPE>}
+         | <TYPE>, {'|', <TYPE>}
+         | <TYPE>, {'->', <TYPE>}
+
+<BASE> ::= 'String' | 'Int' | 'Float' | 'Marker' | 'Buffer'
 "
-  (if (= (length definitions) 1)
-      (elsa--make-type (car definitions))
-    (-reduce-r 'elsa-type-sum (-map 'elsa--make-type definitions))))
+  (elsa--make-type definition))
 
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
