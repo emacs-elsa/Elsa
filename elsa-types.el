@@ -248,7 +248,7 @@ type and none of the negative types.")
                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
 (defmethod elsa-type-describe ((this elsa-type-cons))
-  (format "(%s . %s)"
+  (format "(cons %s %s)"
           (elsa-type-describe (oref this car-type))
           (elsa-type-describe (oref this cdr-type))))
 
