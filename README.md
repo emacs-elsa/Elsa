@@ -21,16 +21,22 @@ If you use [flycheck](https://github.com/flycheck/flycheck) you can use the foll
 ``` emacs-lisp
 (flycheck-define-checker emacs-lisp-elsa
   "Checker for Elsa."
-  :command ("<path-to-cask-binary>" ;; usuall something like "/home/matus/.cask/bin/cask"
+  :command ("/home/matus/.cask/bin/cask" ;; use your own home
             "exec"
             "elsa"
             source)
   :error-filter flycheck-increment-error-columns
+  :predicate
+  (lambda ()
+    (let ((cask-file (locate-dominating-file default-directory "Cask")))
+      (with-current-buffer (find-file-noselect cask-file)
+        (goto-char (point-min))
+        (search-forward "elsa" nil t))))
   :error-patterns
   ((error line-start line ":" column ":error:" (message))
    (warning line-start line ":" column ":warning:" (message))
    (info line-start line ":" column ":notice:" (message)))
-  :modes (emacs-mode-lisp))
+  :modes (emacs-lisp-mode))
 
 (add-to-list 'flycheck-checkers 'emacs-lisp-elsa)
 ```
