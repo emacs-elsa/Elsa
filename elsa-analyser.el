@@ -219,19 +219,22 @@ number by symbol 'many."
 (defun elsa--analyse-splice (form scope state)
   nil)
 
+;; (elsa :: [&or bool [bool]] -> mixed -> [bool])
+(defun elsa--analyse-normalize-spec (spec form)
+  "Normalize evaluation SPEC for FORM."
+  (cond
+   ((eq spec t)
+    (-repeat (1- (length (elsa-form-sequence form))) t))
+   ((eq (-last-item spec) 'body)
+    (-concat (-butlast spec)
+             (-repeat (- (1- (length (elsa-form-sequence form)))
+                         (1- (length spec)))
+                      t)))
+   (t spec)))
+
 ;; (elsa :: mixed -> [&or bool [bool]] -> mixed -> mixed -> mixed)
 (defun elsa--analyse-macro (form spec scope state)
-  (setq
-   spec
-   (cond
-    ((eq spec t)
-     (-repeat (1- (length (elsa-form-sequence form))) t))
-    ((eq (-last-item spec) 'body)
-     (-concat (-butlast spec)
-              (-repeat (- (1- (length (elsa-form-sequence form)))
-                          (1- (length spec)))
-                       t)))
-    (t spec)))
+  (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-form-car form))
          (name (oref head name))
          (args (cdr (oref form sequence)))
