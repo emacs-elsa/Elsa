@@ -201,15 +201,16 @@ number by symbol 'many."
 (defun elsa--analyse-splice (form scope state)
   nil)
 
+;; (elsa :: mixed -> [&or bool [bool]] -> mixed -> mixed -> mixed)
 (defun elsa--analyse-macro (form spec scope state)
   (setq
    spec
    (cond
     ((eq spec t)
-     (-repeat (1- (length form)) t))
+     (-repeat (1- (length (elsa-form-sequence form))) t))
     ((eq (-last-item spec) 'body)
      (-concat (-butlast spec)
-              (-repeat (- (1- (length form))
+              (-repeat (- (1- (length (elsa-form-sequence form)))
                           (1- (length spec)))
                        t)))
     (t spec)))
