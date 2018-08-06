@@ -31,65 +31,38 @@
 
 (require 'elsa-types)
 
-;; (defun elsa--make-type (definition)
-;;   "Return instance of class representing DEFINITION."
-;;   (pcase definition
-;;     ((and (pred vectorp) vector)
-;;      (let ((definition (append vector nil)))
-;;        (pcase definition
-;;          (`(&or . ,types)
-;;           (apply 'elsa-make-type types))
-;;          (`(,type) (elsa-type-list :item-type (elsa-make-type type))))))
-;;     (`(cons ,first ,second)
-;;      (elsa-type-cons :car-type (elsa-make-type first)
-;;                      :cdr-type (elsa-make-type second)))
-;;     (`sum
-;;      (make-instance 'elsa-sum-type))
-;;     (`integer
-;;      (elsa-type-int))
-;;     (`number-or-marker?
-;;      (elsa-type-make-nullable (elsa-make-type 'number-or-marker)))
-;;     (`number-or-marker
-;;      (elsa-type-sum (elsa-make-type 'number) (elsa-make-type 'marker)))
-;;     (_
-;;      (-let* (((&plist :constructor c :nullable n)
-;;               (elsa-type--get-class-constructor definition))
-;;              (instance (make-instance c))
-;;              (nullable (or n (eq c 'elsa-type-mixed))))
-;;        (if nullable (elsa-type-make-nullable instance) instance)))))
-
 (defun elsa--make-union-type (definition)
   (->> (-split-on '| definition)
        (-map 'elsa--make-type)
-       (-flatten-n 1)
        (-reduce 'elsa-type-sum)))
 
 (defun elsa--make-type (definition)
-  (cond
-   ((atom definition)
-    (let* ((type-name (downcase (symbol-name definition)))
-           (constructor (intern (concat "elsa-type-" type-name))))
-      (cond
-       ((functionp constructor) (funcall constructor))
-       (t (elsa-type-nil)))))
-   ((listp definition)
-    (let* ((args (-split-on '-> definition))
-           (parameters
-            (-map
-             (lambda (arg)
-               (cond
-                ((memq '-> arg) (elsa--make-type arg))
-                ((memq '| arg) (elsa--make-union-type arg))
-                (t (-mapcat 'elsa--make-type arg))))
-             args)))
-      (if (> (length args) 1)
-          (elsa-function-type
-           :args (-butlast parameters)
-           :return (-last-item parameters))
-        (car parameters))))))
-
-(elsa-make-type Int -> Foo -> Cons (Int | String) Buffer)
-(elsa-make-type Int | Float)
+  (pcase definition
+    ((and `(,arg) (guard (atom arg)))
+     (let* ((type-name (downcase (symbol-name arg)))
+            (constructor (intern (concat "elsa-type-" type-name))))
+       (cond
+        ((functionp constructor) (funcall constructor))
+        (t (elsa-type-nil)))))
+    ((and `(,arg . nil))
+     (elsa--make-type arg))
+    (`(Cons ,a ,b)
+     (elsa-type-cons :car-type (elsa--make-type (list a))
+                     :cdr-type (elsa--make-type (list b))))
+    (`(List ,a)
+     (let* ((item-type (elsa--make-type (list a)))
+            (list-type (elsa-type-list :item-type item-type)))
+       (oset list-type car-type item-type)
+       (oset list-type cdr-type item-type)
+       list-type))
+    ((and def (guard (memq '-> def)))
+     (let* ((args (-split-on '-> def))
+            (parameters (-map 'elsa--make-type args)))
+       (elsa-function-type
+        :args (-butlast parameters)
+        :return (-last-item parameters))))
+    ((and def (guard (memq '| def)))
+     (elsa--make-union-type def))))
 
 (defmacro elsa-make-type (&rest definition)
   "Make a type according to DEFINITION.
