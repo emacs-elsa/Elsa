@@ -31,7 +31,6 @@
 (require 'elsa-types)
 (require 'elsa-scope)
 (require 'elsa-state)
-(require 'elsa-defun)
 (require 'elsa-error)
 (require 'elsa-analyser)
 (require 'elsa-reader)
