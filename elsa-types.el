@@ -52,12 +52,12 @@ representing TYPE."
 
 (defclass elsa-type nil () :abstract t)
 
-(defmethod elsa-type-describe ((this elsa-type))
+(cl-defmethod elsa-type-describe ((this elsa-type))
   "Describe THIS type."
   (declare (elsa-return string))
   (symbol-name (eieio-object-class this)))
 
-(defmethod elsa-type-accept ((this elsa-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-type) other)
   "Test if THIS type accepts OTHER.
 
 Accepting in this context means that OTHER can be assigned to
@@ -71,10 +71,10 @@ THIS."
                 (oref other types))))
    (t nil)))
 
-(defmethod elsa-type-restrict-by ((this elsa-type) other)
+(cl-defmethod elsa-type-restrict-by ((this elsa-type) other)
   (error "Not implemented yet"))
 
-(defmethod elsa-type-make-non-nullable ((this elsa-type))
+(cl-defmethod elsa-type-make-non-nullable ((this elsa-type))
   (error "Not implemented yet"))
 
 (defclass elsa-type-unbound (elsa-type) ()
@@ -82,7 +82,7 @@ THIS."
 
 This is not accepted by any type because we don't know what it is.")
 
-(defmethod elsa-type-describe ((this elsa-type-unbound))
+(cl-defmethod elsa-type-describe ((this elsa-type-unbound))
   "unbound")
 
 (defclass elsa-sum-type (elsa-type)
@@ -94,7 +94,7 @@ This is not accepted by any type because we don't know what it is.")
 This type is a combination of other types.  It can accept any
 type that is accepted by at least one of its summands.")
 
-(defmethod elsa-type-describe ((this elsa-sum-type))
+(cl-defmethod elsa-type-describe ((this elsa-sum-type))
   (cond
    ((elsa-type-accept this (elsa-type-mixed))
     "mixed")
@@ -117,16 +117,16 @@ type that is accepted by at least one of its summands.")
     new))
 
 ;; TODO: handle sum types and diff types as arguments
-(defmethod elsa-sum-type-remove ((this elsa-sum-type) other)
+(cl-defmethod elsa-sum-type-remove ((this elsa-sum-type) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (oset this types (--remove (eq (eieio-object-class it)
                                  (eieio-object-class other))
                              (oref this types))))
 
-(defmethod elsa-type-make-non-nullable ((this elsa-sum-type))
+(cl-defmethod elsa-type-make-non-nullable ((this elsa-sum-type))
   (elsa-sum-type-remove this (elsa-type-nil)))
 
-(defmethod elsa-type-accept ((this elsa-sum-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-sum-type) other)
   (cond
    ((= 0 (length (oref this types))) nil)
    ((elsa-sum-type-p other)
@@ -159,7 +159,7 @@ type and none of the negative types.")
 ;;   (let ((re (clone this :positive :negative))))
 ;;   (elsa-type-sum (oref this positive) other))
 
-(defmethod elsa-diff-type-remove-positive ((this elsa-diff-type) other)
+(cl-defmethod elsa-diff-type-remove-positive ((this elsa-diff-type) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (if (elsa-type-nil-p other)
       (elsa-type-make-non-nullable (oref this positive))
@@ -167,34 +167,34 @@ type and none of the negative types.")
 
 (defclass elsa-type-t (elsa-type) ())
 
-(defmethod elsa-type-describe ((this elsa-type-t))
+(cl-defmethod elsa-type-describe ((this elsa-type-t))
   "t")
 
 (defclass elsa-type-nil (elsa-type) ())
 
-(defmethod elsa-type-accept ((this elsa-type-nil) other)
+(cl-defmethod elsa-type-accept ((this elsa-type-nil) other)
   (elsa-type-nil-p other))
 
-(defmethod elsa-type-describe ((this elsa-type-nil))
+(cl-defmethod elsa-type-describe ((this elsa-type-nil))
   "nil")
 
 (defclass elsa-type-bool (elsa-type) ())
 
-(defmethod elsa-type-accept ((this elsa-type-bool) other)
+(cl-defmethod elsa-type-accept ((this elsa-type-bool) other)
   (or (elsa-type-bool-p other)
       (elsa-type-accept (elsa-make-type [&or t nil]) other)))
 
-(defmethod elsa-type-describe ((this elsa-type-bool))
+(cl-defmethod elsa-type-describe ((this elsa-type-bool))
   "bool")
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
 (defclass elsa-type-mixed (elsa-type) ())
 
-(defmethod elsa-type-describe ((this elsa-type-mixed))
+(cl-defmethod elsa-type-describe ((this elsa-type-mixed))
   "mixed")
 
-(defmethod elsa-type-accept ((this elsa-type-mixed) other)
+(cl-defmethod elsa-type-accept ((this elsa-type-mixed) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (not (memq (eieio-object-class other)
              '(elsa-type-nil elsa-type-unbound))))
@@ -203,43 +203,43 @@ type and none of the negative types.")
 
 (defclass elsa-type-short-string (elsa-type-string) ())
 
-(defmethod elsa-type-describe ((this elsa-type-string))
+(cl-defmethod elsa-type-describe ((this elsa-type-string))
   "string")
 
 (defclass elsa-type-buffer (elsa-type) ())
 
-(defmethod elsa-type-describe ((this elsa-type-buffer))
+(cl-defmethod elsa-type-describe ((this elsa-type-buffer))
   "buffer")
 
 (defclass elsa-type-number (elsa-type) ())
 
-(defmethod elsa-type-describe ((this elsa-type-number))
+(cl-defmethod elsa-type-describe ((this elsa-type-number))
   "number")
 
 (defclass elsa-type-int (elsa-type-number) ())
 
-(defmethod elsa-type-describe ((this elsa-type-int))
+(cl-defmethod elsa-type-describe ((this elsa-type-int))
   "int")
 
 (defclass elsa-type-float (elsa-type-number) ())
 
-(defmethod elsa-type-describe ((this elsa-type-float))
+(cl-defmethod elsa-type-describe ((this elsa-type-float))
   "float")
 
 (defclass elsa-type-marker (elsa-type) ())
 
-(defmethod elsa-type-describe ((this elsa-type-marker))
+(cl-defmethod elsa-type-describe ((this elsa-type-marker))
   "marker")
 
 (defclass elsa-type-keyword (elsa-type) ())
 
-(defmethod elsa-type-describe ((this elsa-type-keyword))
+(cl-defmethod elsa-type-describe ((this elsa-type-keyword))
   "keyword")
 
 (defclass elsa-type-symbol (elsa-type) ()
   :documentation "Quoted symbol")
 
-(defmethod elsa-type-describe ((this elsa-type-symbol))
+(cl-defmethod elsa-type-describe ((this elsa-type-symbol))
   "symbol")
 
 (defclass elsa-type-cons (elsa-type)
@@ -250,7 +250,7 @@ type and none of the negative types.")
              :initform (elsa-sum-type
                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
-(defmethod elsa-type-describe ((this elsa-type-cons))
+(cl-defmethod elsa-type-describe ((this elsa-type-cons))
   (format "(cons %s %s)"
           (elsa-type-describe (oref this car-type))
           (elsa-type-describe (oref this cdr-type))))
@@ -261,7 +261,7 @@ type and none of the negative types.")
               :initform (elsa-sum-type
                          :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
-(defmethod elsa-type-describe ((this elsa-type-list))
+(cl-defmethod elsa-type-describe ((this elsa-type-list))
   (format "[%s]" (elsa-type-describe (oref this item-type))))
 
 (defclass elsa-type-vector (elsa-type)
@@ -270,14 +270,14 @@ type and none of the negative types.")
               :initform (elsa-sum-type
                          :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
-(defmethod elsa-type-describe ((this elsa-type-vector))
+(cl-defmethod elsa-type-describe ((this elsa-type-vector))
   (format "(vector %s)" (elsa-type-describe (oref this item-type))))
 
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
    (return :type elsa-type :initarg :return)))
 
-(defmethod elsa-type-describe ((this elsa-function-type))
+(cl-defmethod elsa-type-describe ((this elsa-function-type))
   (mapconcat 'elsa-type-describe
              (-snoc (oref this args) (oref this return))
              " -> "))
@@ -291,7 +291,7 @@ type and none of the negative types.")
 (defclass elsa-generic-type (elsa-type)
   ((label :type symbol :initarg :label)))
 
-(defmethod elsa-type-describe ((this elsa-generic-type))
+(cl-defmethod elsa-type-describe ((this elsa-generic-type))
   (symbol-name (oref this label)))
 
 ;; TODO: add a function type, then use it in defuns and variables

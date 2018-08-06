@@ -8,11 +8,11 @@
    (scope :initform (elsa-scope))))
 
 ;; TODO: take defvar directly? For consistency
-(defmethod elsa-state-add-defvar ((this elsa-state) name type)
+(cl-defmethod elsa-state-add-defvar ((this elsa-state) name type)
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar :name name :type type) defvars)))
 
-(defmethod elsa-state-add-error ((this elsa-state) error)
+(cl-defmethod elsa-state-add-error ((this elsa-state) error)
   (oset this errors (cons error (oref this errors))))
 
 (put 'elsa-state-add-error 'lisp-indent-function 1)

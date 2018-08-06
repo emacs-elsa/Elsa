@@ -36,7 +36,7 @@
          :documentation
      "Hash table of variables available in current (lexical) scope.")))
 
-(defmethod elsa-scope-add-variable ((this elsa-scope) variable)
+(cl-defmethod elsa-scope-add-variable ((this elsa-scope) variable)
   "Add VARIABLE to current scope."
   (unless (elsa-variable-p variable) (error "Variable is not `elsa-variable-p'"))
   (let* ((vars (oref this vars))
@@ -44,7 +44,7 @@
          (var-stack (gethash name vars)))
     (puthash name (cons variable var-stack) vars)))
 
-(defmethod elsa-scope-remove-variable ((this elsa-scope) variable)
+(cl-defmethod elsa-scope-remove-variable ((this elsa-scope) variable)
   "Remove VARIABLE from current scope."
   (unless (elsa-variable-p variable) (error "Variable is not `elsa-variable-p'"))
   (let* ((vars (oref this vars))
@@ -54,7 +54,7 @@
         (puthash name var-stack vars)
       (remhash name vars))))
 
-(defmethod elsa-scope-get-var ((this elsa-scope) name)
+(cl-defmethod elsa-scope-get-var ((this elsa-scope) name)
   "Get binding of NAMEd variable in THIS scope."
   (let ((vars (oref this vars)))
     (car (gethash name vars))))

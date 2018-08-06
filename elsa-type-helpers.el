@@ -93,10 +93,10 @@ FORM can be one of:
     (not (null
           (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
 
-(defmethod elsa-type-nullable-p ((this elsa-type))
+(cl-defmethod elsa-type-nullable-p ((this elsa-type))
   (elsa-type-accept this (elsa-make-type 'nil)))
 
-(defmethod elsa-type-make-nullable ((this elsa-type))
+(cl-defmethod elsa-type-make-nullable ((this elsa-type))
   (elsa-type-sum this (elsa-make-type 'nil)))
 
 (defun elsa-type-sum-normalize (sum)
