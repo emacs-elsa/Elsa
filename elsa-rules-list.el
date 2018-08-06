@@ -111,12 +111,14 @@
   (elsa-form-function-call-p form 'cond))
 
 (cl-defmethod elsa-check-check ((_ elsa-check-cond-useless-condition) form scope state)
-  (let ((branches (cdr (oref form sequence))))
-    (-each branches
-      (lambda (branch)
+  (let* ((branches (cdr (oref form sequence)))
+         (total (length branches)))
+    (-each-indexed branches
+      (lambda (index branch)
         (let* ((sequence (oref branch sequence))
                (first-item (-first-item sequence)))
-          (if (not (elsa-type-accept (oref first-item type) (elsa-type-nil)))
+          (if (and (not (elsa-type-accept (oref first-item type) (elsa-type-nil)))
+                   (< index (1- total)))
               (elsa-state-add-error state
                 (elsa-make-warning "Condition always evaluates to true." first-item))
             (when (elsa-type-accept (elsa-type-nil) (oref first-item type))
