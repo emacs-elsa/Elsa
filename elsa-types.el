@@ -275,6 +275,12 @@ type and none of the negative types.")
 
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
+   (variadic
+    :type bool :initarg :variadic
+    :initform nil
+    :documentation "Non-nil if the last input argument is variadic.
+
+A variadic type is automatically collected into a list.")
    (return :type elsa-type :initarg :return)))
 
 (cl-defmethod elsa-type-describe ((this elsa-function-type))
