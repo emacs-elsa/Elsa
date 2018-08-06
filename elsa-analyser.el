@@ -186,6 +186,24 @@ number by symbol 'many."
            (elsa-form-car form)))))
     (--each vars (elsa-scope-remove-variable scope it))))
 
+(defun elsa--analyse:lambda (form scope state)
+  (let* ((sequence (oref form sequence))
+         (args (nth 1 sequence))
+         (body (nthcdr 2 sequence))
+         (arg-types (-repeat (length (elsa-form-sequence args))
+                             (elsa-make-type 'mixed)))
+         (vars))
+    (when (elsa-form-list-p args)
+      (-each-indexed (elsa-form-sequence args)
+        (lambda (index arg)
+          (let ((var (elsa-variable
+                      :name (elsa-form-name arg)
+                      :type (nth index arg-types))))
+            (push var vars)
+            (elsa-scope-add-variable scope var)))))
+    (--each body (elsa--analyse-form it scope state))
+    (--each vars (elsa-scope-remove-variable scope it))))
+
 (defun elsa--analyse:quote (form scope state)
   (let ((arg (cadr (oref form sequence))))
     (cond
