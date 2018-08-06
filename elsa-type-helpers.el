@@ -58,8 +58,35 @@
 ;;              (nullable (or n (eq c 'elsa-type-mixed))))
 ;;        (if nullable (elsa-type-make-nullable instance) instance)))))
 
+(defun elsa--make-union-type (definition)
+  (->> (-split-on '| definition)
+       (-map 'elsa--make-type)
+       (-flatten-n 1)
+       (-reduce 'elsa-type-sum)))
+
 (defun elsa--make-type (definition)
-  `',definition)
+  (cond
+   ((atom definition)
+    (let* ((type-name (downcase (symbol-name definition)))
+           (constructor (intern (concat "elsa-type-" type-name))))
+      (cond
+       ((functionp constructor) (funcall constructor))
+       (t (elsa-type-nil)))))
+   ((listp definition)
+    (let* ((args (-split-on '-> definition))
+           (parameters
+            (-map
+             (lambda (arg)
+               (cond
+                ((memq '-> arg) (elsa--make-type arg))
+                ((memq '| arg) (elsa--make-union-type arg))
+                (t (-mapcat 'elsa--make-type arg))))
+             args)))
+      (if (> (length args) 1)
+          (elsa-function-type
+           :args (-butlast parameters)
+           :return (-last-item parameters))
+        (car parameters))))))
 
 (elsa-make-type Int -> Foo -> Cons (Int | String) Buffer)
 (elsa-make-type Int | Float)
