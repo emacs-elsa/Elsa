@@ -25,7 +25,9 @@ Currently we only support running Elsa with Cask.
 4. `cask exec elsa <file-to-analyse>` to analyse the file.  Currently
    only one file at a time can be analysed.
 
-If you use [flycheck](https://github.com/flycheck/flycheck) you can use the following checker
+## Flycheck integration
+
+If you use [flycheck](https://github.com/flycheck/flycheck) you can use the following checker.  You need to have `cask` installed as dependency and run `(require 'cask)`.
 
 ``` emacs-lisp
 (flycheck-define-checker emacs-lisp-elsa
@@ -37,10 +39,9 @@ If you use [flycheck](https://github.com/flycheck/flycheck) you can use the foll
   :error-filter flycheck-increment-error-columns
   :predicate
   (lambda ()
-    (let ((cask-file (locate-dominating-file default-directory "Cask")))
-      (with-current-buffer (find-file-noselect cask-file)
-        (goto-char (point-min))
-        (search-forward "elsa" nil t))))
+    (-when-let (cask-file (locate-dominating-file default-directory "Cask"))
+      (let ((bundle (cask-initialize (file-name-directory cask-file))))
+        (cask-find-dependency bundle 'elsa))))
   :error-patterns
   ((error line-start line ":" column ":error:" (message))
    (warning line-start line ":" column ":warning:" (message))
@@ -51,7 +52,12 @@ If you use [flycheck](https://github.com/flycheck/flycheck) you can use the foll
 ```
 
 Then in the buffer (must be inside a `cask` powered project) you might
-need to enable the checker with `C-u C-c ! x`.
+need to enable the checker with `C-u C-c ! x`.  You can also globally
+remove it from disabled checkers by evaluating the following form:
+
+``` emacs-lisp
+(setq flycheck-disabled-checkers (delete 'emacs-lisp-elsa flycheck-disabled-checkers))
+```
 
 # Configuration
 
