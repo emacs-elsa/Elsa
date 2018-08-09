@@ -47,7 +47,14 @@
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
        list-type))
-    ((and `(,arg) (guard (atom arg)))
+    (`[,a]
+     (let* ((item-type (elsa--make-type (list a)))
+            (list-type (elsa-type-list :item-type item-type)))
+       (oset list-type car-type item-type)
+       (oset list-type cdr-type item-type)
+       list-type))
+    ((and `(,arg) (guard (and (atom arg)
+                              (not (vectorp arg)))))
      (let* ((type-name (downcase (symbol-name arg)))
             (nullable (string-suffix-p "?" type-name))
             (constructor (intern (concat
