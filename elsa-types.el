@@ -83,7 +83,7 @@ THIS."
 This is not accepted by any type because we don't know what it is.")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-unbound))
-  "unbound")
+  "Unbound")
 
 (defclass elsa-sum-type (elsa-type)
   ((types :type list
@@ -97,7 +97,7 @@ type that is accepted by at least one of its summands.")
 (cl-defmethod elsa-type-describe ((this elsa-sum-type))
   (cond
    ((elsa-type-accept this (elsa-type-mixed))
-    "mixed")
+    "Mixed")
    ((and (= 2 (length (oref this types))))
     (-let [(type1 type2) (oref this types)]
       (cond
@@ -168,7 +168,7 @@ type and none of the negative types.")
 (defclass elsa-type-t (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-t))
-  "t")
+  "T")
 
 (defclass elsa-type-nil (elsa-type) ())
 
@@ -176,7 +176,7 @@ type and none of the negative types.")
   (elsa-type-nil-p other))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-nil))
-  "nil")
+  "Nil")
 
 (defclass elsa-type-bool (elsa-type) ())
 
@@ -185,14 +185,14 @@ type and none of the negative types.")
       (elsa-type-accept (elsa-make-type T?) other)))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-bool))
-  "bool")
+  "Bool")
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
 (defclass elsa-type-mixed (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-mixed))
-  "mixed")
+  "Mixed")
 
 (cl-defmethod elsa-type-accept ((this elsa-type-mixed) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
@@ -203,43 +203,43 @@ type and none of the negative types.")
 (defclass elsa-type-short-string (elsa-type-string) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-string))
-  "string")
+  "String")
 
 (defclass elsa-type-buffer (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-buffer))
-  "buffer")
+  "Buffer")
 
 (defclass elsa-type-number (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-number))
-  "number")
+  "Number")
 
 (defclass elsa-type-int (elsa-type-number) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-int))
-  "int")
+  "Int")
 
 (defclass elsa-type-float (elsa-type-number) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-float))
-  "float")
+  "Float")
 
 (defclass elsa-type-marker (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-marker))
-  "marker")
+  "Marker")
 
 (defclass elsa-type-keyword (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-keyword))
-  "keyword")
+  "Keyword")
 
 (defclass elsa-type-symbol (elsa-type) ()
   :documentation "Quoted symbol")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-symbol))
-  "symbol")
+  "Symbol")
 
 (defclass elsa-type-cons (elsa-type)
   ((car-type :type elsa-type :initarg :car-type
@@ -250,7 +250,7 @@ type and none of the negative types.")
                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-cons))
-  (format "(cons %s %s)"
+  (format "Cons %s %s"
           (elsa-type-describe (oref this car-type))
           (elsa-type-describe (oref this cdr-type))))
 
@@ -270,7 +270,7 @@ type and none of the negative types.")
                          :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
-  (format "(vector %s)" (elsa-type-describe (oref this item-type))))
+  (format "Vector %s" (elsa-type-describe (oref this item-type))))
 
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
