@@ -267,19 +267,19 @@ number by symbol 'many."
     (when type
       ;; analyse the arguments
       (cl-mapc
-       (lambda (expected actual argument-form index)
-         (unless (elsa-type-accept expected actual)
-           (elsa-state-add-error state
-             (elsa-make-error
-              (format "Argument %d accepts type %s but received %s"
-                      index
-                      (elsa-type-describe expected)
-                      (elsa-type-describe actual))
-              head))))
-       (oref type args)
-       (-map (lambda (a) (oref a type)) args)
+       (lambda (argument-form index)
+         (let ((expected (elsa-function-type-nth-arg index type))
+               (actual (oref argument-form type)))
+           (unless (elsa-type-accept expected actual)
+             (elsa-state-add-error state
+               (elsa-make-error
+                (format "Argument %d accepts type %s but received %s"
+                        (1+ index)
+                        (elsa-type-describe expected)
+                        (elsa-type-describe actual))
+                head)))))
        args
-       (number-sequence 1 (length args)))
+       (number-sequence 0 (1- (length args))))
 
       ;; set the return type of the form according to the return type
       ;; of the function's declaration

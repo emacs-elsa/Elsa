@@ -286,6 +286,18 @@ type and none of the negative types.")
              (-snoc (oref this args) (oref this return))
              " -> "))
 
+(defun elsa-function-type-nth-arg (n elsa-type)
+  (let* ((args (oref elsa-type args))
+         (type (nth n args)))
+    (cond
+     ((eq type nil)
+      (let ((last-type (-last-item args)))
+        (when (elsa-variadic-type-p last-type)
+          (oref last-type item-type))))
+     ((elsa-variadic-type-p type)
+      (oref type item-type))
+     (t type))))
+
 (defclass elsa-generic-type (elsa-type)
   ((label :type symbol :initarg :label)))
 

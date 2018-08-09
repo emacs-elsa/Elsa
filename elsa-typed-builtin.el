@@ -43,7 +43,7 @@
 ;; (put 'fmakunbound 'elsa-type)
 ;; (put 'symbol-function 'elsa-type)
 ;; (put 'symbol-plist 'elsa-type)
-;; (put 'symbol-name 'elsa-type)
+(put 'symbol-name 'elsa-type (elsa-make-type Symbol -> String))
 ;; (put 'fset 'elsa-type)
 ;; (put 'defalias 'elsa-type)
 ;; (put 'setplist 'elsa-type)
@@ -214,7 +214,8 @@
 (put 'nth 'elsa-type (elsa-make-type Int -> List -> Mixed))
 
 ;; string functions
-(put 'split-string'elsa-type (elsa-make-type String -> String -> List String))
+(put 'split-string 'elsa-type (elsa-make-type String -> String -> List String))
+(put 'concat 'elsa-type (elsa-make-type String... -> String))
 
 ;; sequence functions
 
