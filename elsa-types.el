@@ -272,14 +272,13 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
   (format "Vector %s" (elsa-type-describe (oref this item-type))))
 
+(defclass elsa-variadic-type (elsa-type-list) nil)
+
+(cl-defmethod elsa-type-describe ((this elsa-variadic-type))
+  (format "%s..." (elsa-type-describe (oref this item-type))))
+
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
-   (variadic
-    :type boolean :initarg :variadic
-    :initform nil
-    :documentation "Non-nil if the last input argument is variadic.
-
-A variadic type is automatically collected into a list.")
    (return :type elsa-type :initarg :return)))
 
 (cl-defmethod elsa-type-describe ((this elsa-function-type))

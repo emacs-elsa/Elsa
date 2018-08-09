@@ -56,18 +56,23 @@
     ((and `(,arg) (guard (and (atom arg)
                               (not (vectorp arg)))))
      (let* ((type-name (downcase (symbol-name arg)))
-            (nullable (string-suffix-p "?" type-name))
-            (constructor (intern (concat
-                                  "elsa-type-"
-                                  (if nullable
-                                      (substring type-name 0 -1)
-                                    type-name)))))
+            (variadic (when (string-suffix-p "..." type-name)
+                        (setq type-name (substring type-name 0 -3))
+                        t))
+            (nullable (when (string-suffix-p "?" type-name)
+                        (setq type-name (substring type-name 0 -1))
+                        t))
+            (constructor (intern (concat "elsa-type-" type-name))))
        (cond
         ((functionp constructor)
-         (let ((type (funcall constructor)))
-           (if nullable
-               (elsa-type-make-nullable type)
-             type)))
+         (let* ((type (funcall constructor))
+                (type (if nullable
+                          (elsa-type-make-nullable type)
+                        type) )
+                (type (if variadic
+                          (elsa-variadic-type :item-type type)
+                        type)))
+           type))
         (t (error "Unknown type %s" type-name)))))
     ((and `(,arg . nil))
      (elsa--make-type arg))
