@@ -151,25 +151,30 @@ but there are some special constructs available to Elsa
 
 Here are general guidelines on how the types are constructed.
 
-- For built-in types with test predicates, drop the `p` or `-p` suffix to get the type:
-    - `stringp` → `string`
-    - `integerp` → `integer` (`int` is also accepted)
-    - `markerp` → `marker`
-    - `hash-table-p` → `hash-table`
-- Sum types can be specified with `&or` syntax similar to `edebug`
-  instrumentation, so `[&or string integer]` is a type accepting both
-  strings or integers.
-- Cons types are specified by wrapping the `car` and `cdr` types in a
-  `(cons)` constructor, so `(cons int int)` is a type where the `car`
-  is an int and `cdr` is also an int, for example `(1 . 3)`.
+- For built-in types with test predicates, drop the `p` or `-p` suffix and PascalCase to get the type:
+    - `stringp` → `String`
+    - `integerp` → `Integer` (`Int` is also accepted)
+    - `markerp` → `Marker`
+    - `hash-table-p` → `HashTable`
+- A type for everything is called `Mixed`.  It accepts anything and is
+  always nullable.  This is the default type for when we lack type
+  information.
+- Sum types can be specified with `|` syntax, so `String | Integer` is
+  a type accepting both strings or integers.
+- Cons types are specified by prefixing wrapping the `car` and `cdr`
+  types with a `Cons` constructor, so `Cons Int Int` is a type where
+  the `car` is an int and `cdr` is also an int, for example `(1 . 3)`.
 - List types are specified by wrapping a type in a vector `[]`
-  constructor, so `[int]` is a list of integers and `[[&or string
-  int]]` is a list of items where each item is either a string or an
-  integer.
+  constructor, so `[Int]` is a list of integers and `[String | Int]`
+  is a list of items where each item is either a string or an integer.
+  A type constructor `List` is also supported.
 - Function types are created by separating argument types and the
   return type with `->` token.
 - To mark type as nullable you can attach `?` to the end of it, so
-  that `int?` accepts any integer and also a `nil`.
+  that `Int?` accepts any integer and also a `nil`.
+
+Some type constructors have optional arguments, for example writing
+just `Cons` will assume the `car` and `cdr` are of type `Mixed`.
 
 # How can I contribute to this project
 
