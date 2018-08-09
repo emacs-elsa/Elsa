@@ -196,8 +196,7 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-accept ((this elsa-type-mixed) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (not (memq (eieio-object-class other)
-             '(elsa-type-nil elsa-type-unbound))))
+  (not (eq (eieio-object-class other) 'elsa-type-unbound)))
 
 (defclass elsa-type-string (elsa-type) ())
 
