@@ -43,7 +43,7 @@
             (constructor (intern (concat "elsa-type-" type-name))))
        (cond
         ((functionp constructor) (funcall constructor))
-        (t (elsa-type-nil)))))
+        (t (error "Unknown type")))))
     ((and `(,arg . nil))
      (elsa--make-type arg))
     (`(Cons ,a ,b)
