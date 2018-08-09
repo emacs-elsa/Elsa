@@ -276,7 +276,7 @@ type and none of the negative types.")
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
    (variadic
-    :type bool :initarg :variadic
+    :type boolean :initarg :variadic
     :initform nil
     :documentation "Non-nil if the last input argument is variadic.
 
