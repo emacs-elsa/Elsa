@@ -119,7 +119,51 @@
                 [eieio-class-tag--elsa-sum-type
                  ([eieio-class-tag--elsa-type-string]
                   [eieio-class-tag--elsa-type-int])]
-                [eieio-class-tag--elsa-type-buffer]]])))
+                [eieio-class-tag--elsa-type-buffer]]]))
+
+    (it "should support construction of lists through vector shorthand"
+      (expect (elsa-make-type [Int]) :to-equal
+              [eieio-class-tag--elsa-type-list
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]]))
+
+    (it "should support construction of lists of lists through vector shorthand"
+      (expect (elsa-make-type [[Int]]) :to-equal
+              [eieio-class-tag--elsa-type-list
+               [eieio-class-tag--elsa-type-list
+                [eieio-class-tag--elsa-type-int]
+                [eieio-class-tag--elsa-type-int]
+                [eieio-class-tag--elsa-type-int]]
+               [eieio-class-tag--elsa-type-list
+                [eieio-class-tag--elsa-type-int]
+                [eieio-class-tag--elsa-type-int]
+                [eieio-class-tag--elsa-type-int]]
+               [eieio-class-tag--elsa-type-list
+                [eieio-class-tag--elsa-type-int]
+                [eieio-class-tag--elsa-type-int]
+                [eieio-class-tag--elsa-type-int]]]))
+
+    (it "should support construction of lists of functions through vector shorthand"
+      (expect (elsa-make-type [Int -> Bool]) :to-equal
+              [eieio-class-tag--elsa-type-list
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]]))
+
+    (it "should support construction of lists of sums through vector shorthand"
+      (expect (elsa-make-type [Int | Bool]) :to-equal
+              [eieio-class-tag--elsa-type-list
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]]))
+
+    (it "should support construction of lists of higher order types through vector shorthand"
+      (expect (elsa-make-type [Cons Int String]) :to-equal
+              [eieio-class-tag--elsa-type-list
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]
+               [eieio-class-tag--elsa-type-int]])))
 
   (describe "elsa-type-sum"
 
