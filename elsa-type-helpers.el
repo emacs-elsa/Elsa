@@ -38,14 +38,40 @@
 
 (defun elsa--make-type (definition)
   (pcase definition
+    (`(Cons) ;; mixed cons by default
+     (elsa-type-cons :car-type (elsa-type-mixed)
+                     :cdr-type (elsa-type-mixed)))
+    (`(List) ;; mixed list by default
+     (let* ((item-type (elsa-type-mixed))
+            (list-type (elsa-type-list :item-type item-type)))
+       (oset list-type car-type item-type)
+       (oset list-type cdr-type item-type)
+       list-type))
     ((and `(,arg) (guard (atom arg)))
      (let* ((type-name (downcase (symbol-name arg)))
-            (constructor (intern (concat "elsa-type-" type-name))))
+            (nullable (string-suffix-p "?" type-name))
+            (constructor (intern (concat
+                                  "elsa-type-"
+                                  (if nullable
+                                      (substring type-name 0 -1)
+                                    type-name)))))
        (cond
-        ((functionp constructor) (funcall constructor))
-        (t (error "Unknown type")))))
+        ((functionp constructor)
+         (let ((type (funcall constructor)))
+           (if nullable
+               (elsa-type-make-nullable type)
+             type)))
+        (t (error "Unknown type %s" type-name)))))
     ((and `(,arg . nil))
      (elsa--make-type arg))
+    ((and def (guard (memq '-> def)))
+     (let* ((args (-split-on '-> def))
+            (parameters (-map 'elsa--make-type args)))
+       (elsa-function-type
+        :args (-butlast parameters)
+        :return (-last-item parameters))))
+    ((and def (guard (memq '| def)))
+     (elsa--make-union-type def))
     (`(Cons ,a ,b)
      (elsa-type-cons :car-type (elsa--make-type (list a))
                      :cdr-type (elsa--make-type (list b))))
@@ -54,15 +80,7 @@
             (list-type (elsa-type-list :item-type item-type)))
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
-       list-type))
-    ((and def (guard (memq '-> def)))
-     (let* ((args (-split-on '-> def))
-            (parameters (-map 'elsa--make-type args)))
-       (elsa-function-type
-        :args (-butlast parameters)
-        :return (-last-item parameters))))
-    ((and def (guard (memq '| def)))
-     (elsa--make-union-type def))))
+       list-type))))
 
 (defmacro elsa-make-type (&rest definition)
   "Make a type according to DEFINITION.
