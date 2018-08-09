@@ -233,15 +233,18 @@
             ;; the entire read form was inside a comment.
             (when (<= (point) line-end)
               ;; handle defun type declaration
-              (cond
-               ((and (elsa-form-function-call-p reader-form 'defun)
-                     (eq (car comment-form) 'elsa)
-                     (eq (cadr comment-form) ::))
-                (put (elsa-form-name (cadr (oref reader-form sequence)))
-                     'elsa-type
-                     ;; TODO: get rid of eval
-                     (eval `(elsa-make-type ,@(cddr comment-form)))))))))))
+              (elsa--process-annotation reader-form comment-form))))))
     reader-form))
+
+(defun elsa--process-annotation (reader-form comment-form)
+  (cond
+   ((and (elsa-form-function-call-p reader-form 'defun)
+         (eq (car comment-form) 'elsa)
+         (eq (cadr comment-form) ::))
+    (put (elsa-form-name (cadr (oref reader-form sequence)))
+         'elsa-type
+         ;; TODO: get rid of eval
+         (eval `(elsa-make-type ,@(cddr comment-form)))))))
 
 (defun elsa-read-form ()
   "Read form at point."
