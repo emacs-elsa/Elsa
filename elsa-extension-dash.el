@@ -5,7 +5,7 @@
   (let ((it-var (elsa-variable
                  :name 'it
                   ;; TODO: derive type based on the list argument type
-                 :type (elsa-make-type 'mixed))))
+                 :type (elsa-make-type Mixed))))
     (elsa-scope-add-variable scope it-var)
     it-var))
 

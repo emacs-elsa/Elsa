@@ -18,14 +18,14 @@
       (let* ((state (elsa-state))
              (scope (oref state scope)))
         (elsa-scope-add-variable
-         scope (elsa-variable :name 'a :type (elsa-make-type 'string)))
+         scope (elsa-variable :name 'a :type (elsa-make-type String)))
         (expect (eieio-object-class
                  (elsa--get-expression-type state 'a))
                 :to-equal 'elsa-type-string)))
 
     (it "should recognize defvars"
       (let* ((state (elsa-state)))
-        (elsa-state-add-defvar state 'a (elsa-make-type 'string))
+        (elsa-state-add-defvar state 'a (elsa-make-type String))
         (expect (eieio-object-class
                  (elsa--get-expression-type state 'a))
                 :to-equal 'elsa-type-string)))
@@ -34,8 +34,8 @@
       (let* ((state (elsa-state))
              (scope (oref state scope)))
         (elsa-scope-add-variable
-         scope (elsa-variable :name 'a :type (elsa-make-type 'string)))
-        (elsa-state-add-defvar state 'a (elsa-make-type 'int))
+         scope (elsa-variable :name 'a :type (elsa-make-type String)))
+        (elsa-state-add-defvar state 'a (elsa-make-type Int))
         (expect (eieio-object-class
                  (elsa--get-expression-type state 'a))
                 :to-equal 'elsa-type-string)))
@@ -48,13 +48,13 @@
     (it "should not recognize t as unbound variable"
       (expect (elsa-type-accept
                (elsa--get-expression-type (elsa-state) t)
-               (elsa-make-type 'mixed))
+               (elsa-make-type Mixed))
               :to-be-truthy))
 
     (it "should not recognize keywords as unbound variable"
       (expect (elsa-type-accept
                (elsa--get-expression-type (elsa-state) :foo)
-               (elsa-make-type 'mixed))
+               (elsa-make-type Mixed))
               :to-be-truthy)))
 
 
@@ -66,7 +66,7 @@
         (elsa-state-add-defun
          state (elsa-defun
                 :name 'a :args nil
-                :return-type (elsa-make-type 'string)))
+                :return-type (elsa-make-type String)))
         (expect (eieio-object-class
                  (elsa--get-expression-type state '(a "foo" "bar")))
                 :to-equal 'elsa-type-string)))))

@@ -101,10 +101,10 @@ The grammar is as follows (in eBNF):
           (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
 
 (cl-defmethod elsa-type-nullable-p ((this elsa-type))
-  (elsa-type-accept this (elsa-make-type 'nil)))
+  (elsa-type-accept this (elsa-make-type Nil)))
 
 (cl-defmethod elsa-type-make-nullable ((this elsa-type))
-  (elsa-type-sum this (elsa-make-type 'nil)))
+  (elsa-type-sum this (elsa-make-type Nil)))
 
 (defun elsa-type-sum-normalize (sum)
   "Normalize a sum type.

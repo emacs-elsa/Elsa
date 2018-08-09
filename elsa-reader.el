@@ -30,7 +30,7 @@
    (quote-type :type symbol :initarg :quote-type :initform nil)
    (line :type integer :initarg :line)
    (column :type integer :initarg :column)
-   (type :type elsa-type :initarg :type :initform (elsa-make-type 'mixed))
+   (type :type elsa-type :initarg :type :initform (elsa-make-type Mixed))
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 
@@ -69,7 +69,7 @@
 (defun elsa--read-keyword (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-keyword
-   :type (elsa-make-type 'keyword)
+   :type (elsa-make-type Keyword)
    :start (point)
    :name form
    :end (elsa--forward-sexp)))
@@ -83,7 +83,7 @@
 (defun elsa--read-integer (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-integer
-   :type (elsa-make-type 'int)
+   :type (elsa-make-type Int)
    :start (point)
    :value form
    :end (elsa--forward-sexp)))
@@ -94,7 +94,7 @@
 (defun elsa--read-float (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-float
-   :type (elsa-make-type 'float)
+   :type (elsa-make-type Float)
    :start (point)
    :value form
    :end (elsa--forward-sexp)))
@@ -110,7 +110,7 @@
 (defun elsa--read-string (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-string
-   :type (elsa-make-type 'string)
+   :type (elsa-make-type String)
    :start (point)
    :end (elsa--forward-sexp)
    :sequence form))
@@ -121,7 +121,7 @@
 (defun elsa--read-vector (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-vector
-   :type (elsa-make-type 'vector)
+   :type (elsa-make-type Vector)
    :start (prog1 (point) (down-list))
    :sequence (apply 'vector (-map 'elsa--read-form form))
    :end (progn (up-list) (point))))
@@ -165,7 +165,7 @@
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
       (elsa-form-improper-list
-       :type (elsa-make-type 'list)
+       :type (elsa-make-type List)
        :start (prog1 (point) (down-list))
        :conses (prog1 (nconc (-map 'elsa--read-form
                                    (-take (safe-length form) form))

@@ -159,7 +159,7 @@ number by symbol 'many."
          (arg-types (or (and function-type
                              (oref function-type args))
                         (-repeat (length (elsa-form-sequence args))
-                                 (elsa-make-type 'mixed))))
+                                 (elsa-make-type Mixed))))
          (vars))
     (when (elsa-form-list-p args)
       (-each-indexed (elsa-form-sequence args)
@@ -176,7 +176,7 @@ number by symbol 'many."
            (function-return-type
             (or (and function-type
                      (oref function-type return))
-                (elsa-make-type 'mixed))))
+                (elsa-make-type Mixed))))
       (unless (elsa-type-accept function-return-type body-return-type)
         (elsa-state-add-error state
           (elsa-make-error
@@ -191,7 +191,7 @@ number by symbol 'many."
          (args (nth 1 sequence))
          (body (nthcdr 2 sequence))
          (arg-types (-repeat (length (elsa-form-sequence args))
-                             (elsa-make-type 'mixed)))
+                             (elsa-make-type Mixed)))
          (vars))
     (when (elsa-form-list-p args)
       (-each-indexed (elsa-form-sequence args)

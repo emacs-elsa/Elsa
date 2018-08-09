@@ -43,7 +43,7 @@
      (current
       (clone (oref current type)))
      ((get var 'elsa-type-var))
-     (t (elsa-make-type 'unbound)))))
+     (t (elsa-make-type Unbound)))))
 
 (defun elsa--narrow-type (condition)
   "Narrow types of expressions contained in CONDITION."
@@ -63,23 +63,23 @@
                               :form condition
                               :message "Testing non-number with `numberp'.")
                              elsa-infer-errors))
-                     (cons (elsa-make-type 'number)
+                     (cons (elsa-make-type Number)
                            (elsa-diff-type
                             :positive type
-                            :negative (elsa-make-type 'number))))))
+                            :negative (elsa-make-type Number))))))
             (push (elsa-variable :name name :type positive-type) pos)
             (push (elsa-variable :name name :type negative-type) neg)))))
       (`elsa-expression-var
        (push (elsa-variable :name (oref (oref condition form) name)
                             :type (oref condition type)) pos)
        (push (elsa-variable :name (oref (oref condition form) name)
-                            :type (elsa-make-type 'nil)) neg)))
+                            :type (elsa-make-type Nil)) neg)))
     (cons pos neg)))
 
 (defun elsa--infer-symbol (form scope)
   (cond
-   ((eq (oref form name) t) (elsa-make-type 't))
-   ((eq (oref form name) nil) (elsa-make-type 'nil))
+   ((eq (oref form name) t) (elsa-make-type T))
+   ((eq (oref form name) nil) (elsa-make-type Nil))
    (t (elsa--get-var-type (oref form name) scope :--placeholder--))))
 
 (defun elsa--infer-unary-fn (form handler)
@@ -101,7 +101,7 @@
                    new-vars)
              (push binding-expr binding-exprs)))
           (var
-           (push (elsa-variable :name (oref var name) :type (elsa-make-type nil))
+           (push (elsa-variable :name (oref var name) :type (elsa-make-type Nil))
                  new-vars)))))
     (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
     (let ((body
@@ -127,7 +127,7 @@
                     (elsa-variable :name (oref var name)
                                    :type (oref binding-expr type))))
                  (var
-                  (elsa-variable :name (oref var name) :type (elsa-make-type nil))))))
+                  (elsa-variable :name (oref var name) :type (elsa-make-type Nil))))))
           (elsa-scope-add-variable scope variable)
           (push variable new-vars))))
     (let ((body
@@ -167,9 +167,9 @@
     (`elsa-form-symbol
      (cond
       ((eq (oref form name) t)
-       (elsa-expression-atom :type (elsa-make-type 't) :form form))
+       (elsa-expression-atom :type (elsa-make-type T) :form form))
       ((eq (oref form name) nil)
-       (elsa-expression-atom :type (elsa-make-type 'nil) :form form))
+       (elsa-expression-atom :type (elsa-make-type Nil) :form form))
       (t
        (elsa-expression-var
         :type (elsa--get-var-type (oref form name) scope decls)

@@ -43,7 +43,7 @@
       (elsa-test-with-buffer "|(if out 1 2)"
         (let ((scope (elsa-scope)))
           (elsa-scope-add-variable
-           scope (elsa-variable :name 'out :type (elsa-make-type 'mixed)))
+           scope (elsa-variable :name 'out :type (elsa-make-type Mixed)))
           (elsa-infer-types (elsa-read-form) scope (elsa-scope))
           (expect (length elsa-infer-errors) :to-be 0)))))
 
@@ -53,7 +53,7 @@
       (elsa-test-with-buffer "|(if out 1 (progn 2))"
         (let ((scope (elsa-scope)))
           (elsa-scope-add-variable
-           scope (elsa-variable :name 'out :type (elsa-make-type 'mixed)))
+           scope (elsa-variable :name 'out :type (elsa-make-type Mixed)))
           (elsa-infer-types (elsa-read-form) scope (elsa-scope))
           (expect (length elsa-infer-errors) :to-be 1)
           (expect (oref (car elsa-infer-errors) message) :to-equal

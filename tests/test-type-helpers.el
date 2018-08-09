@@ -151,6 +151,6 @@
         (expect (elsa-type-int-p sum) :to-be-truthy)))
 
     (it "should not add the same primitive type twice"
-      (let ((sum (elsa-type-sum (elsa-make-type 'float) (elsa-make-type Int))))
+      (let ((sum (elsa-type-sum (elsa-make-type Float) (elsa-make-type Int))))
         (setq sum (elsa-type-sum sum (elsa-make-type Int)))
         (expect (length (oref sum types)) :to-equal 2)))))
