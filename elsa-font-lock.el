@@ -8,8 +8,7 @@
            (group
             (or
              (and "elsa" (1+ space) (group "::"))
-             (and "elsa-make-type" (1+ space))
-             (and "elsa-make-type-fn" (1+ space)))))
+             (and "elsa-make-type" (1+ space)))))
       (1 font-lock-keyword-face t)
       (2 font-lock-variable-name-face t t)
       ("\\_<\\([A-Z]\\(?:\\sw\\|\\s_\\)*\\)\\_>"

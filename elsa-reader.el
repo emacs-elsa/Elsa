@@ -240,7 +240,7 @@
                 (put (elsa-form-name (cadr (oref reader-form sequence)))
                      'elsa-type
                      ;; TODO: get rid of eval
-                     (eval `(elsa-make-type-fn ,@(cddr comment-form)))))))))))
+                     (eval `(elsa-make-type ,@(cddr comment-form)))))))))))
     reader-form))
 
 (defun elsa-read-form ()

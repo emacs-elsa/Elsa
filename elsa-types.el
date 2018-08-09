@@ -287,12 +287,6 @@ A variadic type is automatically collected into a list.")
              (-snoc (oref this args) (oref this return))
              " -> "))
 
-(defmacro elsa-make-type-fn (&rest types)
-  (let ((types (-flatten-n 1 (-split-on '-> types))))
-    `(elsa-function-type
-      :args (list ,@(-map 'elsa-make-type (-butlast types)))
-      :return ,(elsa-make-type (-last-item types)))))
-
 (defclass elsa-generic-type (elsa-type)
   ((label :type symbol :initarg :label)))
 
