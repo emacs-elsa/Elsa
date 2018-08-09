@@ -65,7 +65,7 @@
   (describe "Sum type"
 
     (it "should not share data with its clone"
-      (let* ((old (elsa-make-type Int 'string))
+      (let* ((old (elsa-make-type Int | String))
              (new (clone old)))
         (expect (eq old new) :not :to-be-truthy)
         (expect (eq (car (oref old types))

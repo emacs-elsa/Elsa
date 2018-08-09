@@ -132,7 +132,7 @@
 
     (it "should not create sum type if other sum type is already accepted by this"
       (let ((number (elsa-make-type Number))
-            (int-or-float (elsa-make-type Int Float)))
+            (int-or-float (elsa-make-type Int | Float)))
         (expect (eieio-object-class (elsa-type-sum number int-or-float))
                 :to-be 'elsa-type-number)))
 
