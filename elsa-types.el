@@ -182,7 +182,7 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-accept ((this elsa-type-bool) other)
   (or (elsa-type-bool-p other)
-      (elsa-type-accept (elsa-make-type [&or t nil]) other)))
+      (elsa-type-accept (elsa-make-type T?) other)))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-bool))
   "bool")

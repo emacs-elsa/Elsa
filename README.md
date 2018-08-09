@@ -134,7 +134,7 @@ the correct type (we can only infer what we see during runtime).
 Users can annotate their `defun` definitions like this:
 
 ``` emacs-lisp
-;; (elsa :: string -> int -> string)
+;; (elsa :: String -> Int -> String)
 (defun elsa-pluralize (word n)
   "Return singular or plural of WORD based on N."
   (if (= n 1)
