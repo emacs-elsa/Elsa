@@ -32,7 +32,6 @@
 
 (cl-defmethod elsa-type-describe ((this elsa-type))
   "Describe THIS type."
-  (declare (elsa-return string))
   (symbol-name (eieio-object-class this)))
 
 (cl-defmethod elsa-type-accept ((this elsa-type) other)
@@ -40,7 +39,6 @@
 
 Accepting in this context means that OTHER can be assigned to
 THIS."
-  (declare (elsa-return bool))
   (cond
    ((elsa-instance-of other this))
    ((and (elsa-sum-type-p other)
