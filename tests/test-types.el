@@ -39,15 +39,6 @@
     (it "should recognize proper subtypes"
       (expect (elsa-instance-of (elsa-make-type Int) 'number)))
 
-    (it "should recognize abstract classes"
-      (expect (elsa-instance-of (elsa-make-type Int) 'elsa-type)))
-
-    ;; TODO: add some testing trait type?
-    ;; (it "should recognize traits"
-    ;;   (expect (elsa-instance-of
-    ;;            (elsa-make-type String)
-    ;;            'elsa-type-trait-just-nullable)))
-
 
     (describe "Work with instances or types"
 

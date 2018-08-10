@@ -120,15 +120,10 @@ The grammar is as follows (in eBNF):
 (defun elsa-instance-of (this other)
   "Non-nil if THIS is instance of OTHER."
   (let ((this-type
-         (if (symbolp this)
-             (plist-get (elsa-type--get-class-constructor this) :constructor)
-           (eieio-object-class this)))
+         (eieio-object-class (if (symbolp this) (elsa--make-type (list this)) this)))
         (other-type
-         (if (symbolp other)
-             (plist-get (elsa-type--get-class-constructor other) :constructor)
-           (eieio-object-class other))))
-    (not (null
-          (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
+         (eieio-object-class (if (symbolp other) (elsa--make-type (list other)) other))))
+    (not (null (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
 
 (cl-defmethod elsa-type-nullable-p ((this elsa-type))
   (elsa-type-accept this (elsa-make-type Nil)))

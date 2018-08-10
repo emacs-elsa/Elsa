@@ -28,28 +28,6 @@
 
 (require 'dash)
 
-(defun elsa-type--get-class-constructor (type)
-  "Return constructor information for TYPE.
-
-If the TYPE starts with elsa-type prefix, it is returned as-is.
-Otherwise, elsa-type- is prefixed.
-
-If the TYPE is suffixed with `?', the type is recognized as
-nullable.
-
-The return value is a plist with :constructor being the
-constructor and :nullable a boolean specifying if the type is
-nullable.
-
-Constructor is a symbol which is the actual EIEIO type
-representing TYPE."
-  (let* ((name (split-string (symbol-name type) "?"))
-         (class (intern
-                 (if (string-prefix-p "elsa-type" (car name))
-                     (car name)
-                   (concat "elsa-type-"  (car name))))))
-    (list :constructor class :nullable (equal (cadr name) ""))))
-
 (defclass elsa-type nil () :abstract t)
 
 (cl-defmethod elsa-type-describe ((this elsa-type))
