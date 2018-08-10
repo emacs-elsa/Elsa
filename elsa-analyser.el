@@ -225,6 +225,8 @@ number by symbol 'many."
   (cond
    ((eq spec t)
     (-repeat (1- (length (elsa-form-sequence form))) t))
+   ((eq spec nil)
+    (-repeat (1- (length (elsa-form-sequence form))) nil))
    ((eq (-last-item spec) 'body)
     (-concat (-butlast spec)
              (-repeat (- (1- (length (elsa-form-sequence form)))
