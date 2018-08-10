@@ -199,7 +199,7 @@
 (put 'number-to-string 'elsa-type (elsa-make-type Number -> String))
 
 ;; list functions
-(put 'list 'elsa-type (elsa-make-type Mixed -> List)) ;; TODO: variadic args?
+(put 'list 'elsa-type (elsa-make-type Mixed... -> List)) ;; TODO: variadic args?
 (put 'car 'elsa-type (elsa-make-type Cons | Nil -> Mixed))
 (put 'cdr 'elsa-type (elsa-make-type Cons | Nil -> Mixed))
 (put 'nth 'elsa-type (elsa-make-type Int -> List -> Mixed))
