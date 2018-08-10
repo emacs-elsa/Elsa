@@ -262,6 +262,7 @@ type and none of the negative types.")
              (-snoc (oref this args) (oref this return))
              " -> "))
 
+;; (elsa :: Int -> Mixed -> Mixed)
 (defun elsa-function-type-nth-arg (n elsa-type)
   (let* ((args (oref elsa-type args))
          (type (nth n args)))

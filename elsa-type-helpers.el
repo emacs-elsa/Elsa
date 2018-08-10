@@ -47,8 +47,8 @@
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
        list-type))
-    (`[,a]
-     (let* ((item-type (elsa--make-type (list a)))
+    ((and def (guard (vectorp def)))
+     (let* ((item-type (elsa--make-type (append def nil)))
             (list-type (elsa-type-list :item-type item-type)))
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
@@ -68,7 +68,7 @@
          (let* ((type (funcall constructor))
                 (type (if nullable
                           (elsa-type-make-nullable type)
-                        type) )
+                        type))
                 (type (if variadic
                           (elsa-variadic-type :item-type type)
                         type)))
