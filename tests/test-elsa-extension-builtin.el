@@ -20,8 +20,8 @@
         (elsa-test-with-analysed-form "|(not t)" form
           (expect (elsa-type-nil-p (oref form type)) :to-be-truthy)))
 
-      (it "should resolve to type t? if input argument is mixed"
+      (it "should resolve to type T? if input argument is mixed"
         (elsa-test-with-analysed-form "|(not x)" form
-          (expect (elsa-type-accept (elsa-make-type 't?)
+          (expect (elsa-type-accept (elsa-make-type T?)
                                     (oref form type))
                   :to-be-truthy))))))

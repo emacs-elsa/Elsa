@@ -11,7 +11,7 @@
 
 (require 'elsa-typed-builtin)
 
-;; (elsa :: [symbol] -> (cons int [&or int symbol]))
+;; (elsa :: List Symbol -> Cons Int (Int | Symbol))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
@@ -39,7 +39,7 @@ number by symbol 'many."
         (setq max 'many))
       (cons min max)))))
 
-;; (elsa :: symbol -> (cons int [&or int symbol]))
+;; (elsa :: Symbol -> Cons Int (Int | Symbol))
 (defun elsa-fn-arity (fn)
   (elsa--arglist-to-arity (help-function-arglist fn)))
 
@@ -159,7 +159,7 @@ number by symbol 'many."
          (arg-types (or (and function-type
                              (oref function-type args))
                         (-repeat (length (elsa-form-sequence args))
-                                 (elsa-make-type 'mixed))))
+                                 (elsa-make-type Mixed))))
          (vars))
     (when (elsa-form-list-p args)
       (-each-indexed (elsa-form-sequence args)
@@ -176,7 +176,7 @@ number by symbol 'many."
            (function-return-type
             (or (and function-type
                      (oref function-type return))
-                (elsa-make-type 'mixed))))
+                (elsa-make-type Mixed))))
       (unless (elsa-type-accept function-return-type body-return-type)
         (elsa-state-add-error state
           (elsa-make-error
@@ -191,7 +191,7 @@ number by symbol 'many."
          (args (nth 1 sequence))
          (body (nthcdr 2 sequence))
          (arg-types (-repeat (length (elsa-form-sequence args))
-                             (elsa-make-type 'mixed)))
+                             (elsa-make-type Mixed)))
          (vars))
     (when (elsa-form-list-p args)
       (-each-indexed (elsa-form-sequence args)
@@ -219,12 +219,14 @@ number by symbol 'many."
 (defun elsa--analyse-splice (form scope state)
   nil)
 
-;; (elsa :: [&or bool [bool]] -> mixed -> [bool])
+;; (elsa :: Bool | List Bool -> Mixed -> List Bool)
 (defun elsa--analyse-normalize-spec (spec form)
   "Normalize evaluation SPEC for FORM."
   (cond
    ((eq spec t)
     (-repeat (1- (length (elsa-form-sequence form))) t))
+   ((eq spec nil)
+    (-repeat (1- (length (elsa-form-sequence form))) nil))
    ((eq (-last-item spec) 'body)
     (-concat (-butlast spec)
              (-repeat (- (1- (length (elsa-form-sequence form)))
@@ -232,7 +234,7 @@ number by symbol 'many."
                       t)))
    (t spec)))
 
-;; (elsa :: mixed -> [&or bool [bool]] -> mixed -> mixed -> mixed)
+;; (elsa :: Mixed -> Bool | List Bool -> Mixed -> Mixed -> Mixed)
 (defun elsa--analyse-macro (form spec scope state)
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-form-car form))
@@ -267,19 +269,19 @@ number by symbol 'many."
     (when type
       ;; analyse the arguments
       (cl-mapc
-       (lambda (expected actual argument-form index)
-         (unless (elsa-type-accept expected actual)
-           (elsa-state-add-error state
-             (elsa-make-error
-              (format "Argument %d accepts type %s but received %s"
-                      index
-                      (elsa-type-describe expected)
-                      (elsa-type-describe actual))
-              head))))
-       (oref type args)
-       (-map (lambda (a) (oref a type)) args)
+       (lambda (argument-form index)
+         (let ((expected (elsa-function-type-nth-arg index type))
+               (actual (oref argument-form type)))
+           (unless (elsa-type-accept expected actual)
+             (elsa-state-add-error state
+               (elsa-make-error
+                (format "Argument %d accepts type %s but received %s"
+                        (1+ index)
+                        (elsa-type-describe expected)
+                        (elsa-type-describe actual))
+                head)))))
        args
-       (number-sequence 1 (length args)))
+       (number-sequence 0 (1- (length args))))
 
       ;; set the return type of the form according to the return type
       ;; of the function's declaration

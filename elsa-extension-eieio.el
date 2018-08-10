@@ -1,4 +1,5 @@
 (require 'elsa-analyser)
+(require 'elsa-typed-eieio)
 
 (defun elsa--analyse:oref (form scope state)
   (elsa--analyse-macro form (list t nil) scope state))

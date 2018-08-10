@@ -28,33 +28,10 @@
 
 (require 'dash)
 
-(defun elsa-type--get-class-constructor (type)
-  "Return constructor information for TYPE.
-
-If the TYPE starts with elsa-type prefix, it is returned as-is.
-Otherwise, elsa-type- is prefixed.
-
-If the TYPE is suffixed with `?', the type is recognized as
-nullable.
-
-The return value is a plist with :constructor being the
-constructor and :nullable a boolean specifying if the type is
-nullable.
-
-Constructor is a symbol which is the actual EIEIO type
-representing TYPE."
-  (let* ((name (split-string (symbol-name type) "?"))
-         (class (intern
-                 (if (string-prefix-p "elsa-type" (car name))
-                     (car name)
-                   (concat "elsa-type-"  (car name))))))
-    (list :constructor class :nullable (equal (cadr name) ""))))
-
 (defclass elsa-type nil () :abstract t)
 
 (cl-defmethod elsa-type-describe ((this elsa-type))
   "Describe THIS type."
-  (declare (elsa-return string))
   (symbol-name (eieio-object-class this)))
 
 (cl-defmethod elsa-type-accept ((this elsa-type) other)
@@ -62,7 +39,6 @@ representing TYPE."
 
 Accepting in this context means that OTHER can be assigned to
 THIS."
-  (declare (elsa-return bool))
   (cond
    ((elsa-instance-of other this))
    ((and (elsa-sum-type-p other)
@@ -83,7 +59,7 @@ THIS."
 This is not accepted by any type because we don't know what it is.")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-unbound))
-  "unbound")
+  "Unbound")
 
 (defclass elsa-sum-type (elsa-type)
   ((types :type list
@@ -97,7 +73,7 @@ type that is accepted by at least one of its summands.")
 (cl-defmethod elsa-type-describe ((this elsa-sum-type))
   (cond
    ((elsa-type-accept this (elsa-type-mixed))
-    "mixed")
+    "Mixed")
    ((and (= 2 (length (oref this types))))
     (-let [(type1 type2) (oref this types)]
       (cond
@@ -168,7 +144,7 @@ type and none of the negative types.")
 (defclass elsa-type-t (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-t))
-  "t")
+  "T")
 
 (defclass elsa-type-nil (elsa-type) ())
 
@@ -176,71 +152,70 @@ type and none of the negative types.")
   (elsa-type-nil-p other))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-nil))
-  "nil")
+  "Nil")
 
 (defclass elsa-type-bool (elsa-type) ())
 
 (cl-defmethod elsa-type-accept ((this elsa-type-bool) other)
   (or (elsa-type-bool-p other)
-      (elsa-type-accept (elsa-make-type [&or t nil]) other)))
+      (elsa-type-accept (elsa-make-type T?) other)))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-bool))
-  "bool")
+  "Bool")
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
 (defclass elsa-type-mixed (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-mixed))
-  "mixed")
+  "Mixed")
 
 (cl-defmethod elsa-type-accept ((this elsa-type-mixed) other)
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (not (memq (eieio-object-class other)
-             '(elsa-type-nil elsa-type-unbound))))
+  (not (eq (eieio-object-class other) 'elsa-type-unbound)))
 
 (defclass elsa-type-string (elsa-type) ())
 
 (defclass elsa-type-short-string (elsa-type-string) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-string))
-  "string")
+  "String")
 
 (defclass elsa-type-buffer (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-buffer))
-  "buffer")
+  "Buffer")
 
 (defclass elsa-type-number (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-number))
-  "number")
+  "Number")
 
 (defclass elsa-type-int (elsa-type-number) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-int))
-  "int")
+  "Int")
 
 (defclass elsa-type-float (elsa-type-number) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-float))
-  "float")
+  "Float")
 
 (defclass elsa-type-marker (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-marker))
-  "marker")
+  "Marker")
 
 (defclass elsa-type-keyword (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-keyword))
-  "keyword")
+  "Keyword")
 
 (defclass elsa-type-symbol (elsa-type) ()
   :documentation "Quoted symbol")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-symbol))
-  "symbol")
+  "Symbol")
 
 (defclass elsa-type-cons (elsa-type)
   ((car-type :type elsa-type :initarg :car-type
@@ -251,7 +226,7 @@ type and none of the negative types.")
                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-cons))
-  (format "(cons %s %s)"
+  (format "Cons %s %s"
           (elsa-type-describe (oref this car-type))
           (elsa-type-describe (oref this cdr-type))))
 
@@ -271,7 +246,12 @@ type and none of the negative types.")
                          :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
-  (format "(vector %s)" (elsa-type-describe (oref this item-type))))
+  (format "Vector %s" (elsa-type-describe (oref this item-type))))
+
+(defclass elsa-variadic-type (elsa-type-list) nil)
+
+(cl-defmethod elsa-type-describe ((this elsa-variadic-type))
+  (format "%s..." (elsa-type-describe (oref this item-type))))
 
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
@@ -282,11 +262,18 @@ type and none of the negative types.")
              (-snoc (oref this args) (oref this return))
              " -> "))
 
-(defmacro elsa-make-type-fn (&rest types)
-  (let ((types (-flatten-n 1 (-split-on '-> types))))
-    `(elsa-function-type
-      :args (list ,@(-map 'elsa-make-type (-butlast types)))
-      :return ,(elsa-make-type (-last-item types)))))
+;; (elsa :: Int -> Mixed -> Mixed)
+(defun elsa-function-type-nth-arg (n elsa-type)
+  (let* ((args (oref elsa-type args))
+         (type (nth n args)))
+    (cond
+     ((eq type nil)
+      (let ((last-type (-last-item args)))
+        (when (elsa-variadic-type-p last-type)
+          (oref last-type item-type))))
+     ((elsa-variadic-type-p type)
+      (oref type item-type))
+     (t type))))
 
 (defclass elsa-generic-type (elsa-type)
   ((label :type symbol :initarg :label)))

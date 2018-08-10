@@ -2,17 +2,17 @@
 (require 'elsa-type-helpers)
 
 ;; File: data.c
-(put 'eq 'elsa-type (elsa-make-type-fn mixed -> mixed -> bool))
-(put 'null 'elsa-type (elsa-make-type-fn mixed -> bool))
+(put 'eq 'elsa-type (elsa-make-type Mixed -> Mixed -> Bool))
+(put 'null 'elsa-type (elsa-make-type Mixed -> Bool))
 ;; (put 'type-of 'elsa-type)
-;; (put 'consp 'elsa-type)
+(put 'consp 'elsa-type (elsa-make-type Mixed -> Bool))
 ;; (put 'atom 'elsa-type)
-;; (put 'listp 'elsa-type)
+(put 'listp 'elsa-type (elsa-make-type Mixed -> Bool))
 ;; (put 'nlistp 'elsa-type)
 ;; (put 'symbolp 'elsa-type)
 ;; (put 'keywordp 'elsa-type)
-;; (put 'vectorp 'elsa-type)
-;; (put 'stringp 'elsa-type)
+(put 'vectorp 'elsa-type (elsa-make-type Mixed -> Bool))
+(put 'stringp 'elsa-type (elsa-make-type Mixed -> Bool))
 ;; (put 'multibyte-string-p 'elsa-type)
 ;; (put 'char-table-p 'elsa-type)
 ;; (put 'vector-or-char-table-p 'elsa-type)
@@ -25,12 +25,12 @@
 ;; (put 'subrp 'elsa-type)
 ;; (put 'byte-code-function-p 'elsa-type)
 ;; (put 'char-or-string-p 'elsa-type)
-;; (put 'integerp 'elsa-type)
+(put 'integerp 'elsa-type (elsa-make-type Mixed -> Bool))
 ;; (put 'integer-or-marker-p 'elsa-type)
 ;; (put 'natnump 'elsa-type)
-;; (put 'numberp 'elsa-type)
+(put 'numberp 'elsa-type (elsa-make-type Mixed -> Bool))
 ;; (put 'number-or-marker-p 'elsa-type)
-;; (put 'floatp 'elsa-type)
+(put 'floatp 'elsa-type (elsa-make-type Mixed -> Bool))
 ;; (put 'car 'elsa-type)
 ;; (put 'car-safe 'elsa-type)
 ;; (put 'cdr 'elsa-type)
@@ -43,7 +43,7 @@
 ;; (put 'fmakunbound 'elsa-type)
 ;; (put 'symbol-function 'elsa-type)
 ;; (put 'symbol-plist 'elsa-type)
-;; (put 'symbol-name 'elsa-type)
+(put 'symbol-name 'elsa-type (elsa-make-type Symbol -> String))
 ;; (put 'fset 'elsa-type)
 ;; (put 'defalias 'elsa-type)
 ;; (put 'setplist 'elsa-type)
@@ -90,8 +90,8 @@
 ;; (put 'logxor 'elsa-type)
 ;; (put 'ash 'elsa-type)
 ;; (put 'lsh 'elsa-type)
-(put '1+ 'elsa-type (elsa-make-type-fn [&or number marker] -> int))
-(put '1- 'elsa-type (elsa-make-type-fn [&or number marker] -> int))
+(put '1+ 'elsa-type (elsa-make-type Number | Marker -> Int))
+(put '1- 'elsa-type (elsa-make-type Number | Marker -> Int))
 ;; (put 'lognot 'elsa-type)
 ;; (put 'byteorder 'elsa-type)
 ;; (put 'bool-vector-exclusive-or 'elsa-type)
@@ -107,7 +107,7 @@
 ;; File: fns.c
 ;; (put 'identity 'elsa-type)
 ;; (put 'random 'elsa-type)
-(put 'length 'elsa-type (elsa-make-type-fn list -> int))
+(put 'length 'elsa-type (elsa-make-type List -> Int))
 ;; (put 'safe-length 'elsa-type)
 ;; (put 'string-bytes 'elsa-type)
 ;; (put 'string-equal 'elsa-type)
@@ -192,36 +192,28 @@
 ;; (put 'secure-hash 'elsa-type)
 
 ;; boolean functions
-(put 'not 'elsa-type (elsa-make-type-fn mixed -> bool))
-
-;; type specifiers
-(put 'stringp 'elsa-type (elsa-make-type-fn mixed -> bool))
-(put 'vectorp 'elsa-type (elsa-make-type-fn mixed -> bool))
-(put 'integerp 'elsa-type (elsa-make-type-fn mixed -> bool))
-(put 'numberp 'elsa-type (elsa-make-type-fn mixed -> bool))
-(put 'floatp 'elsa-type (elsa-make-type-fn mixed -> bool))
-(put 'consp 'elsa-type (elsa-make-type-fn mixed -> bool))
-(put 'listp 'elsa-type (elsa-make-type-fn mixed -> bool))
+(put 'not 'elsa-type (elsa-make-type Mixed -> Bool))
 
 ;; type conversion
-(put 'string-to-number 'elsa-type (elsa-make-type-fn string -> number))
-(put 'number-to-string 'elsa-type (elsa-make-type-fn number -> string))
+(put 'string-to-number 'elsa-type (elsa-make-type String -> Number))
+(put 'number-to-string 'elsa-type (elsa-make-type Number -> String))
 
 ;; list functions
-(put 'list 'elsa-type (elsa-make-type-fn mixed -> list)) ;; TODO: variadic args?
-(put 'car 'elsa-type (elsa-make-type-fn [&or cons nil] -> mixed))
-(put 'cdr 'elsa-type (elsa-make-type-fn [&or cons nil] -> mixed))
-(put 'nth 'elsa-type (elsa-make-type-fn int -> list -> mixed))
+(put 'list 'elsa-type (elsa-make-type Mixed... -> List)) ;; TODO: variadic args?
+(put 'car 'elsa-type (elsa-make-type Cons | Nil -> Mixed))
+(put 'cdr 'elsa-type (elsa-make-type Cons | Nil -> Mixed))
+(put 'nth 'elsa-type (elsa-make-type Int -> List -> Mixed))
 
 ;; string functions
-(put 'split-string'elsa-type (elsa-make-type-fn string -> string -> [string]))
+(put 'split-string 'elsa-type (elsa-make-type String -> String -> List String))
+(put 'concat 'elsa-type (elsa-make-type String... -> String))
 
 ;; sequence functions
 
 ;; built-in variables
-(put 'command-line-args-left 'elsa-type-var (elsa-make-type [&or [string] nil]))
+(put 'command-line-args-left 'elsa-type-var (elsa-make-type List String | Nil))
 
 ;; help.el
-(put 'help-function-arglist 'elsa-type (elsa-make-type-fn symbol -> [symbol]))
+(put 'help-function-arglist 'elsa-type (elsa-make-type Symbol -> List Symbol))
 
 (provide 'elsa-typed-builtin)

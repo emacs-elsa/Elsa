@@ -11,7 +11,7 @@
         (oset form type (elsa-type-t)))
        ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
         (oset form type (elsa-type-nil)))
-       (t (oset form type (elsa-make-type 't?)))))))
+       (t (oset form type (elsa-make-type T?)))))))
 
 ;; * list functions
 (defun elsa--analyse:car (form scope state)
@@ -34,7 +34,7 @@
              ;; example int | string, then it might evaluate
              ;; sometimes to true and sometimes to false
              ((elsa-type-accept arg-type (elsa-type-string))
-              (elsa-make-type 't?))
+              (elsa-make-type T?))
              (t (elsa-type-nil)))))))
 
 (provide 'elsa-extension-builtin)

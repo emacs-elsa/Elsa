@@ -29,3 +29,11 @@
 (use-foo "or a literal value can be provided" nil)
 
 (use-foo 1 1) ;; fails on integer literal
+
+;; (elsa :: (list symbol) -> (cons (nullable string) (or int string)))
+;; (elsa :: List Symbol -> Cons String? (Int | String))
+;; (elsa :: String & Keyword)
+;; (elsa :: Vector Int -> Keyword)
+;; (elsa :: String... -> String)
+(defun concat (&rest strings))
+;; (elsa :: Marker -> a -> b -> a)

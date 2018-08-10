@@ -2,6 +2,7 @@
  dash
  eieio
  cl
+ elsa
  )
 
 (register-ruleset

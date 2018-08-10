@@ -9,44 +9,35 @@
   (describe "Make type"
 
     (it "should make a simple type"
-      (let ((type (elsa-make-type 'string)))
+      (let ((type (elsa-make-type String)))
         (expect (elsa-type-string-p type) :to-be-truthy)
         (expect (elsa-type-nullable-p type) :not :to-be-truthy)))
 
     (it "should make a simple nullable type"
-      (let ((type (elsa-make-type 'string?)))
+      (let ((type (elsa-make-type String?)))
         (expect (elsa-sum-type-p type) :to-be-truthy)
-        (expect (elsa-type-accept type (elsa-make-type 'string)) :to-be-truthy)
+        (expect (elsa-type-accept type (elsa-make-type String)) :to-be-truthy)
         (expect (elsa-type-nullable-p type) :to-be-truthy)))
 
     (it "should not make unknown type"
-      (expect (elsa-make-type 'ratherimporbablenameofatype) :to-throw))
+      (expect (elsa-make-type Ratherimporbablenameofatype) :to-throw))
 
-    (it "should make a sum type from an &or definition"
-      (let ((type (elsa-make-type [&or string int])))
+    (it "should make a sum type from a sum definition"
+      (let ((type (elsa-make-type String | Int)))
         (expect (elsa-sum-type-p type) :to-be-truthy)
-        (expect (elsa-type-accept type (elsa-make-type 'string)) :to-be-truthy)
-        (expect (elsa-type-accept type (elsa-make-type 'int)) :to-be-truthy)
-        (expect (elsa-type-accept type (elsa-make-type 'float)) :not :to-be-truthy))))
+        (expect (elsa-type-accept type (elsa-make-type String)) :to-be-truthy)
+        (expect (elsa-type-accept type (elsa-make-type Int)) :to-be-truthy)
+        (expect (elsa-type-accept type (elsa-make-type Float)) :not :to-be-truthy))))
 
 
   (describe "Test type hierarchy"
 
 
     (it "should recognize subtypes reflexively"
-      (expect (elsa-instance-of (elsa-make-type 'int) (elsa-make-type 'int))))
+      (expect (elsa-instance-of (elsa-make-type Int) (elsa-make-type Int))))
 
     (it "should recognize proper subtypes"
-      (expect (elsa-instance-of (elsa-make-type 'int) 'number)))
-
-    (it "should recognize abstract classes"
-      (expect (elsa-instance-of (elsa-make-type 'int) 'elsa-type)))
-
-    ;; TODO: add some testing trait type?
-    ;; (it "should recognize traits"
-    ;;   (expect (elsa-instance-of
-    ;;            (elsa-make-type 'string)
-    ;;            'elsa-type-trait-just-nullable)))
+      (expect (elsa-instance-of (elsa-make-type Int) 'number)))
 
 
     (describe "Work with instances or types"
@@ -56,16 +47,16 @@
         (expect (elsa-instance-of 'int 'number)))
 
       (it "should compare an instance and a type"
-        (expect (elsa-instance-of (elsa-make-type 'int) 'number)))
+        (expect (elsa-instance-of (elsa-make-type Int) 'number)))
 
       (it "should compare two instances"
-        (expect (elsa-instance-of (elsa-make-type 'int) (elsa-make-type 'int))))))
+        (expect (elsa-instance-of (elsa-make-type Int) (elsa-make-type Int))))))
 
 
   (describe "Sum type"
 
     (it "should not share data with its clone"
-      (let* ((old (elsa-make-type 'int 'string))
+      (let* ((old (elsa-make-type Int | String))
              (new (clone old)))
         (expect (eq old new) :not :to-be-truthy)
         (expect (eq (car (oref old types))
@@ -80,82 +71,82 @@
 
     (it "should accept nothing if empty"
       (let ((sum (elsa-sum-type)))
-        (expect (elsa-type-accept sum (elsa-make-type 'mixed)) :not :to-be-truthy)
-        (expect (elsa-type-accept sum (elsa-make-type 'int)) :not :to-be-truthy)
+        (expect (elsa-type-accept sum (elsa-make-type Mixed)) :not :to-be-truthy)
+        (expect (elsa-type-accept sum (elsa-make-type Int)) :not :to-be-truthy)
         (expect (elsa-type-accept sum (elsa-sum-type)) :not :to-be-truthy)))
 
     (it "should be able to hold more types"
-      (let ((sum (elsa-type-sum (elsa-make-type 'int) (elsa-make-type 'string))))
+      (let ((sum (elsa-type-sum (elsa-make-type Int) (elsa-make-type String))))
         (expect (length (oref sum types)) :to-equal 2)))
 
     (it "should accept a type if it is accepted by at least one type of the sum"
-      (let ((sum (elsa-type-sum (elsa-make-type 'int) (elsa-make-type 'string))))
-        (expect (elsa-type-accept sum (elsa-make-type 'int)) :to-be-truthy)))
+      (let ((sum (elsa-type-sum (elsa-make-type Int) (elsa-make-type String))))
+        (expect (elsa-type-accept sum (elsa-make-type Int)) :to-be-truthy)))
 
     (it "should accept nil type if nullable"
-      (let ((sum (elsa-type-sum (elsa-make-type 'nil) (elsa-make-type 'string))))
-        (expect (elsa-type-accept sum (elsa-make-type 'nil)) :to-be-truthy)))
+      (let ((sum (elsa-type-sum (elsa-make-type Nil) (elsa-make-type String))))
+        (expect (elsa-type-accept sum (elsa-make-type Nil)) :to-be-truthy)))
 
     (it "should accept nil type if it holds just nil"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'nil)))
-        (expect (elsa-type-accept sum (elsa-make-type 'nil)) :to-be-truthy)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Nil)))
+        (expect (elsa-type-accept sum (elsa-make-type Nil)) :to-be-truthy)))
 
     (it "should accept a type if it is accepted by at least one nullable type of the sum"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'int?)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'string)))
-        (expect (elsa-type-accept sum (elsa-make-type 'int)) :to-be-truthy)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Int?)))
+        (setq sum (elsa-type-sum sum (elsa-make-type String)))
+        (expect (elsa-type-accept sum (elsa-make-type Int)) :to-be-truthy)))
 
     (it "should not accept a nullable type if it is not accepted by the same nullable type int the sum"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'int)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'string)))
-        (expect (elsa-type-accept sum (elsa-make-type 'int?)) :not :to-be-truthy)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Int)))
+        (setq sum (elsa-type-sum sum (elsa-make-type String)))
+        (expect (elsa-type-accept sum (elsa-make-type Int?)) :not :to-be-truthy)))
 
     (it "should not accept a type if it is not accepted by at least one type of the sum"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'int)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'string)))
-        (expect (elsa-type-accept sum (elsa-make-type 'float)) :not :to-be-truthy)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Int)))
+        (setq sum (elsa-type-sum sum (elsa-make-type String)))
+        (expect (elsa-type-accept sum (elsa-make-type Float)) :not :to-be-truthy)))
 
     (it "should be nullable if some type in the sum is nullable"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'int)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'string?)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Int)))
+        (setq sum (elsa-type-sum sum (elsa-make-type String?)))
         (expect (elsa-type-nullable-p sum) :to-be-truthy)))
 
     (it "should be nullable if nil type is added"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'int)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'nil)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Int)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Nil)))
         (expect (elsa-type-nullable-p sum) :to-be-truthy)))
 
     (it "should accept a sum type which is a subset of itself"
-      (let ((sumA (elsa-make-type 'sum))
-            (sumB (elsa-make-type 'sum)))
-        (setq sumA (elsa-type-sum sumA (elsa-make-type 'string)))
-        (setq sumA (elsa-type-sum sumA (elsa-make-type 'int)))
-        (setq sumA (elsa-type-sum sumA (elsa-make-type 'float)))
-        (setq sumB (elsa-type-sum sumB (elsa-make-type 'string)))
-        (setq sumB (elsa-type-sum sumB (elsa-make-type 'int)))
+      (let ((sumA (elsa-sum-type))
+            (sumB (elsa-sum-type)))
+        (setq sumA (elsa-type-sum sumA (elsa-make-type String)))
+        (setq sumA (elsa-type-sum sumA (elsa-make-type Int)))
+        (setq sumA (elsa-type-sum sumA (elsa-make-type Float)))
+        (setq sumB (elsa-type-sum sumB (elsa-make-type String)))
+        (setq sumB (elsa-type-sum sumB (elsa-make-type Int)))
         (expect (elsa-type-accept sumA sumB) :to-be-truthy)))
 
     (it "should not accept a sum type which is not a subset of itself"
-      (let ((sumA (elsa-make-type 'sum))
-            (sumB (elsa-make-type 'sum)))
-        (setq sumA (elsa-type-sum sumA (elsa-make-type 'string)))
-        (setq sumA (elsa-type-sum sumA (elsa-make-type 'int)))
-        (setq sumB (elsa-type-sum sumB (elsa-make-type 'float)))
-        (setq sumB (elsa-type-sum sumB (elsa-make-type 'string)))
-        (setq sumB (elsa-type-sum sumB (elsa-make-type 'int)))
+      (let ((sumA (elsa-sum-type))
+            (sumB (elsa-sum-type)))
+        (setq sumA (elsa-type-sum sumA (elsa-make-type String)))
+        (setq sumA (elsa-type-sum sumA (elsa-make-type Int)))
+        (setq sumB (elsa-type-sum sumB (elsa-make-type Float)))
+        (setq sumB (elsa-type-sum sumB (elsa-make-type String)))
+        (setq sumB (elsa-type-sum sumB (elsa-make-type Int)))
         (expect (elsa-type-accept sumA sumB) :not :to-be-truthy))))
 
 
   (describe "Diff type"
 
     (it "should not share data with its clone"
-      (let* ((old (elsa-type-sum (elsa-diff-type) (elsa-make-type 'int)))
+      (let* ((old (elsa-type-sum (elsa-diff-type) (elsa-make-type Int)))
              (new (clone old)))
         (expect (eq old new) :not :to-be-truthy)
         (expect (eq (oref old positive) (oref new positive)) :not :to-be-truthy)
@@ -168,38 +159,38 @@
 
 
     (it "should accept any proper type"
-      (expect (elsa-type-accept (elsa-make-type 'mixed)
-                                (elsa-make-type 'string))
+      (expect (elsa-type-accept (elsa-make-type Mixed)
+                                (elsa-make-type String))
               :to-be-truthy))
 
     (it "should accept nullable types by default"
-      (expect (elsa-type-accept (elsa-make-type 'mixed)
-                                (elsa-make-type 'string?))
+      (expect (elsa-type-accept (elsa-make-type Mixed)
+                                (elsa-make-type String?))
               :to-be-truthy))
 
-    (it "should not accept nullable if it was made non-nullable"
-      (let ((instance (elsa-make-type 'mixed)))
+    (xit "should not accept nullable if it was made non-nullable"
+      (let ((instance (elsa-make-type Mixed)))
         (elsa-type-make-non-nullable instance)
-        (expect (elsa-type-accept instance (elsa-make-type 'string?))
+        (expect (elsa-type-accept instance (elsa-make-type String?))
                 :not :to-be-truthy)))
 
-    (it "should accept non-nullable if it was made non-nullable"
-      (let ((instance (elsa-make-type 'mixed)))
+    (xit "should accept non-nullable if it was made non-nullable"
+      (let ((instance (elsa-make-type Mixed)))
         (elsa-type-make-non-nullable instance)
-        (expect (elsa-type-accept instance (elsa-make-type 'string))
+        (expect (elsa-type-accept instance (elsa-make-type String))
                 :to-be-truthy)))
 
     (it "should not accept unbound type"
-      (expect (elsa-type-accept (elsa-make-type 'mixed)
-                                (elsa-make-type 'unbound))
+      (expect (elsa-type-accept (elsa-make-type Mixed)
+                                (elsa-make-type Unbound))
               :not :to-be-truthy))
 
     (it "is always created as nullable"
-      (expect (elsa-type-nullable-p (elsa-make-type 'mixed))
+      (expect (elsa-type-nullable-p (elsa-make-type Mixed))
               :to-be-truthy))
 
-    (it "can be made non-nil"
-      (let ((instance (elsa-make-type 'mixed)))
+    (xit "can be made non-nil"
+      (let ((instance (elsa-make-type Mixed)))
         (elsa-type-make-non-nullable instance)
         (expect (elsa-type-nullable-p instance) :not :to-be-truthy))))
 
@@ -208,10 +199,10 @@
 
 
     (it "should not be possible to make non-nullable"
-      (expect (elsa-type-make-non-nullable (elsa-make-type 'string)) :to-throw))
+      (expect (elsa-type-make-non-nullable (elsa-make-type String)) :to-throw))
 
     (it "should not share data with its clone"
-      (let* ((old (elsa-make-type 'int))
+      (let* ((old (elsa-make-type Int))
              (new (clone old)))
         (expect (eq old new) :not :to-be-truthy))))
 
@@ -224,59 +215,59 @@
       (expect (elsa-type-accept (elsa-type-bool) (elsa-type-t)) :to-be-truthy))
 
     (it "should accept t?"
-      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type 't?)) :to-be-truthy))
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type T?)) :to-be-truthy))
 
     (it "should accept bool"
       (expect (elsa-type-accept (elsa-type-bool) (elsa-type-bool)) :to-be-truthy))
 
     (it "should not accept int|bool"
-      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type [&or int bool])) :not :to-be-truthy))
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type Int | Bool)) :not :to-be-truthy))
 
     (it "should not accept int|t"
-      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type [&or int t])) :not :to-be-truthy)))
+      (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type Int | T)) :not :to-be-truthy)))
 
   (describe "Just-nullable type"
 
 
     (it "should accept nil if nullable"
-      (expect (elsa-type-accept (elsa-make-type 'string?)
-                                (elsa-make-type 'nil))
+      (expect (elsa-type-accept (elsa-make-type String?)
+                                (elsa-make-type Nil))
               :to-be-truthy))
 
     (it "should not accept nil if not nullable"
-      (expect (elsa-type-accept (elsa-make-type 'string)
-                                (elsa-make-type 'nil))
+      (expect (elsa-type-accept (elsa-make-type String)
+                                (elsa-make-type Nil))
               :not :to-be-truthy))
 
     (it "should accept non-nullable types if it is nullable"
-      (expect (elsa-type-accept (elsa-make-type 'string?)
-                                (elsa-make-type 'string))
+      (expect (elsa-type-accept (elsa-make-type String?)
+                                (elsa-make-type String))
               :to-be-truthy))
 
     (it "should not accept nullable types if it is non-nullable"
-      (expect (elsa-type-accept (elsa-make-type 'string)
-                                (elsa-make-type 'string?))
+      (expect (elsa-type-accept (elsa-make-type String)
+                                (elsa-make-type String?))
               :not :to-be-truthy))
 
     (it "should accept subtypes"
-      (expect (elsa-type-accept (elsa-make-type 'number)
-                                (elsa-make-type 'int))
+      (expect (elsa-type-accept (elsa-make-type Number)
+                                (elsa-make-type Int))
               :to-be-truthy))
 
     (it "should not accept supertypes"
-      (expect (elsa-type-accept (elsa-make-type 'int)
-                                (elsa-make-type 'number))
+      (expect (elsa-type-accept (elsa-make-type Int)
+                                (elsa-make-type Number))
               :not :to-be-truthy))
 
     (it "should accept sum type if it accepts every type of the sum"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'int)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'float)))
-        (expect (elsa-type-accept (elsa-make-type 'number) sum) :to-be-truthy)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Int)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Float)))
+        (expect (elsa-type-accept (elsa-make-type Number) sum) :to-be-truthy)))
 
     (it "should not accept sum type if it can not accept some type of the sum"
       (let ((sum (elsa-sum-type)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'int)))
-        (setq sum (elsa-type-sum sum (elsa-make-type 'string)))
+        (setq sum (elsa-type-sum sum (elsa-make-type Int)))
+        (setq sum (elsa-type-sum sum (elsa-make-type String)))
         (expect
-         (elsa-type-accept (elsa-make-type 'number) sum) :not :to-be-truthy)))))
+         (elsa-type-accept (elsa-make-type Number) sum) :not :to-be-truthy)))))
