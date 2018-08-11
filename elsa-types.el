@@ -30,6 +30,18 @@
 
 (defclass elsa-type nil () :abstract t)
 
+;; (elsa :: Mixed -> String)
+(defun elsa-type-format-arg (type)
+  "Format TYPE as an argument for `elsa-make-type'.
+
+First describe TYPE using `elsa-type-describe'.  If TYPE is
+composite also wrap it in parens to preserve the semantics when
+it is passed to another constructor."
+  (let ((printed (elsa-type-describe type)))
+    (if (elsa-type-composite-p type)
+        (format "(%s)" printed)
+      printed)))
+
 (cl-defmethod elsa-type-describe ((this elsa-type))
   "Describe THIS type."
   (symbol-name (eieio-object-class this)))
@@ -46,6 +58,13 @@ THIS."
                   (elsa-type-accept this other-type))
                 (oref other types))))
    (t nil)))
+
+(cl-defmethod elsa-type-composite-p ((this elsa-type))
+  "Determine if the type is a composite type.
+
+Composite types have to be wrapped in parens when passed as
+arguments to other constructors."
+  nil)
 
 (cl-defmethod elsa-type-restrict-by ((this elsa-type) other)
   (error "Not implemented yet"))
@@ -72,18 +91,20 @@ type that is accepted by at least one of its summands.")
 
 (cl-defmethod elsa-type-describe ((this elsa-sum-type))
   (cond
+   ;; TODO: this should be really handled by the normalization step, a
+   ;; sum type Mixed | <...> => Mixed, possibly without Nil
    ((elsa-type-accept this (elsa-type-mixed))
     "Mixed")
-   ((and (= 2 (length (oref this types))))
-    (-let [(type1 type2) (oref this types)]
-      (cond
-       ((elsa-type-nil-p type1)
-        (concat (elsa-type-describe type2) "?"))
-       ((elsa-type-nil-p type2)
-        (concat (elsa-type-describe type1) "?"))
-       (t (mapconcat 'elsa-type-describe (oref this types) " | ")))))
+   ((and (= 2 (length (oref this types)))
+         (elsa-type-nil-p (car (oref this types))))
+    (concat (elsa-type-describe (cadr (oref this types))) "?"))
+   ((and (= 2 (length (oref this types)))
+         (elsa-type-nil-p (cadr (oref this types))))
+    (concat (elsa-type-describe (car (oref this types))) "?"))
    (t
-    (mapconcat 'elsa-type-describe (oref this types) " | "))))
+    (mapconcat 'elsa-type-format-arg (oref this types) " | "))))
+
+(cl-defmethod elsa-type-composite-p ((this elsa-sum-type)) t)
 
 (cl-defmethod clone ((this elsa-sum-type))
   "Make a deep copy of a sum type."
@@ -225,10 +246,12 @@ type and none of the negative types.")
              :initform (elsa-sum-type
                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
+(cl-defmethod elsa-type-composite-p ((this elsa-type-cons)) t)
+
 (cl-defmethod elsa-type-describe ((this elsa-type-cons))
   (format "Cons %s %s"
-          (elsa-type-describe (oref this car-type))
-          (elsa-type-describe (oref this cdr-type))))
+          (elsa-type-format-arg (oref this car-type))
+          (elsa-type-format-arg (oref this cdr-type))))
 
 (defclass elsa-type-list (elsa-type-cons)
   ((item-type :type elsa-type
@@ -239,28 +262,38 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((this elsa-type-list))
   (format "[%s]" (elsa-type-describe (oref this item-type))))
 
+(cl-defmethod elsa-type-composite-p ((this elsa-type-list)) t)
+
 (defclass elsa-type-vector (elsa-type)
   ((item-type :type elsa-type
               :initarg :item-type
               :initform (elsa-sum-type
                          :types (list (elsa-type-mixed) (elsa-type-nil))))))
 
+(cl-defmethod elsa-type-composite-p ((this elsa-type-vector)) t)
+
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
-  (format "Vector %s" (elsa-type-describe (oref this item-type))))
+  (format "Vector %s" (elsa-type-format-arg (oref this item-type))))
 
 (defclass elsa-variadic-type (elsa-type-list) nil)
 
 (cl-defmethod elsa-type-describe ((this elsa-variadic-type))
-  (format "%s..." (elsa-type-describe (oref this item-type))))
+  (format "%s..." (elsa-type-format-arg (oref this item-type))))
 
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
    (return :type elsa-type :initarg :return)))
 
 (cl-defmethod elsa-type-describe ((this elsa-function-type))
-  (mapconcat 'elsa-type-describe
+  (mapconcat (lambda (type)
+               (let ((printed (elsa-type-describe type)))
+                 (if (elsa-function-type-p type)
+                     (format "(%s)" printed)
+                   printed)))
              (-snoc (oref this args) (oref this return))
              " -> "))
+
+(cl-defmethod elsa-type-composite-p ((this elsa-function-type)) t)
 
 ;; (elsa :: Int -> Mixed -> Mixed)
 (defun elsa-function-type-nth-arg (n elsa-type)
