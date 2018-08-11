@@ -82,7 +82,7 @@
 (put '>= 'elsa-type (elsa-make-type Number -> Number... -> Bool))
 (put '/= 'elsa-type (elsa-make-type (Number | Marker) -> (Number | Marker) -> Bool))
 (put 'number-to-string 'elsa-type (elsa-make-type Number -> String))
-(put 'string-to-number 'elsa-type (elsa-make-type String -> Number))
+(put 'string-to-number 'elsa-type (elsa-make-type String -> Number? -> Number))
 (put '+ 'elsa-type (elsa-make-type Number... -> Number))
 (put '- 'elsa-type (elsa-make-type Number... -> Number))
 (put '* 'elsa-type (elsa-make-type Number... -> Number))
