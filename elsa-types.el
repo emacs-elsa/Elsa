@@ -208,7 +208,15 @@ type and none of the negative types.")
 
 (defclass elsa-type-sequence (elsa-type) ())
 
+(cl-defmethod elsa-type-get-item-type ((this elsa-type))
+  "Get the type of items of a sequence type."
+  nil)
+
 (defclass elsa-type-string (elsa-type-sequence) ())
+
+(cl-defmethod elsa-type-get-item-type ((this elsa-type-string))
+  "Get the type of items of a sequence type."
+  (elsa-type-int))
 
 (defclass elsa-type-short-string (elsa-type-string) ())
 
@@ -279,6 +287,10 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-composite-p ((this elsa-type-list)) t)
 
+(cl-defmethod elsa-type-get-item-type ((this elsa-type-list))
+  "Get the type of items of a sequence type."
+  (oref this item-type))
+
 (defclass elsa-type-vector (elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
@@ -288,6 +300,10 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
   (format "Vector %s" (elsa-type-format-arg (oref this item-type))))
+
+(cl-defmethod elsa-type-get-item-type ((this elsa-type-vector))
+  "Get the type of items of a sequence type."
+  (oref this item-type))
 
 (defclass elsa-variadic-type (elsa-type-list) nil)
 
