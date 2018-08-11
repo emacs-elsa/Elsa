@@ -161,22 +161,45 @@
 (cl-defmethod elsa-form-cdr ((this elsa-form-improper-list))
   (cdr (oref this conses)))
 
+;; (elsa :: [Mixed] -> Mixed)
 (defun elsa--read-cons (form)
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
       (elsa-form-improper-list
        :type (elsa-make-type List)
        :start (prog1 (point) (down-list))
-       :conses (prog1 (nconc (-map 'elsa--read-form
-                                   (-take (safe-length form) form))
-                             (progn
-                               (forward-sexp)
-                               (elsa--read-form (cdr (last form))))))
-       :end (progn (up-list) (point)))
+       :conses (let ((depth 0)
+                     (items))
+                 (while (consp form)
+                   (let ((head (elsa--read-form (car form))))
+                     (push head items)
+                     (!cdr form)
+                     (elsa--skip-whitespace-forward)
+                     (when (looking-at-p "\\.")
+                       (if (consp form)
+                           (progn
+                             (cl-incf depth)
+                             (down-list))
+                         (push (elsa--read-form form) items)))))
+                 (while (>= (cl-decf depth) 0) (up-list))
+                 (apply 'cl-list* (nreverse items)))
+        :end (progn (up-list) (point)))
     (elsa-form-list
      :start (prog1 (point) (down-list))
-     :sequence (-map 'elsa--read-form form)
-     :end (progn (up-list) (point)))))
+     :sequence
+      (let ((depth 0)
+            (items))
+        (while form
+          (let ((head (elsa--read-form (car form))))
+            (push head items)
+            (!cdr form)
+            (elsa--skip-whitespace-forward)
+            (when (and form (looking-at-p "\\."))
+              (cl-incf depth)
+              (down-list))))
+        (while (>= (cl-decf depth) 0) (up-list))
+        (nreverse items))
+      :end (progn (up-list) (point)))))
 
 (defun elsa--read-quote (form)
   (elsa--skip-whitespace-forward)
