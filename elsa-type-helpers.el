@@ -164,18 +164,18 @@ A sum accept anything that either THIS or OTHER accepts.")
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
   (elsa-type-sum-normalize
-   (let ((re (oref this types)))
+   (let ((new nil))
      (-each (oref other types)
        (lambda (type)
          (unless (elsa-type-accept this type)
-           (push (clone type) re))))
-     (elsa-sum-type :types re))))
+           (push (clone type) new))))
+     (elsa-sum-type :types (-concat (oref this types) (nreverse new))))))
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-type))
   (elsa-type-sum-normalize
    (if (elsa-type-accept this other)
        (clone this)
-     (elsa-sum-type :types (cons (clone other) (oref this types))))))
+     (elsa-sum-type :types (-snoc (oref this types) (clone other))))))
 
 (cl-defmethod elsa-type-sum ((this elsa-diff-type) (other elsa-type))
   (elsa-type-diff-normalize
