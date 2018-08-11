@@ -41,6 +41,8 @@
     (`(Cons) ;; mixed cons by default
      (elsa-type-cons :car-type (elsa-type-mixed)
                      :cdr-type (elsa-type-mixed)))
+    (`(Vector) ;; mixed vector by default
+     (elsa-type-vector :item-type (elsa-type-mixed)))
     (`(List) ;; mixed list by default
      (let* ((item-type (elsa-type-mixed))
             (list-type (elsa-type-list :item-type item-type)))
@@ -92,7 +94,11 @@
             (list-type (elsa-type-list :item-type item-type)))
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
-       list-type))))
+       list-type))
+    (`(Vector ,a)
+     (let* ((item-type (elsa--make-type (list a)))
+            (vector-type (elsa-type-vector :item-type item-type)))
+       vector-type))))
 
 (defmacro elsa-make-type (&rest definition)
   "Make a type according to DEFINITION.
