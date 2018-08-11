@@ -278,6 +278,14 @@ type and none of the negative types.")
    (cdr-type :type elsa-type :initarg :cdr-type
              :initform (elsa-type-mixed))))
 
+(cl-defmethod elsa-type-accept ((this elsa-type-cons) (other elsa-type-cons))
+  "A cons type accepts another cons type covariantly.
+
+That means that iff both arguments of this are supertypes of
+other, then this is a supertype of other."
+  (and (elsa-type-accept (oref this car-type) (oref other car-type))
+       (elsa-type-accept (oref this cdr-type) (oref other cdr-type))))
+
 (cl-defmethod elsa-type-composite-p ((this elsa-type-cons)) t)
 
 (cl-defmethod elsa-type-describe ((this elsa-type-cons))

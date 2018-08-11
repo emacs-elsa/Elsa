@@ -53,6 +53,39 @@
         (expect (elsa-instance-of (elsa-make-type Int) (elsa-make-type Int))))))
 
 
+  (describe "Cons type"
+
+    (it "of mixed should accept any cons"
+      (expect (elsa-type-accept
+               (elsa-make-type Cons)
+               (elsa-make-type Cons Int String))
+              :to-be-truthy))
+
+    (it "should be covariant in first type argument"
+      (expect (elsa-type-accept
+               (elsa-make-type Cons Number String)
+               (elsa-make-type Cons Int String))
+              :to-be-truthy))
+
+    (it "should be covariant in second type argument"
+      (expect (elsa-type-accept
+               (elsa-make-type Cons String Number)
+               (elsa-make-type Cons String Int))
+              :to-be-truthy))
+
+    (it "of should not accept if any of types is not a subtype of the other"
+      (expect (elsa-type-accept
+               (elsa-make-type Cons Number String)
+               (elsa-make-type Cons String Int))
+              :not :to-be-truthy))
+
+    (it "of should not accept if any of types is not a subtype of the other"
+      (expect (elsa-type-accept
+               (elsa-make-type Cons String Number)
+               (elsa-make-type Cons Int String))
+              :not :to-be-truthy)))
+
+
   (describe "Sum type"
 
     (it "should not share data with its clone"
