@@ -38,7 +38,10 @@
 (require 'elsa-ruleset)
 
 (require 'elsa-extension-builtin)
+
 (require 'elsa-typed-emacs-syntax)
+ ;; TODO: figure out how to load these based on `(require)' forms
+(require 'elsa-typed-thingatpt)
 
 ;; TODO: unify with `elsa-variable'?
 (defclass elsa-defvar nil
