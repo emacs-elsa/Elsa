@@ -120,7 +120,7 @@
 ;; (put 'identity 'elsa-type (elsa-make-type ))
 ;; (put 'random 'elsa-type (elsa-make-type ))
 (put 'length 'elsa-type (elsa-make-type List -> Int))
-;; (put 'safe-length 'elsa-type (elsa-make-type ))
+(put 'safe-length 'elsa-type (elsa-make-type Mixed -> Int))
 ;; (put 'string-bytes 'elsa-type (elsa-make-type ))
 ;; (put 'string-equal 'elsa-type (elsa-make-type ))
 ;; (put 'compare-strings 'elsa-type (elsa-make-type ))
@@ -140,9 +140,11 @@
 ;; (put 'copy-alist 'elsa-type (elsa-make-type ))
 ;; (put 'substring 'elsa-type (elsa-make-type ))
 ;; (put 'substring-no-properties 'elsa-type (elsa-make-type ))
-;; (put 'nthcdr 'elsa-type (elsa-make-type ))
-;; (put 'nth 'elsa-type (elsa-make-type ))
-;; (put 'elt 'elsa-type (elsa-make-type ))
+(put 'nthcdr 'elsa-type (elsa-make-type Int -> List -> Mixed))
+;; TODO: once generics are introduced this can turn into
+;; "Int -> List a -> a" and similarly for elt
+(put 'nth 'elsa-type (elsa-make-type Int -> List -> Mixed))
+(put 'elt 'elsa-type (elsa-make-type Sequence -> Int -> Mixed))
 ;; (put 'member 'elsa-type (elsa-make-type ))
 ;; (put 'memq 'elsa-type (elsa-make-type ))
 ;; (put 'memql 'elsa-type (elsa-make-type ))
@@ -308,7 +310,6 @@
 
 ;; list functions
 (put 'list 'elsa-type (elsa-make-type Mixed... -> List)) ;; TODO: variadic args?
-(put 'nth 'elsa-type (elsa-make-type Int -> List -> Mixed))
 
 ;; string functions
 (put 'split-string 'elsa-type (elsa-make-type String -> String -> List String))
