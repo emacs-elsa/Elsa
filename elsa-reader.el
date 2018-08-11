@@ -34,6 +34,8 @@
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 
+(cl-defmethod elsa-form-print ((this elsa-form)) "")
+
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
 
@@ -44,6 +46,9 @@
 
 (defclass elsa-form-symbol (elsa-form-atom)
   ((name :type symbol :initarg :name)))
+
+(cl-defmethod elsa-form-print ((this elsa-form-symbol))
+  (symbol-name (oref this name)))
 
 (cl-defmethod elsa-form-sequence ((this elsa-form-symbol))
   (if (eq (elsa-form-name this) 'nil)
@@ -58,6 +63,9 @@
    :end (elsa--forward-sexp)))
 
 (defclass elsa-form-keyword (elsa-form-symbol) ())
+
+(cl-defmethod elsa-form-print ((this elsa-form-keyword))
+  (symbol-name (oref this name)))
 
 (cl-defgeneric elsa-form-function-call-p (this &optional name) nil)
 
@@ -76,6 +84,9 @@
 
 (defclass elsa-form-number (elsa-form-atom)
   ((value :type number :initarg :value)))
+
+(cl-defmethod elsa-form-print ((this elsa-form-number))
+  (number-to-string (oref this value)))
 
 (defclass elsa-form-integer (elsa-form-number)
   ((value :initarg :value)))
@@ -107,6 +118,9 @@
 (defclass elsa-form-string (elsa-form-seq)
   ((sequence :type string :initarg :sequence)))
 
+(cl-defmethod elsa-form-print ((this elsa-form-string))
+  (oref this sequence))
+
 (defun elsa--read-string (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-string
@@ -117,6 +131,9 @@
 
 (defclass elsa-form-vector (elsa-form-seq)
   ((sequence :type vector :initarg :sequence)))
+
+(cl-defmethod elsa-form-print ((this elsa-form-vector))
+  (format "[%s]" (mapconcat 'elsa-form-print (oref this sequence) " ")))
 
 (defun elsa--read-vector (form)
   (elsa--skip-whitespace-forward)
@@ -131,6 +148,9 @@
 
 (defclass elsa-form-list (elsa-form-cons elsa-form-seq)
   ((sequence :type list :initarg :sequence)))
+
+(cl-defmethod elsa-form-print ((this elsa-form-list))
+  (format "(%s)" (mapconcat 'elsa-form-print (oref this sequence) " ")))
 
 (cl-defmethod elsa-form-car ((this elsa-form-list))
   (car (oref this sequence)))
@@ -154,6 +174,15 @@
 
 (defclass elsa-form-improper-list (elsa-form-cons)
   ((conses :type list :initarg :conses)))
+
+(cl-defmethod elsa-form-print ((this elsa-form-improper-list))
+  (let* ((seq (oref this conses))
+         (len (safe-length seq))
+         (prefix (-take len seq))
+         (last (cdr (last seq))))
+    (format "(%s . %s)"
+            (mapconcat 'elsa-form-print prefix " ")
+            (elsa-form-print last))))
 
 (cl-defmethod elsa-form-car ((this elsa-form-improper-list))
   (car (oref this conses)))
