@@ -211,7 +211,10 @@ number by symbol 'many."
             (push var vars)
             (elsa-scope-add-variable scope var)))))
     (--each body (elsa--analyse-form it scope state))
-    (--each vars (elsa-scope-remove-variable scope it))))
+    (--each vars (elsa-scope-remove-variable scope it))
+    (oset form type (elsa-function-type
+                     :args arg-types
+                     :return (oref (-last-item body) type)))))
 
 (defun elsa--analyse:quote (form scope state)
   (let ((arg (cadr (oref form sequence))))
