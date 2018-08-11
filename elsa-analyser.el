@@ -294,7 +294,8 @@ number by symbol 'many."
                      (or (get (elsa--quoted-symbol-name argument-form) 'elsa-type)
                          (elsa-type-mixed)))
                     (t (oref argument-form type)))))
-             (unless (elsa-type-accept expected actual)
+             (unless (or (not expected)
+                         (elsa-type-accept expected actual))
                (elsa-state-add-error state
                  (elsa-make-error
                   (format "Argument %d accepts type %s but received %s"
