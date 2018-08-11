@@ -192,6 +192,9 @@ number by symbol 'many."
            (elsa-form-car form)))))
     (--each vars (elsa-scope-remove-variable scope it))))
 
+(defun elsa--analyse:defsubst (form scope state)
+  (elsa--analyse:defun form scope state))
+
 (defun elsa--analyse:lambda (form scope state)
   (let* ((sequence (oref form sequence))
          (args (nth 1 sequence))
