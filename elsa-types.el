@@ -309,6 +309,26 @@ type and none of the negative types.")
              (-snoc (oref this args) (oref this return))
              " -> "))
 
+(cl-defmethod elsa-type-accept ((this elsa-function-type) other)
+  (when (elsa-function-type-p other)
+    ;; Argument types must be contra-variant, return types must be
+    ;; co-variant.
+    (catch 'ok
+      (let ((this-args (oref this args))
+            (other-args (oref other args)))
+        (unless (= (length this-args) (length other-args))
+          (throw 'ok nil))
+        (cl-mapc
+         (lambda (this-arg other-arg)
+           (unless (elsa-type-accept other-arg this-arg)
+             (throw 'ok nil)))
+         this-args other-args)
+        (unless (elsa-type-accept
+                 (elsa-type-get-return this)
+                 (elsa-type-get-return other))
+          (throw 'ok nil)))
+      t)))
+
 (cl-defmethod elsa-type-composite-p ((this elsa-function-type)) t)
 
 ;; (elsa :: Int -> Mixed -> Mixed)

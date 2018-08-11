@@ -283,8 +283,17 @@ number by symbol 'many."
       (when (elsa-function-type-p type)
         (cl-mapc
          (lambda (argument-form index)
-           (let ((expected (elsa-function-type-nth-arg index type))
-                 (actual (oref argument-form type)))
+           (let* ((expected (elsa-function-type-nth-arg index type))
+                  (actual
+                   ;; In case we have a quoted symbol and the expected
+                   ;; type is function, we will take the function
+                   ;; definition from the symbol's plist
+                   (cond
+                    ((and (elsa-function-type-p expected)
+                          (elsa--quoted-symbol-p argument-form))
+                     (or (get (elsa--quoted-symbol-name argument-form) 'elsa-type)
+                         (elsa-type-mixed)))
+                    (t (oref argument-form type)))))
              (unless (elsa-type-accept expected actual)
                (elsa-state-add-error state
                  (elsa-make-error

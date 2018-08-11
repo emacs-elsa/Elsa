@@ -18,6 +18,22 @@
                (not (listp (nthcdr len cell))))
       (nthcdr len cell))))
 
+;; TODO: this will be easier to do later when we properly push quoted
+;; types up.  The check will then be just for a symbol and a quote
+(defun elsa--quoted-symbol-p (form)
+  "Return non-nil if FORM represents a quoted symbol."
+  (when (eq (oref form quote-type) 'quote)
+    (-when-let (seq (elsa-form-sequence form))
+      (when (= (length seq) 2)
+        (elsa-form-symbol-p (cadr seq))))))
+
+(defun elsa--quoted-symbol-name (form)
+  "Return the name of quoted symbol that FORM represents.
+
+Nil if FORM is not a quoted symbol."
+  (when (elsa--quoted-symbol-p form)
+    (elsa-form-name (cadr (elsa-form-sequence form)))))
+
 (defsubst elsa--quote-p (symbol)
   "Return non-nil if SYMBOL is a type of quote."
   (memq symbol (list
