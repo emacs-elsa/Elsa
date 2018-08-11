@@ -320,7 +320,9 @@ Nil if FORM is not a quoted symbol."
              (elsa--read-quote form))
             (t (elsa--read-cons form))))
           (t (error "Invalid form")))))
-    (oset reader-form line (get-text-property (line-beginning-position) 'elsa-line))
+    (oset reader-form line
+          (or (get-text-property (line-beginning-position) 'elsa-line)
+              (line-number-at-pos (oref reader-form start))))
     (oset reader-form column (save-excursion
                                (goto-char (oref reader-form start))
                                (current-column)))
