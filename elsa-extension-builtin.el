@@ -21,6 +21,19 @@
     (when (elsa-type-list-p arg-type)
       (oset form type (elsa-type-make-nullable (oref arg-type item-type))))))
 
+(defun elsa--analyse:elt (form scope state)
+  (elsa--analyse-function-call form scope state)
+  (-when-let* ((arg (cadr (oref form sequence)))
+               (arg-type (oref arg type)))
+    (when (elsa-instance-of arg-type (elsa-make-type Sequence))
+      (let* ((item-type (elsa-type-get-item-type arg-type))
+             ;; with lists it returns nil when overflowing, otherwise
+             ;; throws an error
+             (item-type (if (elsa-type-list-p arg-type)
+                            (elsa-type-make-nullable item-type)
+                          item-type)))
+        (oset form type item-type)))))
+
 ;; * predicates
 (defun elsa--analyse:stringp (form scope state)
   (elsa--analyse-function-call form scope state)
