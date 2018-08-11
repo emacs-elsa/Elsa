@@ -180,8 +180,7 @@ number by symbol 'many."
     ;; the body
     (let* ((body-return-type (oref (-last-item body) type))
            (function-return-type
-            (or (and function-type
-                     (oref function-type return))
+            (or (elsa-type-get-return function-type)
                 (elsa-make-type Mixed))))
       (unless (elsa-type-accept function-return-type body-return-type)
         (elsa-state-add-error state
