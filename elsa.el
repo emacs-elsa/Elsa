@@ -38,6 +38,7 @@
 (require 'elsa-ruleset)
 
 (require 'elsa-extension-builtin)
+(require 'elsa-typed-emacs-syntax)
 
 ;; TODO: unify with `elsa-variable'?
 (defclass elsa-defvar nil
