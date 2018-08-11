@@ -162,8 +162,7 @@ number by symbol 'many."
          (args (nth 2 sequence))
          (body (nthcdr 3 sequence))
          (function-type (get name 'elsa-type))
-         (arg-types (or (and function-type
-                             (oref function-type args))
+         (arg-types (or (elsa-type-get-args function-type)
                         (-repeat (length (elsa-form-sequence args))
                                  (elsa-make-type Mixed))))
          (vars))

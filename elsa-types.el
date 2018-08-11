@@ -46,6 +46,14 @@ it is passed to another constructor."
   "Describe THIS type."
   (symbol-name (eieio-object-class this)))
 
+(cl-defmethod elsa-type-get-args (this)
+  "Get argument types of THIS type."
+  nil)
+
+(cl-defmethod elsa-type-get-return (this)
+  "Get return type of THIS type."
+  nil)
+
 (cl-defmethod elsa-type-get-return ((this elsa-type))
   "Get return type of THIS type."
   this)
@@ -357,6 +365,10 @@ type and none of the negative types.")
      ((elsa-variadic-type-p type)
       (oref type item-type))
      (t type))))
+
+(cl-defmethod elsa-type-get-args ((this elsa-function-type))
+  "Get argument types of THIS type."
+  (oref this args))
 
 (cl-defmethod elsa-type-get-return ((this elsa-function-type))
   "Get return type of THIS type."
