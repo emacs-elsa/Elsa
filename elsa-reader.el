@@ -97,7 +97,11 @@
    :type (elsa-make-type Int)
    :start (point)
    :value form
-   :end (elsa--forward-sexp)))
+   :end (progn
+          ;; We use read again to handle the ? character syntax which
+          ;; is very tricky
+          (read (current-buffer))
+          (point))))
 
 (defclass elsa-form-float (elsa-form-number)
   ((value :initarg :value)))
