@@ -77,6 +77,13 @@ arguments to other constructors."
 
 This is not accepted by any type because we don't know what it is.")
 
+(cl-defmethod elsa-type-accept ((this elsa-type-unbound) other)
+  "Unbount type accepts anything.
+
+The only thing that can be of an unbound type is a symbol
+representing a variable.  It can accept anything because it is not bound to any specific value yet."
+  t)
+
 (cl-defmethod elsa-type-describe ((this elsa-type-unbound))
   "Unbound")
 
