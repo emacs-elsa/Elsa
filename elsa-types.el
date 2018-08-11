@@ -258,11 +258,9 @@ type and none of the negative types.")
 
 (defclass elsa-type-cons (elsa-type)
   ((car-type :type elsa-type :initarg :car-type
-             :initform (elsa-sum-type
-                        :types (list (elsa-type-mixed) (elsa-type-nil))))
+             :initform (elsa-type-mixed))
    (cdr-type :type elsa-type :initarg :cdr-type
-             :initform (elsa-sum-type
-                        :types (list (elsa-type-mixed) (elsa-type-nil))))))
+             :initform (elsa-type-mixed))))
 
 (cl-defmethod elsa-type-composite-p ((this elsa-type-cons)) t)
 
@@ -274,8 +272,7 @@ type and none of the negative types.")
 (defclass elsa-type-list (elsa-type-cons elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
-              :initform (elsa-sum-type
-                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
+              :initform (elsa-type-mixed))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-list))
   (format "[%s]" (elsa-type-describe (oref this item-type))))
@@ -285,8 +282,7 @@ type and none of the negative types.")
 (defclass elsa-type-vector (elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
-              :initform (elsa-sum-type
-                         :types (list (elsa-type-mixed) (elsa-type-nil))))))
+              :initform (elsa-type-mixed))))
 
 (cl-defmethod elsa-type-composite-p ((this elsa-type-vector)) t)
 
