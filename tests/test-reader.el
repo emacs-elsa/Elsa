@@ -7,7 +7,7 @@
 
 (describe "Elsa reader"
 
-  (describe "symbol"
+  (describe "symbols"
 
     (it "should read a symbol"
       (elsa-test-with-buffer "| foo"
@@ -105,35 +105,58 @@
   (describe "quotes"
 
     (it "should read a quoted symbol"
-      (elsa-test-with-buffer "|'foo"
-        (let ((form (elsa-read-form)))
-          (expect (elsa-form-list-p form) :to-be-truthy)
-          (expect (elsa-form-name form) :to-be 'quote)
-          (expect (oref form quote-type) :to-be 'quote))))
+      (elsa-test-with-read-form "|'foo" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-name form) :to-be 'quote)
+        (expect (oref form quote-type) :to-be 'quote)))
+
+    (it "should read an expanded quoted symbol"
+      (elsa-test-with-read-form "|(quote foo)" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-name form) :to-be 'quote)
+        (expect (oref form quote-type) :to-be 'quote)))
+
+    (it "should read an expanded quoted symbol nested inside a list"
+      (elsa-test-with-read-form "|(foo (quote foo) bar)" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-print form) :to-equal "(foo (quote foo) bar)")))
+
+    (it "should read a quoted function"
+      (elsa-test-with-read-form "|#'foo" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-name form) :to-be 'function)
+        (expect (oref form quote-type) :to-be 'function)))
+
+    (it "should read an expanded quoted function"
+      (elsa-test-with-read-form "|(function foo)" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-name form) :to-be 'function)
+        (expect (oref form quote-type) :to-be 'function)))
+
+    (it "should read an expanded quoted function nested inside a list"
+      (elsa-test-with-read-form "|(foo (function foo) bar)" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-print form) :to-equal "(foo (function foo) bar)")))
 
     (it "should read an unquoted symbol"
-      (elsa-test-with-buffer "|,foo"
-        (let ((form (elsa-read-form)))
-          (expect (elsa-form-list-p form) :to-be-truthy)
-          (expect (elsa-form-name form) :to-be '\,)
-          (expect (oref form quote-type) :to-be '\,))))
+      (elsa-test-with-read-form "|,foo" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-name form) :to-be '\,)
+        (expect (oref form quote-type) :to-be '\,)))
 
     (it "should read a backquoted symbol"
-      (elsa-test-with-buffer "|`foo"
-        (let ((form (elsa-read-form)))
-          (expect (elsa-form-list-p form) :to-be-truthy)
-          (expect (elsa-form-name form) :to-be '\`)
-          (expect (oref form quote-type) :to-be '\`))))
+      (elsa-test-with-read-form "|`foo" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-name form) :to-be '\`)
+        (expect (oref form quote-type) :to-be '\`)))
 
     (it "should read a spliced symbol"
-      (elsa-test-with-buffer "|,@foo"
-        (let ((form (elsa-read-form)))
-          (expect (elsa-form-list-p form) :to-be-truthy)
-          (expect (elsa-form-name form) :to-be '\,@)
-          (expect (oref form quote-type) :to-be '\,@))))
+      (elsa-test-with-read-form "|,@foo" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-name form) :to-be '\,@)
+        (expect (oref form quote-type) :to-be '\,@)))
 
     (it "should read a list containing quoted nil"
-      (elsa-test-with-buffer "|(foo 'nil)"
-        (let ((form (elsa-read-form)))
-          (expect (elsa-form-list-p form) :to-be-truthy)
-          (expect (elsa-form-list-p (cadr (oref form sequence))) :to-be-truthy))))))
+      (elsa-test-with-read-form "|(foo 'nil)" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-list-p (cadr (oref form sequence))) :to-be-truthy)))))

@@ -232,19 +232,29 @@
 
 (defun elsa--read-quote (form)
   (elsa--skip-whitespace-forward)
-  (elsa-form-list
-   :quote-type (car form)
-   :start (point)
-   :sequence (cons
-              (elsa-form-symbol
-               :start (prog1 (point)
-                        (if (looking-at-p "#?'")
-                            (skip-syntax-forward "'")
-                          (forward-char (length (symbol-name (car form))))))
-               :name (car form)
-               :end (point))
-              (-map 'elsa--read-form (cdr form)))
-   :end (point)))
+  (let ((expanded-form nil))
+    (elsa-form-list
+     :quote-type (car form)
+     :start (point)
+     :sequence (cons
+                (elsa-form-symbol
+                 :start (cond
+                         ((looking-at-p "#?'")
+                          (prog1 (point)
+                            (skip-syntax-forward "'")))
+                         ((looking-at-p "(")
+                          (setq expanded-form t)
+                          (down-list)
+                          (forward-sexp)
+                          (point))
+                         (t (prog1 (point)
+                              (forward-char (length (symbol-name (car form)))))))
+                 :name (car form)
+                 :end (point))
+                (-map 'elsa--read-form (cdr form)))
+     :end (progn
+            (when expanded-form (up-list))
+            (point)))))
 
 (defun elsa--read-form (form)
   (let ((reader-form
