@@ -3,185 +3,83 @@
 (require 'elsa-undercover)
 (require 'elsa-type-helpers)
 
+(defmacro elsa-test-describe-type (&rest spec)
+  `(elsa-type-describe (elsa-make-type ,@spec)))
+
 (describe "Elsa type helpers"
 
   (describe "elsa-make-type"
 
     (it "should make a primitive type"
-      (expect (elsa-make-type Int) :to-equal
-              [eieio-class-tag--elsa-type-int]))
+      (expect (elsa-test-describe-type Int) :to-equal "Int"))
 
     (it "should make a primitive type wrapped in superfluous parens"
-      (expect (elsa-make-type (Int)) :to-equal
-              [eieio-class-tag--elsa-type-int]))
+      (expect (elsa-test-describe-type (Int)) :to-equal "Int"))
 
     (it "should make a primitive type wrapped in superfluous parens multiple times"
-      (expect (elsa-make-type ((Int))) :to-equal
-              [eieio-class-tag--elsa-type-int]))
+      (expect (elsa-test-describe-type ((Int))) :to-equal "Int"))
 
     (it "should make a simple function type"
-      (expect (elsa-make-type Int -> Int) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int])
-               [eieio-class-tag--elsa-type-int]]))
+      (expect (elsa-test-describe-type Int -> Int) :to-equal "Int -> Int"))
 
     (it "should make a simple function type wrapped in superfluous parens"
-      (expect (elsa-make-type (Int -> Int)) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int])
-               [eieio-class-tag--elsa-type-int]]))
+      (expect (elsa-test-describe-type (Int -> Int)) :to-equal "Int -> Int"))
 
     (it "should"
-      (expect (elsa-make-type Int -> Int -> Bool) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int])
-               [eieio-class-tag--elsa-type-bool]]))
+      (expect (elsa-test-describe-type Int -> Int -> Bool) :to-equal
+              "Int -> Int -> Bool"))
 
     (it "should"
-      (expect (elsa-make-type Int -> List Int) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int])
-               [eieio-class-tag--elsa-type-list
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]]]))
+      (expect (elsa-test-describe-type Int -> List Int) :to-equal
+              "Int -> [Int]"))
 
     (it "should"
-      (expect (elsa-make-type Int -> (List Int)) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int])
-               [eieio-class-tag--elsa-type-list
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]]]))
+      (expect (elsa-test-describe-type Int -> (List Int)) :to-equal
+              "Int -> [Int]"))
 
     (it "should"
-      (expect (elsa-make-type Int -> Cons String Nil) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int])
-               [eieio-class-tag--elsa-type-cons
-                [eieio-class-tag--elsa-type-string]
-                [eieio-class-tag--elsa-type-nil]]]))
+      (expect (elsa-test-describe-type Int -> Cons String Nil) :to-equal
+              "Int -> Cons String Nil"))
 
     (it "should"
-      (expect (elsa-make-type Int | Bool) :to-equal
-              [eieio-class-tag--elsa-sum-type
-               ([eieio-class-tag--elsa-type-bool]
-                [eieio-class-tag--elsa-type-int])]))
+      (expect (elsa-test-describe-type Int | Bool) :to-equal
+              "Int | Bool"))
 
     (it "should"
-      (expect (elsa-make-type Int | Bool -> Float) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-sum-type
-                 ([eieio-class-tag--elsa-type-bool]
-                  [eieio-class-tag--elsa-type-int])])
-               [eieio-class-tag--elsa-type-float]]))
+      (expect (elsa-test-describe-type Int | Bool -> Float) :to-equal
+              "Int | Bool -> Float"))
 
     (it "should"
-      (expect (elsa-make-type Int | (Bool -> Float)) :to-equal
-              [eieio-class-tag--elsa-sum-type
-               ([eieio-class-tag--elsa-function-type
-                 ([eieio-class-tag--elsa-type-bool])
-                 [eieio-class-tag--elsa-type-float]]
-                [eieio-class-tag--elsa-type-int])]))
+      (expect (elsa-test-describe-type Int | (Bool -> Float)) :to-equal
+              "Int | (Bool -> Float)"))
 
     (it "should"
-      (expect (elsa-make-type Int | (Bool -> Float | String)) :to-equal
-              [eieio-class-tag--elsa-sum-type
-               ([eieio-class-tag--elsa-function-type
-                 ([eieio-class-tag--elsa-type-bool])
-                 [eieio-class-tag--elsa-sum-type
-                  ([eieio-class-tag--elsa-type-string]
-                   [eieio-class-tag--elsa-type-float])]]
-                [eieio-class-tag--elsa-type-int])]))
+      (expect (elsa-test-describe-type Int | (Bool -> Float | String)) :to-equal
+              "Int | (Bool -> Float | String)"))
 
     (it "should"
-      (expect (elsa-make-type Int -> Bool -> Cons (Int | String) Buffer) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-bool])
-               [eieio-class-tag--elsa-type-cons
-                [eieio-class-tag--elsa-sum-type
-                 ([eieio-class-tag--elsa-type-string]
-                  [eieio-class-tag--elsa-type-int])]
-                [eieio-class-tag--elsa-type-buffer]]]))
+      (expect (elsa-test-describe-type Int -> Bool -> Cons (Int | String) Buffer) :to-equal
+              "Int -> Bool -> Cons (Int | String) Buffer"))
 
     (it "should"
-      (expect (elsa-make-type Int -> (String -> Float) -> Buffer -> Cons (Int | String) Buffer) :to-equal
-              [eieio-class-tag--elsa-function-type
-               ([eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-function-type
-                 ([eieio-class-tag--elsa-type-string])
-                 [eieio-class-tag--elsa-type-float]]
-                [eieio-class-tag--elsa-type-buffer])
-               [eieio-class-tag--elsa-type-cons
-                [eieio-class-tag--elsa-sum-type
-                 ([eieio-class-tag--elsa-type-string]
-                  [eieio-class-tag--elsa-type-int])]
-                [eieio-class-tag--elsa-type-buffer]]]))
+      (expect (elsa-test-describe-type Int -> (String -> Float) -> Buffer -> Cons (Int | String) Buffer) :to-equal
+              "Int -> (String -> Float) -> Buffer -> Cons (Int | String) Buffer"))
 
     (it "should support construction of lists through vector shorthand"
-      (expect (elsa-make-type [Int]) :to-equal
-              [eieio-class-tag--elsa-type-list
-               [eieio-class-tag--elsa-type-int]
-               [eieio-class-tag--elsa-type-int]
-               [eieio-class-tag--elsa-type-int]]))
+      (expect (elsa-test-describe-type [Int]) :to-equal "[Int]"))
 
     (it "should support construction of lists of lists through vector shorthand"
-      (expect (elsa-make-type [[Int]]) :to-equal
-              [eieio-class-tag--elsa-type-list
-               [eieio-class-tag--elsa-type-list
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]]
-               [eieio-class-tag--elsa-type-list
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]]
-               [eieio-class-tag--elsa-type-list
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-int]]]))
+      (expect (elsa-test-describe-type [[Int]]) :to-equal "[[Int]]"))
 
     (it "should support construction of lists of functions through vector shorthand"
-      (expect (elsa-make-type [Int -> Bool]) :to-equal
-              [eieio-class-tag--elsa-type-list
-               [eieio-class-tag--elsa-function-type
-                ([eieio-class-tag--elsa-type-int])
-                [eieio-class-tag--elsa-type-bool]]
-               [eieio-class-tag--elsa-function-type
-                ([eieio-class-tag--elsa-type-int])
-                [eieio-class-tag--elsa-type-bool]]
-               [eieio-class-tag--elsa-function-type
-                ([eieio-class-tag--elsa-type-int])
-                [eieio-class-tag--elsa-type-bool]]]))
+      (expect (elsa-test-describe-type [Int -> Bool]) :to-equal "[Int -> Bool]"))
 
     (it "should support construction of lists of sums through vector shorthand"
-      (expect (elsa-make-type [Int | Bool]) :to-equal
-              [eieio-class-tag--elsa-type-list
-               [eieio-class-tag--elsa-sum-type
-                ([eieio-class-tag--elsa-type-bool]
-                 [eieio-class-tag--elsa-type-int])]
-               [eieio-class-tag--elsa-sum-type
-                ([eieio-class-tag--elsa-type-bool]
-                 [eieio-class-tag--elsa-type-int])]
-               [eieio-class-tag--elsa-sum-type
-                ([eieio-class-tag--elsa-type-bool]
-                 [eieio-class-tag--elsa-type-int])]]))
+      (expect (elsa-test-describe-type [Int | Bool]) :to-equal "[Int | Bool]"))
 
     (it "should support construction of lists of higher order types through vector shorthand"
-      (expect (elsa-make-type [Cons Int String]) :to-equal
-              [eieio-class-tag--elsa-type-list
-               [eieio-class-tag--elsa-type-cons
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-string]]
-               [eieio-class-tag--elsa-type-cons
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-string]]
-               [eieio-class-tag--elsa-type-cons
-                [eieio-class-tag--elsa-type-int]
-                [eieio-class-tag--elsa-type-string]]])))
+      (expect (elsa-test-describe-type [Cons Int String]) :to-equal
+              "[Cons Int String]")))
 
   (describe "elsa-type-sum"
 
