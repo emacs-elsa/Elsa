@@ -46,6 +46,10 @@ it is passed to another constructor."
   "Describe THIS type."
   (symbol-name (eieio-object-class this)))
 
+(cl-defmethod elsa-type-get-return ((this elsa-type))
+  "Get return type of THIS type."
+  this)
+
 (cl-defmethod elsa-type-accept ((this elsa-type) other)
   "Test if THIS type accepts OTHER.
 
@@ -319,6 +323,10 @@ type and none of the negative types.")
      ((elsa-variadic-type-p type)
       (oref type item-type))
      (t type))))
+
+(cl-defmethod elsa-type-get-return ((this elsa-function-type))
+  "Get return type of THIS type."
+  (oref this return))
 
 (defclass elsa-generic-type (elsa-type)
   ((label :type symbol :initarg :label)))

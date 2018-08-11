@@ -294,7 +294,7 @@ number by symbol 'many."
 
       ;; set the return type of the form according to the return type
       ;; of the function's declaration
-      (oset form type (oref type return)))))
+      (oset form type (elsa-type-get-return type)))))
 
 (defun elsa--analyse-function-call (form scope state)
   (elsa--analyse-macro form t scope state))
