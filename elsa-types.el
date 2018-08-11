@@ -206,7 +206,9 @@ type and none of the negative types.")
   (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
   (not (eq (eieio-object-class other) 'elsa-type-unbound)))
 
-(defclass elsa-type-string (elsa-type) ())
+(defclass elsa-type-sequence (elsa-type) ())
+
+(defclass elsa-type-string (elsa-type-sequence) ())
 
 (defclass elsa-type-short-string (elsa-type-string) ())
 
@@ -269,7 +271,7 @@ type and none of the negative types.")
           (elsa-type-format-arg (oref this car-type))
           (elsa-type-format-arg (oref this cdr-type))))
 
-(defclass elsa-type-list (elsa-type-cons)
+(defclass elsa-type-list (elsa-type-cons elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
               :initform (elsa-sum-type
@@ -280,7 +282,7 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-composite-p ((this elsa-type-list)) t)
 
-(defclass elsa-type-vector (elsa-type)
+(defclass elsa-type-vector (elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
               :initform (elsa-sum-type
