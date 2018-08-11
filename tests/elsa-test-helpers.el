@@ -7,6 +7,12 @@
        (delete-char -1))
      ,@body))
 
+(defmacro elsa-test-with-read-form (initial form-var &rest body)
+  (declare (indent 2))
+  `(elsa-test-with-buffer ,initial
+     (let ((,form-var (elsa-read-form)))
+       ,@body)))
+
 (defmacro elsa-test-with-analysed-form (initial form-var &rest body)
   (declare (indent 2))
   `(elsa-test-with-buffer ,initial
