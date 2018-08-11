@@ -214,6 +214,11 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((this elsa-type-buffer))
   "Buffer")
 
+(defclass elsa-type-frame (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-frame))
+  "Frame")
+
 (defclass elsa-type-number (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-number))
