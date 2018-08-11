@@ -212,18 +212,27 @@
                          (push (elsa--read-form form) items)))))
                  (while (>= (cl-decf depth) 0) (up-list))
                  (apply 'cl-list* (nreverse items)))
-        :end (progn (up-list) (point)))
+       :end (progn (up-list) (point)))
     (elsa-form-list
      :start (prog1 (point) (down-list))
      :sequence
       (let ((depth 0)
             (items))
         (while form
-          (let ((head (elsa--read-form (car form))))
-            (push head items)
-            (!cdr form)
-            (elsa--skip-whitespace-forward)
-            (when (and form (looking-at-p "\\."))
+          (cond
+           ((elsa--quote-p (car form))
+            (let ((quoted-form (elsa--read-form form)))
+              (setq items
+                    (-concat (reverse (oref quoted-form sequence))
+                             items)))
+            (setq form nil))
+           (t
+            (push (elsa--read-form (car form)) items)
+            (!cdr form)))
+          (elsa--skip-whitespace-forward)
+          (when (and form (looking-at-p "\\."))
+            (if (elsa--quote-p (car form))
+                (forward-sexp) ;; skip the dot
               (cl-incf depth)
               (down-list))))
         (while (>= (cl-decf depth) 0) (up-list))
@@ -256,6 +265,15 @@
             (when expanded-form (up-list))
             (point)))))
 
+(defun elsa--quote-p (symbol)
+  "Return non-nil if SYMBOL is a type of quote."
+  (memq symbol (list
+                'function
+                'quote
+                backquote-backquote-symbol
+                backquote-unquote-symbol
+                backquote-splice-symbol)))
+
 (defun elsa--read-form (form)
   (let ((reader-form
          (cond
@@ -268,7 +286,7 @@
           ((consp form)
            ;; special care needs to be taken about the "reader macros" '`,
            (cond
-            ((memq (car form) (list 'function 'quote backquote-backquote-symbol backquote-unquote-symbol backquote-splice-symbol))
+            ((elsa--quote-p (car form))
              (elsa--read-quote form))
             (t (elsa--read-cons form))))
           (t (error "Invalid form")))))

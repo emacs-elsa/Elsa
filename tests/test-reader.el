@@ -24,6 +24,11 @@
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(a . b)")))
 
+    (it "should read an improper list containgin a quote."
+      (elsa-test-with-read-form "|(a . (quote . c))" form
+        (expect (elsa-form-improper-list-p form) :to-be-truthy)
+        (expect (elsa-form-print form) :to-equal "(a quote . c)")))
+
     (it "should read an expanded improper list"
       (elsa-test-with-read-form "|(a . (b . (c . d)))" form
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
@@ -99,7 +104,45 @@
     (it "should read a long proper list in dotted notation"
       (elsa-test-with-read-form "(a . (b . (c . (d . nil))))" form
         (expect (elsa-form-list-p form) :to-be-truthy)
-        (expect (elsa-form-print form) :to-equal "(a b c d)"))))
+        (expect (elsa-form-print form) :to-equal "(a b c d)")))
+
+    (describe "with quoted cdr"
+
+
+      (it "should read a dotted list with a quoted symbol in cdr"
+        (elsa-test-with-read-form "|(foo . 'bar)" form
+          (expect (elsa-form-list-p form) :to-be-truthy)
+          (expect (elsa-form-print form) :to-equal "(foo quote bar)")))
+
+      (it "should read a dotted list with an expanded quoted symbol in cdr"
+        (elsa-test-with-read-form "|(foo . (quote bar))" form
+          (expect (elsa-form-list-p form) :to-be-truthy)
+          (expect (elsa-form-print form) :to-equal "(foo quote bar)")))
+
+      (it "should read a dotted list with a quoted symbol in nested cdr"
+        (elsa-test-with-read-form "|(foo . (quote . 'bar))" form
+          (expect (elsa-form-list-p form) :to-be-truthy)
+          (expect (elsa-form-print form) :to-equal "(foo quote quote bar)")))
+
+      (it "should read a backquoted list with an unquoted symbol in cdr"
+        (elsa-test-with-read-form "|`(foo . ,bar)" form
+          (expect (elsa-form-list-p form) :to-be-truthy)
+          (expect (elsa-form-print form) :to-equal "(` (foo , bar))")))
+
+      (it "should read a list with an unquoted symbol in cdr"
+        (elsa-test-with-read-form "|(foo . ,bar)" form
+          (expect (elsa-form-list-p form) :to-be-truthy)
+          (expect (elsa-form-print form) :to-equal "(foo , bar)")))
+
+      (it "should read a list in dotted notation with expanded quoted last cdr"
+        (elsa-test-with-read-form "(foo . (quote . (quote (bar baz))))" form
+          (expect (elsa-form-list-p form) :to-be-truthy)
+          (expect (elsa-form-print form) :to-equal "(foo quote quote (bar baz))")))
+
+      (it "should read a list in dotted notation with quoted last cdr"
+        (elsa-test-with-read-form "(foo . (quote . '(bar baz)))" form
+          (expect (elsa-form-list-p form) :to-be-truthy)
+          (expect (elsa-form-print form) :to-equal "(foo quote quote (bar baz))")))))
 
 
   (describe "quotes"
