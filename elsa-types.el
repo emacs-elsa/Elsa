@@ -116,10 +116,10 @@ type that is accepted by at least one of its summands.")
     "Mixed")
    ((and (= 2 (length (oref this types)))
          (elsa-type-nil-p (car (oref this types))))
-    (concat (elsa-type-describe (cadr (oref this types))) "?"))
+    (concat (elsa-type-format-arg (cadr (oref this types))) "?"))
    ((and (= 2 (length (oref this types)))
          (elsa-type-nil-p (cadr (oref this types))))
-    (concat (elsa-type-describe (car (oref this types))) "?"))
+    (concat (elsa-type-format-arg (car (oref this types))) "?"))
    (t
     (mapconcat 'elsa-type-format-arg (oref this types) " | "))))
 
