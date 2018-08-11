@@ -57,6 +57,14 @@
         (save-restriction
           (widen)
           (goto-char (point-min))
+          (let ((line 1))
+            (put-text-property (point) (1+ (point)) 'elsa-line line)
+            (while (= (forward-line) 0)
+              (cl-incf line)
+              (put-text-property (point) (min
+                                          (buffer-size)
+                                          (1+ (point))) 'elsa-line line)))
+          (goto-char (point-min))
           (condition-case _err
               (while (setq form (elsa-read-form))
                 (elsa-analyse-form state form))
