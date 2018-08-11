@@ -239,12 +239,12 @@
 ;; (put 'save-excursion 'elsa-type (elsa-make-type))
 ;; (put 'save-current-buffer 'elsa-type (elsa-make-type))
 ;; (put 'buffer-size 'elsa-type (elsa-make-type))
-;; (put 'point-min 'elsa-type (elsa-make-type))
-;; (put 'point-min-marker 'elsa-type (elsa-make-type))
-;; (put 'point-max 'elsa-type (elsa-make-type))
-;; (put 'point-max-marker 'elsa-type (elsa-make-type))
-;; (put 'gap-position 'elsa-type (elsa-make-type))
-;; (put 'gap-size 'elsa-type (elsa-make-type))
+(put 'point-min 'elsa-type (elsa-make-type Int))
+(put 'point-min-marker 'elsa-type (elsa-make-type Marker))
+(put 'point-max 'elsa-type (elsa-make-type Int))
+(put 'point-max-marker 'elsa-type (elsa-make-type Marker))
+(put 'gap-position 'elsa-type (elsa-make-type Int))
+(put 'gap-size 'elsa-type (elsa-make-type Int))
 ;; (put 'position-bytes 'elsa-type (elsa-make-type))
 ;; (put 'byte-to-position 'elsa-type (elsa-make-type))
 ;; (put 'following-char 'elsa-type (elsa-make-type))
@@ -304,12 +304,29 @@
 ;; (put 'char-equal 'elsa-type (elsa-make-type))
 ;; (put 'transpose-regions 'elsa-type (elsa-make-type))
 
+;; File: alloc.c
+(put 'make-string 'elsa-type (elsa-make-type Int -> Int -> String))
+;; (put 'make-bool-vector 'elsa-type (elsa-make-type))
+;; (put 'bool-vector 'elsa-type (elsa-make-type))
+;; TODO: generic type a -> b -> Cons a b
+(put 'cons 'elsa-type (elsa-make-type Mixed -> Mixed -> Cons))
+(put 'list 'elsa-type (elsa-make-type Mixed... -> List))
+;; (put 'make-list 'elsa-type (elsa-make-type))
+;; (put 'make-vector 'elsa-type (elsa-make-type))
+(put 'vector 'elsa-type (elsa-make-type Mixed... -> Vector))
+;; (put 'make-byte-code 'elsa-type (elsa-make-type))
+;; (put 'make-symbol 'elsa-type (elsa-make-type))
+;; (put 'make-marker 'elsa-type (elsa-make-type))
+;; (put 'make-finalizer 'elsa-type (elsa-make-type))
+;; (put 'purecopy 'elsa-type (elsa-make-type))
+;; (put 'garbage-collect 'elsa-type (elsa-make-type))
+;; (put 'memory-info 'elsa-type (elsa-make-type))
+;; (put 'memory-limit 'elsa-type (elsa-make-type))
+;; (put 'memory-use-counts 'elsa-type (elsa-make-type))
+;; (put 'suspicious-object 'elsa-type (elsa-make-type))
 
 ;; boolean functions
 (put 'not 'elsa-type (elsa-make-type Mixed -> Bool))
-
-;; list functions
-(put 'list 'elsa-type (elsa-make-type Mixed... -> List)) ;; TODO: variadic args?
 
 ;; string functions
 (put 'split-string 'elsa-type (elsa-make-type String -> String -> List String))
@@ -319,6 +336,8 @@
 
 ;; built-in variables
 (put 'command-line-args-left 'elsa-type-var (elsa-make-type List String | Nil))
+(put 'major-mode 'elsa-type-var (elsa-make-type Symbol))
+(put 'system-type 'elsa-type-var (elsa-make-type Symbol))
 
 ;; help.el
 (put 'help-function-arglist 'elsa-type (elsa-make-type Symbol -> List Symbol))
