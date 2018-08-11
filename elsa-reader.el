@@ -18,7 +18,16 @@
                (not (listp (nthcdr len cell))))
       (nthcdr len cell))))
 
-(defun elsa--forward-sexp (&optional n)
+(defsubst elsa--quote-p (symbol)
+  "Return non-nil if SYMBOL is a type of quote."
+  (memq symbol (list
+                'function
+                'quote
+                backquote-backquote-symbol
+                backquote-unquote-symbol
+                backquote-splice-symbol)))
+
+(defsubst elsa--forward-sexp (&optional n)
   "Skip `forward-sexp' N times and return `point'."
   (setq n (or n 1))
   (forward-sexp n)
@@ -55,7 +64,7 @@
       nil
     (error "Can not get sequence out of symbol form.")))
 
-(defun elsa--read-symbol (form)
+(defsubst elsa--read-symbol (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-symbol
    :start (point)
@@ -74,7 +83,7 @@
 (cl-defmethod elsa-form-name ((this elsa-form-symbol))
   (oref this name))
 
-(defun elsa--read-keyword (form)
+(defsubst elsa--read-keyword (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-keyword
    :type (elsa-make-type Keyword)
@@ -91,7 +100,7 @@
 (defclass elsa-form-integer (elsa-form-number)
   ((value :initarg :value)))
 
-(defun elsa--read-integer (form)
+(defsubst elsa--read-integer (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-integer
    :type (elsa-make-type Int)
@@ -106,7 +115,7 @@
 (defclass elsa-form-float (elsa-form-number)
   ((value :initarg :value)))
 
-(defun elsa--read-float (form)
+(defsubst elsa--read-float (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-float
    :type (elsa-make-type Float)
@@ -125,7 +134,7 @@
 (cl-defmethod elsa-form-print ((this elsa-form-string))
   (oref this sequence))
 
-(defun elsa--read-string (form)
+(defsubst elsa--read-string (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-string
    :type (elsa-make-type String)
@@ -139,7 +148,7 @@
 (cl-defmethod elsa-form-print ((this elsa-form-vector))
   (format "[%s]" (mapconcat 'elsa-form-print (oref this sequence) " ")))
 
-(defun elsa--read-vector (form)
+(defsubst elsa--read-vector (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-vector
    :type (elsa-make-type Vector)
@@ -195,7 +204,7 @@
   (cdr (oref this conses)))
 
 ;; (elsa :: [Mixed] -> Mixed)
-(defun elsa--read-cons (form)
+(defsubst elsa--read-cons (form)
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
       (elsa-form-improper-list
@@ -269,14 +278,15 @@
             (when expanded-form (up-list))
             (point)))))
 
-(defun elsa--quote-p (symbol)
-  "Return non-nil if SYMBOL is a type of quote."
-  (memq symbol (list
-                'function
-                'quote
-                backquote-backquote-symbol
-                backquote-unquote-symbol
-                backquote-splice-symbol)))
+(defsubst elsa--process-annotation (reader-form comment-form)
+  (cond
+   ((and (elsa-form-function-call-p reader-form 'defun)
+         (eq (car comment-form) 'elsa)
+         (eq (cadr comment-form) ::))
+    (put (elsa-form-name (cadr (oref reader-form sequence)))
+         'elsa-type
+         ;; TODO: get rid of eval
+         (eval `(elsa-make-type ,@(cddr comment-form)))))))
 
 (defun elsa--read-form (form)
   (let ((reader-form
@@ -319,16 +329,6 @@
               ;; handle defun type declaration
               (elsa--process-annotation reader-form comment-form))))))
     reader-form))
-
-(defun elsa--process-annotation (reader-form comment-form)
-  (cond
-   ((and (elsa-form-function-call-p reader-form 'defun)
-         (eq (car comment-form) 'elsa)
-         (eq (cadr comment-form) ::))
-    (put (elsa-form-name (cadr (oref reader-form sequence)))
-         'elsa-type
-         ;; TODO: get rid of eval
-         (eval `(elsa-make-type ,@(cddr comment-form)))))))
 
 (defun elsa-read-form ()
   "Read form at point."
