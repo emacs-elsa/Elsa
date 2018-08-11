@@ -204,6 +204,17 @@
 ;; (put 'secure-hash 'elsa-type (elsa-make-type ))
 
 
+;; File: dired.c
+(put 'directory-files 'elsa-type (elsa-make-type String -> Mixed -> Mixed -> Mixed -> [String]))
+(put 'directory-files-and-attributes 'elsa-type (elsa-make-type String -> Mixed -> Mixed -> Mixed -> Mixed -> [[Mixed]] ))
+(put 'file-name-completion 'elsa-type (elsa-make-type String -> String -> (String -> Bool) | Nil -> String | Nil | T))
+(put 'file-name-all-completions 'elsa-type (elsa-make-type String -> String -> [String]))
+(put 'file-attributes 'elsa-type (elsa-make-type String -> [Mixed]))
+(put 'file-attributes-lessp 'elsa-type (elsa-make-type [Mixed] -> [Mixed] -> Bool))
+(put 'system-users 'elsa-type (elsa-make-type [String]))
+(put 'system-groups 'elsa-type (elsa-make-type [String]))
+
+
 ;; File: editfns.c
 (put 'char-to-string 'elsa-type (elsa-make-type Int -> String))
 (put 'byte-to-string 'elsa-type (elsa-make-type Int -> String))
