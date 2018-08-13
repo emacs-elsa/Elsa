@@ -81,6 +81,9 @@ Nil if FORM is not a quoted symbol."
       nil
     (error "Can not get sequence out of symbol form.")))
 
+(cl-defmethod elsa-form-sequence-p ((this elsa-form-symbol))
+  (eq (elsa-form-name this) 'nil))
+
 (defsubst elsa--read-symbol (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-symbol
@@ -191,6 +194,8 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-form-sequence ((this elsa-form-list))
   (oref this sequence))
 
+(cl-defmethod elsa-form-sequence-p ((this elsa-form-list)) t)
+
 (cl-defmethod elsa-form-name ((this elsa-form-list))
   (-when-let (head (elsa-form-car this))
     (and (elsa-form-symbol-p head)
@@ -297,22 +302,33 @@ Nil if FORM is not a quoted symbol."
 
 (defsubst elsa--process-annotation (reader-form comment-form &optional state)
   (cond
-   ((and (or (elsa-form-function-call-p reader-form 'defun)
-             (elsa-form-function-call-p reader-form 'defsubst))
-         (eq (cadr comment-form) ::))
-    (let ((fn-name (elsa-form-name (cadr (elsa-form-sequence reader-form))))
-          (annotation-name (car comment-form)))
-      (when (and state
-                 (not (eq fn-name annotation-name)))
-        (elsa-state-add-error state
-          (elsa-make-warning (format "The function name `%s' and the annotation name `%s' do not match"
-                                     (symbol-name fn-name)
-                                     (symbol-name annotation-name))
-                             reader-form))))
-    (put (elsa-form-name (cadr (oref reader-form sequence)))
-         'elsa-type
-         ;; TODO: get rid of eval
-         (eval `(elsa-make-type ,@(cddr comment-form)))))))
+   ;; type annotation
+   ((and (eq (cadr comment-form) ::)
+         (elsa-form-sequence-p reader-form))
+    (let ((annotation-name (car comment-form))
+          (form-name (elsa-form-name (cadr (elsa-form-sequence reader-form)))))
+      (cond
+       ((or (elsa-form-function-call-p reader-form 'defun)
+            (elsa-form-function-call-p reader-form 'defsubst))
+        (when (and state (not (eq form-name annotation-name)))
+          (elsa-state-add-error state
+            (elsa-make-warning (format "The function name `%s' and the annotation name `%s' do not match"
+                                       (symbol-name form-name)
+                                       (symbol-name annotation-name))
+                               reader-form)))
+        (put (elsa-form-name (cadr (oref reader-form sequence)))
+             'elsa-type
+             (eval `(elsa-make-type ,@(cddr comment-form)))))
+       ((elsa-form-function-call-p reader-form 'defvar)
+        (when (and state (not (eq form-name annotation-name)))
+          (elsa-state-add-error state
+            (elsa-make-warning (format "The variable name `%s' and the annotation name `%s' do not match"
+                                       (symbol-name form-name)
+                                       (symbol-name annotation-name))
+                               reader-form)))
+        (put (elsa-form-name (cadr (oref reader-form sequence)))
+             'elsa-type-var
+             (eval `(elsa-make-type ,@(cddr comment-form))))))))))
 
 (defun elsa--read-form (form &optional state)
   (let ((reader-form

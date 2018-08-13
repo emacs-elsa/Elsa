@@ -1,3 +1,4 @@
+;; (elsa-checks :: [Mixed])
 (defvar elsa-checks nil)
 
 (defun elsa-check-add (check)
