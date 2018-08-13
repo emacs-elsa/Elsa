@@ -238,7 +238,7 @@
 (put 'line-end-position 'elsa-type (elsa-make-type Int))
 ;; (put 'save-excursion 'elsa-type (elsa-make-type))
 ;; (put 'save-current-buffer 'elsa-type (elsa-make-type))
-;; (put 'buffer-size 'elsa-type (elsa-make-type))
+(put 'buffer-size 'elsa-type (elsa-make-type Buffer? -> Int))
 (put 'point-min 'elsa-type (elsa-make-type Int))
 (put 'point-min-marker 'elsa-type (elsa-make-type Marker))
 (put 'point-max 'elsa-type (elsa-make-type Int))
@@ -249,10 +249,10 @@
 ;; (put 'byte-to-position 'elsa-type (elsa-make-type))
 ;; (put 'following-char 'elsa-type (elsa-make-type))
 ;; (put 'preceding-char 'elsa-type (elsa-make-type))
-;; (put 'bobp 'elsa-type (elsa-make-type))
-;; (put 'eobp 'elsa-type (elsa-make-type))
-;; (put 'bolp 'elsa-type (elsa-make-type))
-;; (put 'eolp 'elsa-type (elsa-make-type))
+(put 'bobp 'elsa-type (elsa-make-type Bool))
+(put 'eobp 'elsa-type (elsa-make-type Bool))
+(put 'bolp 'elsa-type (elsa-make-type Bool))
+(put 'eolp 'elsa-type (elsa-make-type Bool))
 ;; (put 'char-after 'elsa-type (elsa-make-type))
 ;; (put 'char-before 'elsa-type (elsa-make-type))
 ;; (put 'user-login-name 'elsa-type (elsa-make-type))
@@ -276,7 +276,8 @@
 ;; (put 'current-time-string 'elsa-type (elsa-make-type))
 ;; (put 'current-time-zone 'elsa-type (elsa-make-type))
 ;; (put 'set-time-zone-rule 'elsa-type (elsa-make-type))
-;; (put 'insert 'elsa-type (elsa-make-type))
+;; TODO: rewrite as (String | Int)... when that syntax is available
+(put 'insert 'elsa-type (elsa-make-type Variadic (String | Int) -> Nil))
 ;; (put 'insert-and-inherit 'elsa-type (elsa-make-type))
 ;; (put 'insert-before-markers 'elsa-type (elsa-make-type))
 ;; (put 'insert-before-markers-and-inherit 'elsa-type (elsa-make-type))
@@ -308,7 +309,9 @@
 (put 'make-string 'elsa-type (elsa-make-type Int -> Int -> String))
 ;; (put 'make-bool-vector 'elsa-type (elsa-make-type))
 ;; (put 'bool-vector 'elsa-type (elsa-make-type))
-;; TODO: generic type a -> b -> Cons a b
+;; TODO: generic type a -> b -> Cons a b...  This fails deriving the
+;; type of something like (cons 1 "foo")... it still thinks the return
+;; type is Cons Mixed Mixed
 (put 'cons 'elsa-type (elsa-make-type Mixed -> Mixed -> Cons))
 (put 'list 'elsa-type (elsa-make-type Mixed... -> List))
 ;; (put 'make-list 'elsa-type (elsa-make-type))
@@ -324,6 +327,16 @@
 ;; (put 'memory-limit 'elsa-type (elsa-make-type))
 ;; (put 'memory-use-counts 'elsa-type (elsa-make-type))
 ;; (put 'suspicious-object 'elsa-type (elsa-make-type))
+
+;; File: cmds.c
+(put 'forward-point 'elsa-type (elsa-make-type Int -> Int))
+(put 'forward-char 'elsa-type (elsa-make-type Int? -> Nil))
+(put 'backward-char 'elsa-type (elsa-make-type Int? -> Nil))
+(put 'forward-line 'elsa-type (elsa-make-type Int? -> Int))
+(put 'beginning-of-line 'elsa-type (elsa-make-type Int? -> Nil))
+(put 'end-of-line 'elsa-type (elsa-make-type Int? -> Nil))
+(put 'delete-char 'elsa-type (elsa-make-type Int -> Mixed -> Nil))
+(put 'self-insert-command 'elsa-type (elsa-make-type Int -> Nil))
 
 ;; boolean functions
 (put 'not 'elsa-type (elsa-make-type Mixed -> Bool))
