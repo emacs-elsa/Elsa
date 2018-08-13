@@ -134,7 +134,7 @@ the correct type (we can only infer what we see during runtime).
 Users can annotate their `defun` definitions like this:
 
 ``` emacs-lisp
-;; (elsa :: String -> Int -> String)
+;; (elsa-pluralize :: String -> Int -> String)
 (defun elsa-pluralize (word n)
   "Return singular or plural of WORD based on N."
   (if (= n 1)
@@ -142,9 +142,10 @@ Users can annotate their `defun` definitions like this:
     (concat word "s")))
 ```
 
-The `(elsa ...)` inside a comment form provides additional information
-to the Elsa analysis.  Here we say that the function following such a
-comment takes two arguments, string and int, and returns a string.
+The `(elsa-pluralise :: ...)` inside a comment form provides
+additional information to the Elsa analysis.  Here we say that the
+function following such a comment takes two arguments, string and int,
+and returns a string.
 
 The syntax of the type annotation is somewhat modeled after Haskell
 but there are some special constructs available to Elsa

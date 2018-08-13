@@ -5,23 +5,23 @@
   (font-lock-add-keywords
    nil
    `((,(rx "("
-           (group
-            (or
-             (and "elsa" (1+ space) (group "::"))
-             (and "elsa-make-type" (1+ space)))))
-      (1 font-lock-keyword-face t)
+           (or
+            (and (group (1+ (or (syntax word) (syntax symbol)))) (1+ space) (group "::") (1+ space))
+            (group (and "elsa-make-type" (1+ space)))))
+      (1 font-lock-function-name-face t t)
       (2 font-lock-variable-name-face t t)
+      (3 font-lock-keyword-face t t)
       ("\\_<\\([A-Z]\\(?:\\sw\\|\\s_\\)*\\)\\_>"
        (save-excursion (up-list) (point))
-       (progn (search-backward "(elsa"))
+       (re-search-backward (rx (or "::" "elsa-make-type")))
        (0 font-lock-type-face t))
       ("\\_<\\([a-z]\\(?:\\sw\\|\\s_\\)*\\)\\_>"
        (save-excursion (up-list) (point))
-       (progn (search-backward "(elsa"))
+       (re-search-backward (rx (or "::" "elsa-make-type")))
        (0 nil t))
-      ("[()]"
+      ("[][()]"
        (save-excursion (up-list) (1- (point)))
-       (progn (search-backward "(elsa"))
+       (re-search-backward (rx (or "::" "elsa-make-type")))
        (0 nil t))
       (,(rx (or "->" "|"))
        (save-excursion (up-list) (point))

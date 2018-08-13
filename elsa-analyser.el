@@ -11,7 +11,7 @@
 
 (require 'elsa-typed-builtin)
 
-;; (elsa :: List Symbol -> Cons Int (Int | Symbol))
+;; (elsa--arglist-to-arity :: List Symbol -> Cons Int (Int | Symbol))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
@@ -39,7 +39,7 @@ number by symbol 'many."
         (setq max 'many))
       (cons min max)))))
 
-;; (elsa :: Symbol -> Cons Int (Int | Symbol))
+;; (elsa-fn-arity :: Symbol -> Cons Int (Int | Symbol))
 (defun elsa-fn-arity (fn)
   (elsa--arglist-to-arity (help-function-arglist fn)))
 
@@ -229,7 +229,7 @@ number by symbol 'many."
 (defun elsa--analyse-splice (form scope state)
   nil)
 
-;; (elsa :: Bool | List Bool -> Mixed -> List Bool)
+;; (elsa--analyse-normalize-spec :: Bool | List Bool -> Mixed -> List Bool)
 (defun elsa--analyse-normalize-spec (spec form)
   "Normalize evaluation SPEC for FORM."
   (cond
@@ -244,7 +244,7 @@ number by symbol 'many."
                       t)))
    (t spec)))
 
-;; (elsa :: Mixed -> Bool | List Bool -> Mixed -> Mixed -> Mixed)
+;; (elsa--analyse-macro :: Mixed -> Bool | List Bool -> Mixed -> Mixed -> Mixed)
 (defun elsa--analyse-macro (form spec scope state)
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-form-car form))

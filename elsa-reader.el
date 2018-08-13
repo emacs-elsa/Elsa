@@ -4,6 +4,7 @@
 (require 'pcase)
 (require 'backquote)
 
+(require 'elsa-error)
 (require 'elsa-types)
 (require 'elsa-type-helpers)
 
@@ -219,7 +220,7 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-form-cdr ((this elsa-form-improper-list))
   (cdr (oref this conses)))
 
-;; (elsa :: [Mixed] -> Mixed)
+;; (elsa--read-cons :: [Mixed] -> Mixed)
 (defsubst elsa--read-cons (form)
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
@@ -294,17 +295,26 @@ Nil if FORM is not a quoted symbol."
             (when expanded-form (up-list))
             (point)))))
 
-(defsubst elsa--process-annotation (reader-form comment-form)
+(defsubst elsa--process-annotation (reader-form comment-form &optional state)
   (cond
-   ((and (elsa-form-function-call-p reader-form 'defun)
-         (eq (car comment-form) 'elsa)
+   ((and (or (elsa-form-function-call-p reader-form 'defun)
+             (elsa-form-function-call-p reader-form 'defsubst))
          (eq (cadr comment-form) ::))
+    (let ((fn-name (elsa-form-name (cadr (elsa-form-sequence reader-form))))
+          (annotation-name (car comment-form)))
+      (when (and state
+                 (not (eq fn-name annotation-name)))
+        (elsa-state-add-error state
+          (elsa-make-warning (format "The function name `%s' and the annotation name `%s' do not match"
+                                     (symbol-name fn-name)
+                                     (symbol-name annotation-name))
+                             reader-form))))
     (put (elsa-form-name (cadr (oref reader-form sequence)))
          'elsa-type
          ;; TODO: get rid of eval
          (eval `(elsa-make-type ,@(cddr comment-form)))))))
 
-(defun elsa--read-form (form)
+(defun elsa--read-form (form &optional state)
   (let ((reader-form
          (cond
           ((floatp form) (elsa--read-float form))
@@ -321,7 +331,10 @@ Nil if FORM is not a quoted symbol."
             (t (elsa--read-cons form))))
           (t (error "Invalid form")))))
     (oset reader-form line
-          (or (get-text-property (line-beginning-position) 'elsa-line)
+          (or (get-text-property (save-excursion
+                                   (goto-char (oref reader-form start))
+                                   (line-beginning-position))
+                                 'elsa-line)
               (line-number-at-pos (oref reader-form start))))
     (oset reader-form column (save-excursion
                                (goto-char (oref reader-form start))
@@ -335,23 +348,23 @@ Nil if FORM is not a quoted symbol."
       (forward-line -1)
       (elsa--skip-whitespace-forward)
       (let ((line-end (line-end-position)))
-        (when (and (search-forward "(elsa" line-end t)
+        (when (and (re-search-forward "(.*?::" line-end t)
                    (nth 4 (syntax-ppss)))
           ;; we are inside a comment and inside a form starting with
           ;; (elsa
-          (search-backward "(elsa")
+          (search-backward "(")
           (let ((comment-form (read (current-buffer))))
             ;; we must end on the same line, that way we can be sure
             ;; the entire read form was inside a comment.
             (when (<= (point) line-end)
               ;; handle defun type declaration
-              (elsa--process-annotation reader-form comment-form))))))
+              (elsa--process-annotation reader-form comment-form state))))))
     reader-form))
 
-(defun elsa-read-form ()
+(defun elsa-read-form (&optional state)
   "Read form at point."
   (let* ((form (save-excursion
                  (read (current-buffer)))))
-    (elsa--read-form form)))
+    (elsa--read-form form state)))
 
 (provide 'elsa-reader)

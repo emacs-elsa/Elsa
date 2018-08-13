@@ -70,7 +70,7 @@
                                           (1+ (point))) 'elsa-line line)))
           (goto-char (point-min))
           (condition-case _err
-              (while (setq form (elsa-read-form))
+              (while (setq form (elsa-read-form state))
                 (elsa-analyse-form state form))
             (end-of-file t)))))
     state))

@@ -30,7 +30,7 @@
 
 (defclass elsa-type nil () :abstract t)
 
-;; (elsa :: Mixed -> String)
+;; (elsa-type-format-arg :: Mixed -> String)
 (defun elsa-type-format-arg (type)
   "Format TYPE as an argument for `elsa-make-type'.
 
@@ -361,7 +361,7 @@ other, then this is a supertype of other."
 
 (cl-defmethod elsa-type-composite-p ((this elsa-function-type)) t)
 
-;; (elsa :: Int -> Mixed -> Mixed)
+;; (elsa-function-type-nth-arg :: Int -> Mixed -> Mixed)
 (defun elsa-function-type-nth-arg (n elsa-type)
   (let* ((args (oref elsa-type args))
          (type (nth n args)))
