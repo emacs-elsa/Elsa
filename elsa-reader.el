@@ -44,6 +44,7 @@ Nil if FORM is not a quoted symbol."
                 backquote-unquote-symbol
                 backquote-splice-symbol)))
 
+;; (elsa--forward-sexp :: Int? -> Int)
 (defsubst elsa--forward-sexp (&optional n)
   "Skip `forward-sexp' N times and return `point'."
   (setq n (or n 1))

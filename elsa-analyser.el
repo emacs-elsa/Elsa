@@ -156,6 +156,18 @@ number by symbol 'many."
         (oset form type (oref first type))
       (oset form type (elsa-type-unbound)))))
 
+(defun elsa--get-default-function-types (args)
+  "Return a default list of types based on ARGS.
+
+This function skips over special &optional and &rest markers and
+collects all the arguments, turns &optional arguments into
+nullables and the &rest argument into a variadic."
+  (-let (((min . max) (elsa--arglist-to-arity args)))
+    (if (eq max 'many)
+        (-snoc (-repeat min (elsa-make-type Mixed))
+               (elsa-make-type Variadic Mixed))
+      (-repeat max (elsa-make-type Mixed)))))
+
 (defun elsa--analyse:defun (form scope state)
   (let* ((sequence (oref form sequence))
          (name (elsa-form-name (nth 1 sequence)))
@@ -163,11 +175,13 @@ number by symbol 'many."
          (body (nthcdr 3 sequence))
          (function-type (get name 'elsa-type))
          (arg-types (or (elsa-type-get-args function-type)
-                        (-repeat (length (elsa-form-sequence args))
-                                 (elsa-make-type Mixed))))
+                        (elsa--get-default-function-types
+                         (-map 'elsa-form-name (elsa-form-sequence args)))))
          (vars))
     (when (elsa-form-list-p args)
-      (-each-indexed (elsa-form-sequence args)
+      (-each-indexed (--remove
+                      (memq (elsa-form-name it) '(&rest &optional))
+                      (elsa-form-sequence args))
         (lambda (index arg)
           (let ((var (elsa-variable
                       :name (elsa-form-name arg)
