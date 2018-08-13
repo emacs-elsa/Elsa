@@ -18,8 +18,12 @@
   (elsa--analyse-function-call form scope state)
   (-when-let* ((arg (cadr (oref form sequence)))
                (arg-type (oref arg type)))
-    (when (elsa-type-list-p arg-type)
-      (oset form type (elsa-type-make-nullable (oref arg-type item-type))))))
+    (cond
+     ((elsa-type-list-p arg-type)
+      (oset form type (elsa-type-make-nullable (oref arg-type item-type))))
+     ((elsa-type-cons-p arg-type)
+      (oset form type (oref arg-type car-type))))))
+
 
 (defun elsa--analyse:elt (form scope state)
   (elsa--analyse-function-call form scope state)
