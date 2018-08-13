@@ -23,9 +23,12 @@
        (re-search-backward (rx (or "::" "elsa-make-type")))
        (0 nil t))
       ("[)]"
-       (progn (up-list)
-              (when (nth 4 (syntax-ppss))
-                (backward-char 1)))
+       (if (nth 4 (syntax-ppss))
+           (progn
+             (up-list)
+             (backward-char 1)
+             (1+ (point)))
+         (1+ (point)))
        (re-search-backward (rx (or "::" "elsa-make-type")))
        (0 font-lock-doc-face t))
       (,(rx (or "->" "|"))
