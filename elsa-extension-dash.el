@@ -1,4 +1,7 @@
 (require 'elsa-analyser)
+(require 'elsa-type-helpers)
+
+(put '--any? 'elsa-type (elsa-make-type Mixed -> List -> Bool))
 
 (defun elsa-dash--update-anaphora-scope (scope)
   "Add the `it' variable to SCOPE."
