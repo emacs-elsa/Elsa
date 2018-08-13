@@ -178,7 +178,8 @@ Here are general guidelines on how the types are constructed.
   arity.  A `Variadic` type constructor is also available to construct
   complex types.
 - To mark type as nullable you can attach `?` to the end of it, so
-  that `Int?` accepts any integer and also a `nil`.
+  that `Int?` accepts any integer and also a `nil`.  A `Maybe` type
+  constructor is also available to construct complex types.
 
 Some type constructors have optional arguments, for example writing
 just `Cons` will assume the `car` and `cdr` are of type `Mixed`.
