@@ -80,7 +80,7 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-form-sequence ((this elsa-form-symbol))
   (if (eq (elsa-form-name this) 'nil)
       nil
-    (error "Can not get sequence out of symbol form.")))
+    (error "Can not get sequence out of symbol form")))
 
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-symbol))
   (eq (elsa-form-name this) 'nil))
