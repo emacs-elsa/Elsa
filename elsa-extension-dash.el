@@ -2,6 +2,8 @@
 (require 'elsa-type-helpers)
 
 (put '--any? 'elsa-type (elsa-make-type Mixed -> List -> Bool))
+(put '-repeat 'elsa-type (elsa-make-type Number -> Mixed -> [Mixed]))
+(put '-concat 'elsa-type (elsa-make-type Variadic [Mixed] -> [Mixed]))
 
 (defun elsa-dash--update-anaphora-scope (scope)
   "Add the `it' variable to SCOPE."
