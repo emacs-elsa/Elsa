@@ -4,11 +4,10 @@
   (interactive)
   (font-lock-add-keywords
    nil
-   `((,(rx "("
-           (or
-            (and (group (1+ (or (syntax word) (syntax symbol)))) (1+ space) (group "::") (1+ space))
+   `((,(rx (or
+            (and (group "(" (1+ (or (syntax word) (syntax symbol)))) (1+ space) (group "::") (1+ space))
             (group (and "elsa-make-type" (1+ space)))))
-      (1 font-lock-function-name-face t t)
+      (1 font-lock-doc-face t t)
       (2 font-lock-variable-name-face t t)
       (3 font-lock-keyword-face t t)
       ("\\_<\\([A-Z]\\(?:\\sw\\|\\s_\\)*\\)\\_>"
@@ -23,6 +22,12 @@
        (save-excursion (up-list) (1- (point)))
        (re-search-backward (rx (or "::" "elsa-make-type")))
        (0 nil t))
+      ("[)]"
+       (progn (up-list)
+              (when (nth 4 (syntax-ppss))
+                (backward-char 1)))
+       (re-search-backward (rx (or "::" "elsa-make-type")))
+       (0 font-lock-doc-face t))
       (,(rx (or "->" "|"))
        (save-excursion (up-list) (point))
        nil
