@@ -24,6 +24,11 @@
      ((elsa-type-cons-p arg-type)
       (oset form type (oref arg-type car-type))))))
 
+(defun elsa--analyse:cons (form scope state)
+  (elsa--analyse-function-call form scope state)
+  (-when-let* ((car-type (oref (nth 1 (oref form sequence)) type))
+               (cdr-type (oref (nth 2 (oref form sequence)) type)))
+    (oset form type (elsa-type-cons :car-type car-type :cdr-type cdr-type))))
 
 (defun elsa--analyse:elt (form scope state)
   (elsa--analyse-function-call form scope state)
