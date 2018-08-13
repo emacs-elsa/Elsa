@@ -170,6 +170,12 @@ Here are general guidelines on how the types are constructed.
   A type constructor `List` is also supported.
 - Function types are created by separating argument types and the
   return type with `->` token.
+- To make variadic types (for the `&rest` keyword) add three dots
+  `...` after the type, so `String... -> String` is a function taking
+  any number of strings and returning a string, such as `concat`.
+  Note: a variadic type is internally just a list of the same base
+  type but it has a flag that allows the function be of variable
+  arity.
 - To mark type as nullable you can attach `?` to the end of it, so
   that `Int?` accepts any integer and also a `nil`.
 
