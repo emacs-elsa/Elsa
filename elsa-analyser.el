@@ -232,7 +232,9 @@ nullables and the &rest argument into a variadic."
   (let ((arg (cadr (oref form sequence))))
     (cond
      ((elsa-form-list-p arg)
-      (oset form type (elsa-type-list))))))
+      (oset form type (elsa-type-list)))
+     ((elsa-form-symbol-p arg)
+      (oset form type (elsa-type-symbol))))))
 
 (defun elsa--analyse-backquote (form scope state)
   nil)
