@@ -175,7 +175,8 @@ Here are general guidelines on how the types are constructed.
   any number of strings and returning a string, such as `concat`.
   Note: a variadic type is internally just a list of the same base
   type but it has a flag that allows the function be of variable
-  arity.
+  arity.  A `Variadic` type constructor is also available to construct
+  complex types.
 - To mark type as nullable you can attach `?` to the end of it, so
   that `Int?` accepts any integer and also a `nil`.
 
