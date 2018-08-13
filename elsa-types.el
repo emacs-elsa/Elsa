@@ -38,7 +38,8 @@ First describe TYPE using `elsa-type-describe'.  If TYPE is
 composite also wrap it in parens to preserve the semantics when
 it is passed to another constructor."
   (let ((printed (elsa-type-describe type)))
-    (if (elsa-type-composite-p type)
+    (if (and (elsa-type-composite-p type)
+             (not (elsa-type-list-p type)))
         (format "(%s)" printed)
       printed)))
 
