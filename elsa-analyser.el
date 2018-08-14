@@ -133,8 +133,12 @@ number by symbol 'many."
         (can-be-nil-p t))
     (-each branches
       (lambda (branch)
-        (--each (oref branch sequence)
-          (elsa--analyse-form it scope state))
+        (-when-let* ((branch-seq (oref branch sequence))
+                     (head (car branch-seq)))
+          (elsa--analyse-form head scope state)
+          (elsa--with-narrowed-variables head scope
+            (--each (cdr branch-seq)
+              (elsa--analyse-form it scope state))))
         (let ((first-item (-first-item (oref branch sequence)))
               (last-item (-last-item (oref branch sequence))))
           (unless (elsa-type-accept (oref first-item type) (elsa-type-nil))
