@@ -11,6 +11,15 @@
 
 (require 'elsa-typed-builtin)
 
+(defmacro elsa--with-narrowed-variables (form scope &rest body)
+  (declare (indent 2))
+  `(progn
+     (--each (oref ,form narrow-types)
+       (elsa-scope-add-variable ,scope it))
+     ,@body
+     (--each (oref ,form narrow-types)
+       (elsa-scope-remove-variable ,scope it))))
+
 ;; (elsa--arglist-to-arity :: List Symbol -> Cons Int (Int | Symbol))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
@@ -107,11 +116,8 @@ number by symbol 'many."
         (true-body (nth 2 (oref form sequence)))
         (false-body (nthcdr 3 (oref form sequence))))
     (elsa--analyse-form condition scope state)
-    (--each (oref condition narrow-types)
-      (elsa-scope-add-variable scope it))
-    (elsa--analyse-form true-body scope state)
-    (--each (oref condition narrow-types)
-      (elsa-scope-remove-variable scope it))
+    (elsa--with-narrowed-variables condition scope
+      (elsa--analyse-form true-body scope state))
     (elsa--analyse-body false-body scope state)
     (let ((result-type (oref true-body type)))
       (when false-body
