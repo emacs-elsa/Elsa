@@ -107,7 +107,11 @@ number by symbol 'many."
         (true-body (nth 2 (oref form sequence)))
         (false-body (nthcdr 3 (oref form sequence))))
     (elsa--analyse-form condition scope state)
+    (--each (oref condition narrow-types)
+      (elsa-scope-add-variable scope it))
     (elsa--analyse-form true-body scope state)
+    (--each (oref condition narrow-types)
+      (elsa-scope-remove-variable scope it))
     (elsa--analyse-body false-body scope state)
     (let ((result-type (oref true-body type)))
       (when false-body
@@ -276,7 +280,8 @@ nullables and the &rest argument into a variadic."
   (let* ((head (elsa-form-car form))
          (name (oref head name))
          (args (cdr (oref form sequence)))
-         (type (get name 'elsa-type)))
+         (type (get name 'elsa-type))
+         (narrow-types (get name 'elsa-narrow-types)))
     (-each (-zip args spec)
       (-lambda ((arg . analysep))
         (when analysep
@@ -332,7 +337,21 @@ nullables and the &rest argument into a variadic."
 
       ;; set the return type of the form according to the return type
       ;; of the function's declaration
-      (oset form type (elsa-type-get-return type)))))
+      (oset form type (elsa-type-get-return type)))
+
+    ;; compute narrowed types of variables in this function if possible
+    (when narrow-types
+      (let ((form-narrow-types nil))
+        (-each-indexed narrow-types
+          (lambda (index narrow-type)
+            (let ((arg (nth index args)))
+              (when (and (elsa-form-symbol-p arg)
+                         (not (oref arg quote-type)))
+                (-when-let* ((varname (elsa-form-name arg))
+                             (var (elsa-scope-get-var scope varname)))
+                  (push (elsa-variable :name varname :type narrow-type)
+                        form-narrow-types))))))
+        (oset form narrow-types form-narrow-types)))))
 
 (defun elsa--analyse-function-call (form scope state)
   (elsa--analyse-macro form t scope state))

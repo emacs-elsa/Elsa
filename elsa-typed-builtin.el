@@ -5,14 +5,22 @@
 (put 'eq 'elsa-type (elsa-make-type Mixed -> Mixed -> Bool))
 (put 'null 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'type-of 'elsa-type (elsa-make-type Mixed -> Symbol))
-(put 'consp 'elsa-type (elsa-make-type Mixed -> Bool))
+(progn
+  (put 'consp 'elsa-type (elsa-make-type Mixed -> Bool))
+  (put 'consp 'elsa-narrow-types (list (elsa-make-type Cons))))
 (put 'atom 'elsa-type (elsa-make-type Mixed -> Bool))
-(put 'listp 'elsa-type (elsa-make-type Mixed -> Bool))
+(progn
+  (put 'listp 'elsa-type (elsa-make-type Mixed -> Bool))
+  (put 'listp 'elsa-narrow-types (list (elsa-make-type List))))
 (put 'nlistp 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'symbolp 'elsa-type (elsa-make-type Mixed -> Bool))
-(put 'keywordp 'elsa-type (elsa-make-type Mixed -> Bool))
+(progn
+  (put 'keywordp 'elsa-type (elsa-make-type Mixed -> Bool))
+  (put 'keywordp 'elsa-narrow-types (list (elsa-make-type Keyword))))
 (put 'vectorp 'elsa-type (elsa-make-type Mixed -> Bool))
-(put 'stringp 'elsa-type (elsa-make-type Mixed -> Bool))
+(progn
+  (put 'stringp 'elsa-type (elsa-make-type Mixed -> Bool))
+  (put 'stringp 'elsa-narrow-types (list (elsa-make-type String))))
 (put 'multibyte-string-p 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'char-table-p 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'vector-or-char-table-p 'elsa-type (elsa-make-type Mixed -> Bool))
@@ -25,7 +33,9 @@
 (put 'subrp 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'byte-code-function-p 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'char-or-string-p 'elsa-type (elsa-make-type Mixed -> Bool))
-(put 'integerp 'elsa-type (elsa-make-type Mixed -> Bool))
+(progn
+  (put 'integerp 'elsa-type (elsa-make-type Mixed -> Bool))
+  (put 'integerp 'elsa-narrow-types (list (elsa-make-type Int))))
 (put 'integer-or-marker-p 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'natnump 'elsa-type (elsa-make-type Mixed -> Bool))
 (put 'numberp 'elsa-type (elsa-make-type Mixed -> Bool))
