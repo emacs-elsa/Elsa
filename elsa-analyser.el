@@ -168,20 +168,17 @@ nullables and the &rest argument into a variadic."
                (elsa-make-type Variadic Mixed))
       (-repeat max (elsa-make-type Mixed)))))
 
-(defun elsa--analyse:defun (form scope state)
+(defun elsa--analyse-defun-like-form (name args body form scope state)
   (let* ((sequence (oref form sequence))
-         (name (elsa-form-name (nth 1 sequence)))
-         (args (nth 2 sequence))
-         (body (nthcdr 3 sequence))
          (function-type (get name 'elsa-type))
          (arg-types (or (elsa-type-get-args function-type)
                         (elsa--get-default-function-types
-                         (-map 'elsa-form-name (elsa-form-sequence args)))))
+                         (-map 'elsa-form-name args))))
          (vars))
-    (when (elsa-form-list-p args)
+    (when args
       (-each-indexed (--remove
                       (memq (elsa-form-name it) '(&rest &optional))
-                      (elsa-form-sequence args))
+                      args)
         (lambda (index arg)
           (let ((var (elsa-variable
                       :name (elsa-form-name arg)
@@ -203,6 +200,13 @@ nullables and the &rest argument into a variadic."
                    (elsa-type-describe body-return-type))
            (elsa-form-car form)))))
     (--each vars (elsa-scope-remove-variable scope it))))
+
+(defun elsa--analyse:defun (form scope state)
+  (let* ((sequence (oref form sequence))
+         (name (elsa-form-name (nth 1 sequence)))
+         (args (elsa-form-sequence (nth 2 sequence)))
+         (body (nthcdr 3 sequence)))
+    (elsa--analyse-defun-like-form name args body form scope state)))
 
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))
