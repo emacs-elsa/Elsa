@@ -4,14 +4,14 @@
 ;; * boolean functions
 (defun elsa--analyse:not (form scope state)
   (elsa--analyse-function-call form scope state)
-  (let ((args (cdr (oref form sequence))))
-    (let ((arg-type (oref (car args) type)))
-      (cond
-       ((elsa-type-accept (elsa-type-nil) arg-type) ;; definitely false
-        (oset form type (elsa-type-t)))
-       ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
-        (oset form type (elsa-type-nil)))
-       (t (oset form type (elsa-make-type T?)))))))
+  (let* ((args (cdr (oref form sequence)))
+         (arg-type (oref (car args) type)))
+    (cond
+     ((elsa-type-accept (elsa-type-nil) arg-type) ;; definitely false
+      (oset form type (elsa-type-t)))
+     ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
+      (oset form type (elsa-type-nil)))
+     (t (oset form type (elsa-make-type T?))))))
 
 (defun elsa--analyse--eq (eq-form symbol-form constant-form)
   (let ((name (elsa-form-name symbol-form))
