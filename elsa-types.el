@@ -195,7 +195,13 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((this elsa-type-nil))
   "Nil")
 
-(defclass elsa-type-bool (elsa-type) ())
+(defclass elsa-type-symbol (elsa-type) ()
+  :documentation "Quoted symbol")
+
+(cl-defmethod elsa-type-describe ((this elsa-type-symbol))
+  "Symbol")
+
+(defclass elsa-type-bool (elsa-type elsa-type-symbol) ())
 
 (cl-defmethod elsa-type-accept ((this elsa-type-bool) other)
   (or (elsa-type-bool-p other)
@@ -266,12 +272,6 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-keyword))
   "Keyword")
-
-(defclass elsa-type-symbol (elsa-type) ()
-  :documentation "Quoted symbol")
-
-(cl-defmethod elsa-type-describe ((this elsa-type-symbol))
-  "Symbol")
 
 (defclass elsa-type-cons (elsa-type)
   ((car-type :type elsa-type :initarg :car-type
