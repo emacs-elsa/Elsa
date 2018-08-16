@@ -129,7 +129,7 @@ number by symbol 'many."
 
 (defun elsa--analyse:cond (form scope state)
   (let ((branches (cdr (oref form sequence)))
-        return-type
+        (return-type (elsa-type-empty))
         (can-be-nil-p t))
     (-each branches
       (lambda (branch)
@@ -143,13 +143,7 @@ number by symbol 'many."
               (last-item (-last-item (oref branch sequence))))
           (unless (elsa-type-accept (oref first-item type) (elsa-type-nil))
             (setq can-be-nil-p nil))
-          (setq
-           return-type
-           (if (eq return-type nil)
-               (clone (oref last-item type))
-             (elsa-type-sum
-              return-type
-              (oref last-item type)))))))
+          (setq return-type (elsa-type-sum return-type (oref last-item type))))))
     (when can-be-nil-p
       (setq return-type (elsa-type-make-nullable return-type)))
     (oset form type return-type)))
