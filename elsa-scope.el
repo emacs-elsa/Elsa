@@ -59,5 +59,10 @@
   (let ((vars (oref this vars)))
     (car (gethash name vars))))
 
+(cl-defmethod elsa-scope-get-var ((this elsa-scope) (var elsa-variable))
+  "Get binding of NAMEd variable in THIS scope."
+  (let ((vars (oref this vars)))
+    (car (gethash (oref var name) vars))))
+
 (provide 'elsa-scope)
 ;;; elsa-scope.el ends here
