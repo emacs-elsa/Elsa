@@ -114,11 +114,19 @@ number by symbol 'many."
 (defun elsa--analyse:if (form scope state)
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
-        (false-body (nthcdr 3 (oref form sequence))))
+        (false-body (nthcdr 3 (oref form sequence)))
+        (vars-to-pop nil))
     (elsa--analyse-form condition scope state)
     (elsa--with-narrowed-variables condition scope
       (elsa--analyse-form true-body scope state))
+    ;; TODO: extract this logic to a helper macro, it's shared with
+    ;; `cond' analysis, will also be used in `and' and `or'
+    (--each (oref condition narrow-types)
+      (-when-let (scope-var (elsa-scope-get-var scope it))
+        (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
+        (push it vars-to-pop)))
     (elsa--analyse-body false-body scope state)
+    (--each vars-to-pop (elsa-scope-remove-variable scope it))
     (let ((result-type (oref true-body type)))
       (when false-body
         (setq result-type
@@ -130,20 +138,27 @@ number by symbol 'many."
 (defun elsa--analyse:cond (form scope state)
   (let ((branches (cdr (oref form sequence)))
         (return-type (elsa-type-empty))
+        (vars-to-pop nil)
         (can-be-nil-p t))
     (-each branches
       (lambda (branch)
         (-when-let* ((branch-seq (oref branch sequence))
-                     (head (car branch-seq)))
+                     (head (car branch-seq))
+                     (body (cdr branch-seq)))
           (elsa--analyse-form head scope state)
           (elsa--with-narrowed-variables head scope
-            (--each (cdr branch-seq)
-              (elsa--analyse-form it scope state))))
+            (--each body
+              (elsa--analyse-form it scope state)))
+          (--each (oref head narrow-types)
+            (-when-let (scope-var (elsa-scope-get-var scope it))
+              (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
+              (push it vars-to-pop))))
         (let ((first-item (-first-item (oref branch sequence)))
               (last-item (-last-item (oref branch sequence))))
           (unless (elsa-type-accept (oref first-item type) (elsa-type-nil))
             (setq can-be-nil-p nil))
           (setq return-type (elsa-type-sum return-type (oref last-item type))))))
+    (--each vars-to-pop (elsa-scope-remove-variable scope it))
     (when can-be-nil-p
       (setq return-type (elsa-type-make-nullable return-type)))
     (oset form type return-type)))
