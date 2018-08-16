@@ -20,6 +20,7 @@
   (add-to-list 'elsa-checks (elsa-check-if-useless-then-progn))
   (add-to-list 'elsa-checks (elsa-check-if-useless-else-progn))
   (add-to-list 'elsa-checks (elsa-check-if-to-when))
+  (add-to-list 'elsa-checks (elsa-check-lambda-eta-conversion))
   )
 
 (defclass elsa-ruleset-symbol (elsa-ruleset) ())

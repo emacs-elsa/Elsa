@@ -125,4 +125,29 @@
               (elsa-state-add-error state
                 (elsa-make-warning "Condition always evaluates to false." first-item)))))))))
 
+(defclass elsa-check-lambda-eta-conversion (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-lambda-eta-conversion) form scope state)
+  (elsa-form-function-call-p form 'lambda))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-lambda-eta-conversion) form scope state)
+  (let* ((seq (oref form sequence))
+         (arg-list (elsa-form-sequence (nth 1 seq)))
+         (body (nthcdr 2 seq)))
+    (when (= 1 (length body))
+      (let ((fn-form (car body)))
+        (when (elsa-form-list-p fn-form)
+          (let ((fn-args (cdr (elsa-form-sequence fn-form))))
+            (when (and (= (length arg-list) (length fn-args))
+                       (-all-p
+                        (-lambda ((lambda-arg . fn-arg))
+                          (and (elsa-form-symbol-p fn-arg)
+                               (eq (elsa-form-name lambda-arg)
+                                   (elsa-form-name fn-arg))))
+                        (-zip arg-list fn-args)))
+              (elsa-state-add-error state
+                (elsa-make-notice (format "You can eta convert the lambda form and use the function `%s' directly"
+                                          (symbol-name (elsa-form-name fn-form)))
+                                  (elsa-form-car form))))))))))
+
 (provide 'elsa-rules-list)
