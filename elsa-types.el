@@ -283,7 +283,7 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((this elsa-type-marker))
   "Marker")
 
-(defclass elsa-type-keyword (elsa-type) ())
+(defclass elsa-type-keyword (elsa-type-symbol) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-keyword))
   "Keyword")
