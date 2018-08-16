@@ -36,5 +36,13 @@ You can assign to this variable any expression which is accepted
 by this type."))
   :documentation "A lexical variable")
 
+(cl-defmethod elsa-type-diff ((this elsa-variable) other)
+  (elsa-variable :name (oref this name)
+                 :type (elsa-type-diff (oref this type) other)))
+
+(cl-defmethod elsa-type-diff ((this elsa-variable) (other elsa-variable))
+  (elsa-variable :name (oref this name)
+                 :type (elsa-type-diff (oref this type) (oref other type))))
+
 (provide 'elsa-variable)
 ;;; elsa-variable.el ends here
