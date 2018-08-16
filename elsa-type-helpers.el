@@ -129,6 +129,11 @@ The grammar is as follows (in eBNF):
         (-mapcat 'elsa--eieio-class-parents-recursive
                  (-map 'eieio-class-name (eieio-class-parents type)))))
 
+(defun elsa-type-equivalent-p (this other)
+  "Test if THIS and OTHER are equivalent types."
+  (and (elsa-type-accept this other)
+       (elsa-type-accept other this)))
+
 ;; TODO: what is the relationship of `a' and `a?'
 (defun elsa-instance-of (this other)
   "Non-nil if THIS is instance of OTHER."
@@ -144,6 +149,8 @@ The grammar is as follows (in eBNF):
 (cl-defmethod elsa-type-make-nullable ((this elsa-type))
   (elsa-type-sum this (elsa-make-type Nil)))
 
+
+;; TODO: turn into a generic
 (defun elsa-type-sum-normalize (sum)
   "Normalize a sum type.
 
@@ -170,6 +177,12 @@ An intersection only accepts what both THIS and OTHER accept.")
   "Return the sum of THIS and OTHER type.
 
 A sum accept anything that either THIS or OTHER accepts.")
+
+(cl-defmethod elsa-type-sum ((this elsa-type-empty) (other elsa-type))
+  other)
+
+(cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type-empty))
+  this)
 
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
   (let ((sum (elsa-sum-type :types (list this))))
@@ -204,11 +217,56 @@ A sum accept anything that either THIS or OTHER accepts.")
 The diff type only accepts those types accepted by THIS which are
 not accepted by OTHER.")
 
+(cl-defmethod elsa-type-diff ((this elsa-type) other)
+  "Any base type without another is the same type, there is no intersection."
+  (if (elsa-type-accept other this)
+      (elsa-type-empty)
+    (clone this)))
 
-;; (cl-defgeneric elsa-type-diff ((this elsa-type) (other elsa-type))
-;;   (elsa-type-diff-normalize
-;;    (let ((diff (elsa-diff-type :positive (list this))))))
-;;   )
+(cl-defmethod elsa-type-diff ((this elsa-type-mixed) other)
+  "Mixed is one with everything, so we need to subtract OTHER from the world."
+  (elsa-type-diff-normalize (elsa-diff-type :negative (clone other))))
+
+(cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-int))
+  "Number without int must be float."
+  (cond
+   ((elsa-type-int-p this)
+    (elsa-type-empty))
+   ((elsa-type-float-p this)
+    this)
+   (t
+    (elsa-type-float))))
+
+(cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-float))
+  "Number without float must by int."
+  (cond
+   ((elsa-type-int-p this)
+    this)
+   ((elsa-type-float-p this)
+    (elsa-type-empty))
+   (t
+    (elsa-type-int))))
+
+(cl-defmethod elsa-type-diff ((this elsa-type) (other elsa-sum-type))
+  "A difference of a type and sum is THIS minus all the summed types."
+  (let ((new (clone this)))
+    (-reduce-from 'elsa-type-diff new (oref other types))))
+
+(cl-defmethod elsa-type-diff ((this elsa-sum-type) other)
+  "A difference of sum and some other type can only reduce the arguments of the sum."
+  (let (new)
+    (-each (oref this types)
+      (lambda (type)
+        (let ((diff-type (elsa-type-diff type other)))
+          (unless (elsa-type-empty-p diff-type)
+            (push (clone diff-type) new)))))
+    (elsa-type-sum-normalize
+     (elsa-sum-type :types (nreverse new)))))
+
+(cl-defmethod elsa-type-diff ((this elsa-diff-type) other)
+  (elsa-type-diff-normalize
+   (elsa-diff-type :positive (elsa-type-diff (oref this positive) other)
+                   :negative (elsa-type-sum (oref this negative) other))))
 
 (provide 'elsa-type-helpers)
 ;;; elsa-type-helpers.el ends here

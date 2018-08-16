@@ -113,4 +113,120 @@
     (it "should not add the same primitive type twice"
       (let ((sum (elsa-type-sum (elsa-make-type Float) (elsa-make-type Int))))
         (setq sum (elsa-type-sum sum (elsa-make-type Int)))
-        (expect (length (oref sum types)) :to-equal 2)))))
+        (expect (length (oref sum types)) :to-equal 2))))
+
+
+  (describe "elsa-type-diff"
+
+
+    (describe "primitive"
+
+
+      (it "string diffed with itself should give empty"
+        (expect (elsa-type-diff (elsa-make-type String) (elsa-make-type String))
+                :to-equal (elsa-make-type Empty)))
+
+      (it "symbol diffed with itself should give empty"
+        (expect (elsa-type-diff (elsa-make-type Symbol) (elsa-make-type Symbol))
+                :to-equal (elsa-make-type Empty))))
+
+    (describe "number"
+
+
+      (it "diffing int with int should give empty"
+        (expect (elsa-type-diff (elsa-make-type Int) (elsa-make-type Int))
+                :to-equal (elsa-make-type Empty)))
+
+      (it "diffing float with float should give empty"
+        (expect (elsa-type-diff (elsa-make-type Float) (elsa-make-type Float))
+                :to-equal (elsa-make-type Empty)))
+
+      (it "diffing number with int should give float"
+        (expect (elsa-type-diff (elsa-make-type Number) (elsa-make-type Int))
+                :to-equal (elsa-make-type Float)))
+
+      (it "diffing number with float should give int"
+        (expect (elsa-type-diff (elsa-make-type Number) (elsa-make-type Float))
+                :to-equal (elsa-make-type Int)))
+
+      (it "diffing int with float should give int"
+        (expect (elsa-type-diff (elsa-make-type Int) (elsa-make-type Float))
+                :to-equal (elsa-make-type Int)))
+
+      (it "diffing float with int should give float"
+        (expect (elsa-type-diff (elsa-make-type Float) (elsa-make-type Int))
+                :to-equal (elsa-make-type Float))))
+
+
+    (describe "sum"
+
+
+      (describe "subtracting from sum"
+
+
+        (it "should remove primitive type from a sum"
+          (expect (elsa-type-diff
+                   (elsa-sum-type
+                    :types (list (elsa-make-type Int)
+                                 (elsa-make-type String)))
+                   (elsa-make-type Int))
+                  :to-equal (elsa-make-type String)))
+
+        (it "should reduce number in a sum to float if int is subtracted"
+          (expect (elsa-type-equivalent-p
+                   (elsa-type-diff
+                    (elsa-sum-type
+                     :types (list (elsa-make-type Number)
+                                  (elsa-make-type String)))
+                    (elsa-make-type Int))
+                   (elsa-make-type String | Float))
+                  :to-be t)))
+
+
+      (describe "subtracting a sum"
+
+
+        (it "should empty a primitive if the sum contains it"
+          (expect (elsa-type-diff
+                   (elsa-make-type Int)
+                   (elsa-sum-type
+                    :types (list (elsa-make-type Int)
+                                 (elsa-make-type String))))
+                  :to-equal (elsa-make-type Empty)))
+
+        (it "should resolve a number to float if the sum contains int"
+          (expect (elsa-type-diff
+                   (elsa-make-type Number)
+                   (elsa-sum-type
+                    :types (list (elsa-make-type Int)
+                                 (elsa-make-type String))))
+                  :to-equal (elsa-make-type Float)))))
+
+
+    (describe "mixed"
+
+
+      (it "without string should be mixed \ string"
+        (expect (oref (elsa-type-diff
+                       (elsa-make-type Mixed)
+                       (elsa-make-type String)) negative)
+                :to-equal (elsa-make-type String)))
+
+      (it "without string and int should be mixed \ (string | int)"
+        (expect (elsa-type-equivalent-p
+                 (oref (elsa-type-diff
+                        (elsa-make-type Mixed)
+                        (elsa-make-type String | Int)) negative)
+                 (elsa-make-type String | Int))
+                :to-be t))
+
+      (it "without string and int subtracted iteratively should be mixed \ (string | int)"
+        (expect (elsa-type-equivalent-p
+                 (oref (elsa-type-diff
+                        (elsa-type-diff
+                         (elsa-make-type Mixed)
+                         (elsa-make-type String))
+                        (elsa-make-type Int))
+                       negative)
+                 (elsa-make-type String | Int))
+                :to-be t)))))

@@ -90,6 +90,14 @@ arguments to other constructors."
 
 This is not accepted by any type because we don't know what it is.")
 
+(defclass elsa-type-empty (elsa-type) ()
+  :documentation "Empty type.  Has no domain.
+
+This is not accepted by any type and does not accept any type.")
+
+(cl-defmethod elsa-type-describe ((this elsa-type-empty))
+  "()")
+
 (cl-defmethod elsa-type-accept ((this elsa-type-unbound) other)
   "Unbount type accepts anything.
 
@@ -151,8 +159,8 @@ type that is accepted by at least one of its summands.")
    (t (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
 
 (defclass elsa-diff-type (elsa-type)
-  ((positive :initform (elsa-sum-type) :initarg :positive)
-   (negative :initform (elsa-sum-type) :initarg :negative))
+  ((positive :initform (elsa-type-mixed) :initarg :positive)
+   (negative :initform (elsa-type-empty) :initarg :negative))
   :documentation "Diff type.
 
 This type is a combination of positive and negative types.  It
@@ -171,6 +179,13 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-accept ((this elsa-diff-type) (other elsa-type))
   (and (elsa-type-accept (oref this positive) other)
        (not (elsa-type-accept (oref this negative) other))))
+
+(cl-defmethod elsa-type-describe ((this elsa-diff-type))
+  (if (oref this negative)
+      (format "%s \\ %s"
+              (elsa-type-format-arg (oref this positive))
+              (elsa-type-format-arg (oref this negative)))
+    (elsa-type-describe (oref this positive))))
 
 ;; (cl-defmethod elsa-diff-type-add-positive ((this elsa-diff-type) (other elsa-type))
 ;;   (let ((re (clone this :positive :negative))))
