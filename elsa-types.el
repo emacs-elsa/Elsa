@@ -99,10 +99,11 @@ This is not accepted by any type and does not accept any type.")
   "()")
 
 (cl-defmethod elsa-type-accept ((this elsa-type-unbound) other)
-  "Unbount type accepts anything.
+  "Unbound type accepts anything.
 
 The only thing that can be of an unbound type is a symbol
-representing a variable.  It can accept anything because it is not bound to any specific value yet."
+representing a variable.  It can accept anything because it is
+not bound to any specific value yet."
   t)
 
 (cl-defmethod elsa-type-describe ((this elsa-type-unbound))
