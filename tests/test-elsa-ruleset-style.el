@@ -1,0 +1,42 @@
+;; -*- lexical-binding: t -*-
+
+(require 'elsa-reader)
+(require 'elsa-types)
+(require 'elsa-extension-builtin)
+(require 'elsa-ruleset)
+
+(require 'elsa-test-helpers)
+
+(describe "Ruleset"
+
+  (describe "Style"
+
+    (before-all
+      (setq elsa-checks nil)
+      (elsa-ruleset-load (elsa-ruleset-style)))
+
+    (describe "Eta conversion"
+
+      (it "should suggest converting a unary function"
+        (elsa-test-with-analysed-form "|(lambda (x) (stringp x))" form
+          :state-var state
+          (expect (oref state errors) :not :to-be nil)
+          (expect (oref (car (oref state errors)) message) :to-equal
+                  "You can eta convert the lambda form and use the function `stringp' directly")))
+
+      (it "should not suggest converting a unary function if argument names don't match"
+        (elsa-test-with-analysed-form "|(let (y) (lambda (x) (stringp y)))" form
+          :state-var state
+          (expect (oref state errors) :to-be nil)))
+
+      (it "should suggest converting a binary function"
+        (elsa-test-with-analysed-form "|(lambda (x y) (equal x y))" form
+          :state-var state
+          (expect (oref state errors) :not :to-be nil)
+          (expect (oref (car (oref state errors)) message) :to-equal
+                  "You can eta convert the lambda form and use the function `equal' directly")))
+
+      (it "should not suggest converting a binary function if arguments don't match"
+        (elsa-test-with-analysed-form "|(lambda (x y) (equal y x))" form
+          :state-var state
+          (expect (oref state errors) :to-be nil))))))
