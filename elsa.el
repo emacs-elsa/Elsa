@@ -48,9 +48,6 @@
   ((name :initarg :name)
    (type :initarg :type)))
 
-(defclass elsa-expression nil
-  ((type :initarg :type)))
-
 (defun elsa-process-file (file)
   "Process FILE."
   (let ((buffer (find-file-noselect file))
