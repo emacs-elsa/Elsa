@@ -28,8 +28,6 @@
 
 (require 'elsa-variable)
 
-;; TODO: add some methods for looking up variables, so we don't
-;; directly work with the hashtable
 (defclass elsa-scope nil
   ((vars :initarg :vars
          :initform (make-hash-table)
@@ -54,10 +52,18 @@
         (puthash name var-stack vars)
       (remhash name vars))))
 
+(cl-defgeneric elsa-scope-get-var (scope var)
+  "Fetch current binding of elsa-variable from elsa-scope.")
+
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) name)
-  "Get binding of NAMEd variable in THIS scope."
+  "Get binding of variable with NAME in THIS scope."
   (let ((vars (oref this vars)))
     (car (gethash name vars))))
+
+(cl-defmethod elsa-scope-get-var ((this elsa-scope) (var elsa-variable))
+  "Get binding of VAR in THIS scope."
+  (let ((vars (oref this vars)))
+    (car (gethash (oref var name) vars))))
 
 (provide 'elsa-scope)
 ;;; elsa-scope.el ends here

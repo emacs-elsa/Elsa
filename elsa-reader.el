@@ -58,6 +58,7 @@ Nil if FORM is not a quoted symbol."
    (line :type integer :initarg :line)
    (column :type integer :initarg :column)
    (type :type elsa-type :initarg :type :initform (elsa-make-type Mixed))
+   (narrow-types :initarg :narrow-type :initform nil)
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 

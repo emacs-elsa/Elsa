@@ -30,38 +30,19 @@
 (defclass elsa-variable nil
   ((name :initarg :name)
    (type :initarg :type
-         :documentation "Type of this variable for assignment.
+         :documentation "Type of this variable.
 
-You can assign to this variable any expression which is accepted
-by this type.")
-   (surely :initform nil
-           :documentation "This variable is surely of this type.")
-   (surely-not :initform nil
-               :documentation "This variable is surely not of this type."))
+This is the type that the symbol form representing this variable
+will assume during analysis."))
   :documentation "A lexical variable")
 
-(cl-defmethod elsa-variable-surely ((this elsa-variable) type)
-  (unless (elsa-type-child-p type) (error "Type must be `elsa-type-child-p'"))
-  (oset this surely (cons type (oref this surely))))
+(cl-defmethod elsa-type-diff ((this elsa-variable) other)
+  (elsa-variable :name (oref this name)
+                 :type (elsa-type-diff (oref this type) other)))
 
-(cl-defmethod elsa-variable-pop-surely ((this elsa-variable))
-  (oset this surely (cdr (oref this surely))))
-
-(cl-defmethod elsa-variable-surely-not ((this elsa-variable) type)
-  (unless (elsa-type-child-p type) (error "Type must be `elsa-type-child-p'"))
-  (oset this surely-not (cons type (oref this surely-not))))
-
-(cl-defmethod elsa-variable-pop-surely-not ((this elsa-variable))
-  (oset this surely-not (pop (oref this surely-not))))
-
-(cl-defmethod elsa-variable-is-accepted ((this elsa-variable) type)
-  "Return non-nil if VARIABLE is accepted by TYPE."
-  (unless (elsa-type-child-p type) (error "Type must be `elsa-type-child-p'"))
-  (and (or (not (oref this surely))
-           (elsa-type-accept type (oref this surely)))
-       (or (not (oref this surely-not))
-           (not (elsa-type-accept type (oref this surely-not))))
-       (elsa-type-accept type (oref this type))))
+(cl-defmethod elsa-type-diff ((this elsa-variable) (other elsa-variable))
+  (elsa-variable :name (oref this name)
+                 :type (elsa-type-diff (oref this type) (oref other type))))
 
 (provide 'elsa-variable)
 ;;; elsa-variable.el ends here

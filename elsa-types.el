@@ -90,11 +90,20 @@ arguments to other constructors."
 
 This is not accepted by any type because we don't know what it is.")
 
+(defclass elsa-type-empty (elsa-type) ()
+  :documentation "Empty type.  Has no domain.
+
+This is not accepted by any type and does not accept any type.")
+
+(cl-defmethod elsa-type-describe ((this elsa-type-empty))
+  "()")
+
 (cl-defmethod elsa-type-accept ((this elsa-type-unbound) other)
-  "Unbount type accepts anything.
+  "Unbound type accepts anything.
 
 The only thing that can be of an unbound type is a symbol
-representing a variable.  It can accept anything because it is not bound to any specific value yet."
+representing a variable.  It can accept anything because it is
+not bound to any specific value yet."
   t)
 
 (cl-defmethod elsa-type-describe ((this elsa-type-unbound))
@@ -151,8 +160,8 @@ type that is accepted by at least one of its summands.")
    (t (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
 
 (defclass elsa-diff-type (elsa-type)
-  ((positive :initform (elsa-sum-type) :initarg :positive)
-   (negative :initform (elsa-sum-type) :initarg :negative))
+  ((positive :initform (elsa-type-mixed) :initarg :positive)
+   (negative :initform (elsa-type-empty) :initarg :negative))
   :documentation "Diff type.
 
 This type is a combination of positive and negative types.  It
@@ -171,6 +180,13 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-accept ((this elsa-diff-type) (other elsa-type))
   (and (elsa-type-accept (oref this positive) other)
        (not (elsa-type-accept (oref this negative) other))))
+
+(cl-defmethod elsa-type-describe ((this elsa-diff-type))
+  (if (oref this negative)
+      (format "%s \\ %s"
+              (elsa-type-format-arg (oref this positive))
+              (elsa-type-format-arg (oref this negative)))
+    (elsa-type-describe (oref this positive))))
 
 ;; (cl-defmethod elsa-diff-type-add-positive ((this elsa-diff-type) (other elsa-type))
 ;;   (let ((re (clone this :positive :negative))))
@@ -195,7 +211,13 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((this elsa-type-nil))
   "Nil")
 
-(defclass elsa-type-bool (elsa-type) ())
+(defclass elsa-type-symbol (elsa-type) ()
+  :documentation "Quoted symbol")
+
+(cl-defmethod elsa-type-describe ((this elsa-type-symbol))
+  "Symbol")
+
+(defclass elsa-type-bool (elsa-type elsa-type-symbol) ())
 
 (cl-defmethod elsa-type-accept ((this elsa-type-bool) other)
   (or (elsa-type-bool-p other)
@@ -262,16 +284,10 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((this elsa-type-marker))
   "Marker")
 
-(defclass elsa-type-keyword (elsa-type) ())
+(defclass elsa-type-keyword (elsa-type-symbol) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-keyword))
   "Keyword")
-
-(defclass elsa-type-symbol (elsa-type) ()
-  :documentation "Quoted symbol")
-
-(cl-defmethod elsa-type-describe ((this elsa-type-symbol))
-  "Symbol")
 
 (defclass elsa-type-cons (elsa-type)
   ((car-type :type elsa-type :initarg :car-type

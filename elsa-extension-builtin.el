@@ -4,14 +4,44 @@
 ;; * boolean functions
 (defun elsa--analyse:not (form scope state)
   (elsa--analyse-function-call form scope state)
-  (let ((args (cdr (oref form sequence))))
-    (let ((arg-type (oref (car args) type)))
-      (cond
-       ((elsa-type-accept (elsa-type-nil) arg-type) ;; definitely false
-        (oset form type (elsa-type-t)))
-       ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
-        (oset form type (elsa-type-nil)))
-       (t (oset form type (elsa-make-type T?)))))))
+  (let* ((args (cdr (oref form sequence)))
+         (arg-type (oref (car args) type)))
+    (cond
+     ((elsa-type-accept (elsa-type-nil) arg-type) ;; definitely false
+      (oset form type (elsa-type-t)))
+     ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
+      (oset form type (elsa-type-nil)))
+     (t (oset form type (elsa-make-type T?))))))
+
+(defun elsa--analyse--eq (eq-form symbol-form constant-form)
+  (let ((name (elsa-form-name symbol-form))
+        (type))
+    (setq type
+          (cond
+           ((elsa-form-keyword-p constant-form) (elsa-make-type Keyword))
+           ((elsa--quoted-symbol-p constant-form) (elsa-make-type Symbol))
+           ((and (elsa-form-symbol-p constant-form)
+                 (eq (elsa-form-name constant-form) t))
+            (elsa-make-type T))
+           ((and (elsa-form-symbol-p constant-form)
+                 (eq (elsa-form-name constant-form) nil))
+            (elsa-make-type Nil))
+           ((elsa-form-integer-p constant-form) (elsa-make-type Int))
+           ((elsa-form-float-p constant-form) (elsa-make-type Float))))
+    (when type (oset eq-form narrow-types (list (elsa-variable :name name :type type))))))
+
+(defun elsa--analyse:eq (form scope state)
+  (elsa--analyse-function-call form scope state)
+  (let* ((args (cdr (oref form sequence)))
+         (first (car args))
+         (second (cadr args)))
+    (cond
+     ((and (elsa-form-symbol-p first)
+           (elsa-scope-get-var scope (elsa-form-name first)))
+      (elsa--analyse--eq form first second))
+     ((and (elsa-form-symbol-p second)
+           (elsa-scope-get-var scope (elsa-form-name second)))
+      (elsa--analyse--eq form second first)))))
 
 ;; * list functions
 (defun elsa--analyse:car (form scope state)
