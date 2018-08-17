@@ -15,6 +15,15 @@
       (setq elsa-checks nil)
       (elsa-ruleset-load (elsa-ruleset-style)))
 
+    (describe "Unnecessary progn"
+
+      (it "should warn about useless progn around else branch"
+        (elsa-test-with-analysed-form "|(if out 1 (progn 2))" form
+          :errors-var errors
+          (expect errors :not :to-be nil)
+          (expect (oref (car errors) message) :to-equal
+                  "Useless `progn' around body of else branch."))))
+
     (describe "Eta conversion"
 
       (it "should suggest converting a unary function"
