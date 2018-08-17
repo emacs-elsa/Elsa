@@ -16,11 +16,11 @@ A check has to implement two methods:
   the current node.
 - `elsa-check-check' which performs the actual computation.")
 
-(cl-defmethod elsa-check-should-run ((this elsa-check) form scope state)
+(cl-defgeneric elsa-check-should-run ((this elsa-check) form scope state)
   "Decide if the check should run on FORM."
   nil)
 
-(cl-defmethod elsa-check-check ((this elsa-check) form scope state)
+(cl-defgeneric elsa-check-check ((this elsa-check) form scope state)
   "Run THIS check on FORM in SCOPE."
   nil)
 
