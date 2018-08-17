@@ -30,10 +30,10 @@
 (defclass elsa-variable nil
   ((name :initarg :name)
    (type :initarg :type
-         :documentation "Type of this variable for assignment.
+         :documentation "Type of this variable.
 
-You can assign to this variable any expression which is accepted
-by this type."))
+This is the type that the symbol form representing this variable
+will assume during analysis."))
   :documentation "A lexical variable")
 
 (cl-defmethod elsa-type-diff ((this elsa-variable) other)
