@@ -188,6 +188,9 @@ A sum accept anything that either THIS or OTHER accepts.")
 
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
   (cond
+   ((or (and (elsa-type-nil-p this) (elsa-type-t-p other))
+        (and (elsa-type-t-p this) (elsa-type-nil-p other)))
+    (elsa-type-bool))
    ((elsa-type-accept this other)
     (clone this))
    ((elsa-type-accept other this)
