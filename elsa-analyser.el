@@ -194,19 +194,24 @@ number by symbol 'many."
 (defun elsa--analyse:or (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (vars-to-pop)
-         (return-type (elsa-type-empty)))
+         (return-type (elsa-type-nil))
+         (can-be-nil-p t))
     (-each body
       (lambda (arg)
         (elsa--analyse-form arg scope state)
         (setq return-type (elsa-type-sum return-type (oref arg type)))
+        (unless (elsa-type-accept (oref arg type) (elsa-type-nil))
+          (setq can-be-nil-p nil))
         (--each (oref arg narrow-types)
           (-when-let (scope-var (elsa-scope-get-var scope it))
             (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
             (push it vars-to-pop)))))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
-    (let ((grouped (elsa-variables-group-and-sum
-                    (-non-nil (--mapcat (oref it narrow-types) body)))))
+    (-when-let (grouped (elsa-variables-group-and-sum
+                         (-non-nil (--mapcat (oref it narrow-types) body))))
       (oset form narrow-types grouped))
+    (unless can-be-nil-p
+      (setq return-type (elsa-type-make-non-nullable return-type)))
     (oset form type return-type)))
 
 (defun elsa--get-default-function-types (args)
