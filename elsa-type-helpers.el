@@ -187,8 +187,13 @@ A sum accept anything that either THIS or OTHER accepts.")
   this)
 
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
-  (let ((sum (elsa-sum-type :types (list this))))
-    (elsa-type-sum sum other)))
+  (cond
+   ((elsa-type-accept this other)
+    (clone this))
+   ((elsa-type-accept other this)
+    (clone other))
+   (t (let ((sum (elsa-sum-type :types (list this))))
+        (elsa-type-sum sum other)))))
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
   (elsa-type-sum-normalize
