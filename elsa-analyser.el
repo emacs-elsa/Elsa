@@ -191,6 +191,24 @@ number by symbol 'many."
         (oset form type (oref second type))
       (oset form type (elsa-type-unbound)))))
 
+(defun elsa--analyse:or (form scope state)
+  (let* ((body (cdr (oref form sequence)))
+         (vars-to-pop)
+         (return-type (elsa-type-empty)))
+    (-each body
+      (lambda (arg)
+        (elsa--analyse-form arg scope state)
+        (setq return-type (elsa-type-sum return-type (oref arg type)))
+        (--each (oref arg narrow-types)
+          (-when-let (scope-var (elsa-scope-get-var scope it))
+            (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
+            (push it vars-to-pop)))))
+    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (let ((grouped (elsa-variables-group-and-sum
+                    (-non-nil (--mapcat (oref it narrow-types) body)))))
+      (oset form narrow-types grouped))
+    (oset form type return-type)))
+
 (defun elsa--get-default-function-types (args)
   "Return a default list of types based on ARGS.
 
