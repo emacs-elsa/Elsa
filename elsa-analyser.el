@@ -175,6 +175,15 @@ number by symbol 'many."
         (oset form type (oref last type))
       (oset form type (elsa-type-nil)))))
 
+(defun elsa--analyse:save-excursion (form scope state)
+  (elsa--analyse:progn form scope state))
+
+(defun elsa--analyse:save-restriction (form scope state)
+  (elsa--analyse:progn form scope state))
+
+(defun elsa--analyse:save-current-buffer (form scope state)
+  (elsa--analyse:progn form scope state))
+
 (defun elsa--analyse:prog1 (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (first (car body)))
