@@ -115,8 +115,13 @@ not bound to any specific value yet."
           :initform nil))
   :documentation "Sum type.
 
-This type is a combination of other types.  It can accept any
-type that is accepted by at least one of its summands.")
+This type is a combination of other types.
+
+It can accept any type that is accepted by at least one of its
+summands.
+
+It is accepted by any type that is all of the summed types
+because the actual type can be any of them.")
 
 (cl-defmethod elsa-type-describe ((this elsa-sum-type))
   (cond
