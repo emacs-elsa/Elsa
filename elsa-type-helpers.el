@@ -247,6 +247,14 @@ not accepted by OTHER.")
    (t
     (elsa-type-int))))
 
+(cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-t))
+  "Bool without T is Nil."
+  (elsa-type-nil))
+
+(cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-nil))
+  "Bool without NIL is T."
+  (elsa-type-t))
+
 (cl-defmethod elsa-type-diff ((this elsa-type) (other elsa-sum-type))
   "A difference of a type and sum is THIS minus all the summed types."
   (let ((new (clone this)))
