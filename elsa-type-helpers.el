@@ -143,31 +143,30 @@ The grammar is as follows (in eBNF):
          (eieio-object-class (if (symbolp other) (elsa--make-type (list other)) other))))
     (not (null (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
 
-(cl-defmethod elsa-type-nullable-p ((this elsa-type))
-  (elsa-type-accept this (elsa-make-type Nil)))
+(defun elsa-type-nullable-p (type)
+  "Test if TYPE is nullable (i.e. accepts nil)."
+  (elsa-type-accept type (elsa-make-type Nil)))
 
-(cl-defmethod elsa-type-make-nullable ((this elsa-type))
-  (elsa-type-sum this (elsa-make-type Nil)))
+(defun elsa-type-make-nullable (type)
+  "Make TYPE nullable."
+  (elsa-type-sum type (elsa-make-type Nil)))
 
-(cl-defmethod elsa-type-make-non-nullable ((this elsa-type))
-  (elsa-type-diff this (elsa-type-nil)))
+(defun elsa-type-make-non-nullable (type)
+  "Make TYPE non-nullable."
+  (elsa-type-diff type (elsa-make-type Nil)))
 
-;; TODO: turn into a generic
-(defun elsa-type-sum-normalize (sum)
-  "Normalize a sum type.
+(cl-defgeneric elsa-type-normalize (type)
+  "Normalize TYPE to its most simplest form.")
 
-If the SUM only contains one type, return that type directly."
-  (let ((types (oref sum types)))
+(cl-defmethod elsa-type-normalize ((this elsa-sum-type))
+  "Normalize a sum type."
+  (let ((types (oref this types)))
     (if (= 1 (length types))
         (car types)
-      sum)))
+      this)))
 
-;; TODO:
-(defun elsa-type-diff-normalize (diff)
-  "Normalize a diff type.
-
-If the positive or negative types of the DIFF type contain only
-one type make them that type directly instead of a sum."
+(cl-defmethod elsa-type-normalize ((diff elsa-diff-type))
+  "Normalize a diff type."
   diff)
 
 (cl-defgeneric elsa-type-intersect (this other)
@@ -199,7 +198,7 @@ A sum accept anything that either THIS or OTHER accepts.")
         (elsa-type-sum sum other)))))
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
-  (elsa-type-sum-normalize
+  (elsa-type-normalize
    (let ((new nil))
      (-each (oref other types)
        (lambda (type)
@@ -208,13 +207,13 @@ A sum accept anything that either THIS or OTHER accepts.")
      (elsa-sum-type :types (-concat (oref this types) (nreverse new))))))
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-type))
-  (elsa-type-sum-normalize
+  (elsa-type-normalize
    (if (elsa-type-accept this other)
        (clone this)
      (elsa-sum-type :types (-snoc (oref this types) (clone other))))))
 
 (cl-defmethod elsa-type-sum ((this elsa-diff-type) (other elsa-type))
-  (elsa-type-diff-normalize
+  (elsa-type-normalize
    (if (elsa-type-accept this other)
        (clone this)
      (let ((new (clone this)))
@@ -235,7 +234,7 @@ not accepted by OTHER.")
 
 (cl-defmethod elsa-type-diff ((this elsa-type-mixed) other)
   "Mixed is one with everything, so we need to subtract OTHER from the world."
-  (elsa-type-diff-normalize (elsa-diff-type :negative (clone other))))
+  (elsa-type-normalize (elsa-diff-type :negative (clone other))))
 
 (cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-int))
   "Number without int must be float."
@@ -278,11 +277,11 @@ not accepted by OTHER.")
         (let ((diff-type (elsa-type-diff type other)))
           (unless (elsa-type-empty-p diff-type)
             (push (clone diff-type) new)))))
-    (elsa-type-sum-normalize
+    (elsa-type-normalize
      (elsa-sum-type :types (nreverse new)))))
 
 (cl-defmethod elsa-type-diff ((this elsa-diff-type) other)
-  (elsa-type-diff-normalize
+  (elsa-type-normalize
    (elsa-diff-type :positive (elsa-type-diff (oref this positive) other)
                    :negative (elsa-type-sum (oref this negative) other))))
 
