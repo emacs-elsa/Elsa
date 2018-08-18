@@ -185,6 +185,18 @@ number by symbol 'many."
       (elsa-scope-remove-variable scope var))
     (oset form type return-type)))
 
+(defun elsa--analyse:unwind-protect (form scope state)
+  (let* ((seq (oref form sequence))
+         (body (nth 1 seq))
+         (unwind-forms (nthcdr 2 seq))
+         (return-type))
+    (elsa--analyse-form body scope state)
+    (setq return-type (oref body type))
+    (--each unwind-forms (elsa--analyse-form it scope state))
+    (let ((last (-last-item unwind-forms)))
+      (setq return-type (elsa-type-sum return-type last)))
+    (oset form type return-type)))
+
 (defun elsa--analyse:progn (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (last (-last-item (oref form sequence))))
