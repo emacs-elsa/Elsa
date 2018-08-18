@@ -27,6 +27,7 @@
 (require 'eieio)
 
 (require 'elsa-variable)
+(require 'elsa-reader)
 
 (defclass elsa-scope nil
   ((vars :initarg :vars
@@ -34,23 +35,32 @@
          :documentation
      "Hash table of variables available in current (lexical) scope.")))
 
-(cl-defmethod elsa-scope-add-variable ((this elsa-scope) variable)
+(cl-defmethod elsa-scope-add-variable ((this elsa-scope) (variable elsa-variable))
   "Add VARIABLE to current scope."
-  (unless (elsa-variable-p variable) (error "Variable is not `elsa-variable-p'"))
   (let* ((vars (oref this vars))
          (name (oref variable name))
          (var-stack (gethash name vars)))
     (puthash name (cons variable var-stack) vars)))
 
-(cl-defmethod elsa-scope-remove-variable ((this elsa-scope) variable)
-  "Remove VARIABLE from current scope."
-  (unless (elsa-variable-p variable) (error "Variable is not `elsa-variable-p'"))
-  (let* ((vars (oref this vars))
-         (name (oref variable name))
+(cl-defmethod elsa-scope-add-variable ((this elsa-scope) (form elsa-form-symbol) type)
+  "Add VARIABLE to current scope."
+  (let* ((name (elsa-form-name form)))
+    (elsa-scope-add-variable this (elsa-variable :name name :type type))))
+
+(defun elsa-scope--remove-variable (scope name)
+  (let* ((vars (oref scope vars))
          (var-stack (cdr (gethash name vars))))
     (if var-stack
         (puthash name var-stack vars)
       (remhash name vars))))
+
+(cl-defmethod elsa-scope-remove-variable ((this elsa-scope) (variable elsa-variable))
+  "Remove VARIABLE from current scope."
+  (elsa-scope--remove-variable this (oref variable name)))
+
+(cl-defmethod elsa-scope-remove-variable ((this elsa-scope) (form elsa-form-symbol))
+  "Remove VARIABLE from current scope."
+  (elsa-scope--remove-variable this (elsa-form-name form)))
 
 (cl-defgeneric elsa-scope-get-var (scope var)
   "Fetch current binding of elsa-variable from elsa-scope.")
@@ -64,6 +74,11 @@
   "Get binding of VAR in THIS scope."
   (let ((vars (oref this vars)))
     (car (gethash (oref var name) vars))))
+
+(cl-defmethod elsa-scope-get-var ((this elsa-scope) (form elsa-form-symbol))
+  "Get binding of FORM in THIS scope."
+  (let ((vars (oref this vars)))
+    (car (gethash (elsa-form-name form) vars))))
 
 (provide 'elsa-scope)
 ;;; elsa-scope.el ends here
