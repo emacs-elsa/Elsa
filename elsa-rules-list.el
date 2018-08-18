@@ -150,4 +150,20 @@
                                           (symbol-name (elsa-form-name fn-form)))
                                   (elsa-form-car form))))))))))
 
+(defclass elsa-check-or-unreachable-code (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-or-unreachable-code) form scope state)
+  (elsa-form-function-call-p form 'or))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-or-unreachable-code) form scope state)
+  (let ((args (cdr (oref form sequence))))
+    (-each args
+      (lambda (condition)
+        (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
+            (elsa-state-add-error state
+              (elsa-make-warning "Condition always evaluates to true." condition))
+          (when (elsa-type-accept (elsa-type-nil) (oref condition type))
+            (elsa-state-add-error state
+              (elsa-make-warning "Condition always evaluates to false." condition))))))))
+
 (provide 'elsa-rules-list)
