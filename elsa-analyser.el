@@ -184,6 +184,9 @@ number by symbol 'many."
 (defun elsa--analyse:save-current-buffer (form scope state)
   (elsa--analyse:progn form scope state))
 
+(defun elsa--analyse:track-mouse (form scope state)
+  (elsa--analyse:progn form scope state))
+
 (defun elsa--analyse:prog1 (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (first (car body)))
