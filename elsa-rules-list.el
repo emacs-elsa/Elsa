@@ -115,8 +115,8 @@
          (total (length branches)))
     (-each-indexed branches
       (lambda (index branch)
-        (let* ((sequence (oref branch sequence))
-               (first-item (-first-item sequence)))
+        (-when-let* ((sequence (elsa-form-sequence branch))
+                     (first-item (-first-item sequence)))
           (if (and (not (elsa-type-accept (oref first-item type) (elsa-type-nil)))
                    (< index (1- total)))
               (elsa-state-add-error state
