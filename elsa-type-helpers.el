@@ -149,6 +149,8 @@ The grammar is as follows (in eBNF):
 (cl-defmethod elsa-type-make-nullable ((this elsa-type))
   (elsa-type-sum this (elsa-make-type Nil)))
 
+(cl-defmethod elsa-type-make-non-nullable ((this elsa-type))
+  (elsa-type-diff this (elsa-type-nil)))
 
 ;; TODO: turn into a generic
 (defun elsa-type-sum-normalize (sum)

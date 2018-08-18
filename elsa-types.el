@@ -82,9 +82,6 @@ arguments to other constructors."
 (cl-defmethod elsa-type-restrict-by ((this elsa-type) other)
   (error "Not implemented yet"))
 
-(cl-defmethod elsa-type-make-non-nullable ((this elsa-type))
-  (error "Not implemented yet"))
-
 (defclass elsa-type-unbound (elsa-type) ()
   :documentation "Type of an unbound variable.
 
@@ -153,9 +150,6 @@ because the actual type can be any of them.")
   (oset this types (--remove (eq (eieio-object-class it)
                                  (eieio-object-class other))
                              (oref this types))))
-
-(cl-defmethod elsa-type-make-non-nullable ((this elsa-sum-type))
-  (elsa-sum-type-remove this (elsa-type-nil)))
 
 (cl-defmethod elsa-type-accept ((this elsa-sum-type) other)
   (cond
