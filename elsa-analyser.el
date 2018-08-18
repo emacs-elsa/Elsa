@@ -132,11 +132,15 @@ number by symbol 'many."
     (elsa--analyse-body false-body scope state)
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
     (let ((result-type (oref true-body type)))
-      (when false-body
-        (setq result-type
+      (setq result-type
+            (cond
+             (false-body
               (elsa-type-sum
                result-type
-               (oref (-last-item false-body) type))))
+               (oref (-last-item false-body) type)))
+             ((elsa-type-accept (oref condition type) (elsa-type-nil))
+              (elsa-type-make-nullable result-type))
+             (t result-type)))
       (oset form type result-type))))
 
 (defun elsa--analyse:cond (form scope state)
