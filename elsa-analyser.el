@@ -179,6 +179,14 @@ number by symbol 'many."
         (oset form type (oref first type))
       (oset form type (elsa-type-unbound)))))
 
+(defun elsa--analyse:prog2 (form scope state)
+  (let* ((body (cdr (oref form sequence)))
+         (second (cadr body)))
+    (--each body (elsa--analyse-form it scope state))
+    (if second
+        (oset form type (oref second type))
+      (oset form type (elsa-type-unbound)))))
+
 (defun elsa--get-default-function-types (args)
   "Return a default list of types based on ARGS.
 
