@@ -188,16 +188,6 @@ type and none of the negative types.")
               (elsa-type-format-arg (oref this negative)))
     (elsa-type-describe (oref this positive))))
 
-;; (cl-defmethod elsa-diff-type-add-positive ((this elsa-diff-type) (other elsa-type))
-;;   (let ((re (clone this :positive :negative))))
-;;   (elsa-type-sum (oref this positive) other))
-
-(cl-defmethod elsa-diff-type-remove-positive ((this elsa-diff-type) other)
-  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (if (elsa-type-nil-p other)
-      (elsa-type-make-non-nullable (oref this positive))
-    (elsa-sum-type-remove (oref this positive) other)))
-
 (defclass elsa-type-t (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((this elsa-type-t))
