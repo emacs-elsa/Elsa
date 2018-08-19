@@ -2,7 +2,6 @@
 
 (require 'elsa-reader)
 (require 'elsa-check)
-(require 'elsa-infer)
 (require 'elsa-error)
 (require 'elsa-types)
 (require 'elsa-type-helpers)

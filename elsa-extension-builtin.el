@@ -1,5 +1,4 @@
 (require 'elsa-analyser)
-(require 'elsa-infer)
 
 ;; * boolean functions
 (defun elsa--analyse:not (form scope state)
