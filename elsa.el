@@ -42,6 +42,7 @@
 (require 'elsa-typed-emacs-syntax)
  ;; TODO: figure out how to load these based on `(require)' forms
 (require 'elsa-typed-thingatpt)
+(require 'elsa-typed-subr)
 
 ;; TODO: unify with `elsa-variable'?
 (defclass elsa-defvar nil
