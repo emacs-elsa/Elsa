@@ -166,8 +166,14 @@ The grammar is as follows (in eBNF):
       this)))
 
 (cl-defmethod elsa-type-normalize ((diff elsa-diff-type))
+(cl-defmethod elsa-type-normalize ((this elsa-diff-type))
   "Normalize a diff type."
-  diff)
+  (let ((pos (oref this positive))
+        (neg (oref this negative)))
+    (cond
+     ((elsa-type-equivalent-p pos neg)
+      (elsa-type-empty))
+     (t this))))
 
 (cl-defgeneric elsa-type-intersect (this other)
   "Return the intersection of THIS and OTHER type.
