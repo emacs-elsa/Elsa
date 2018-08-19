@@ -76,17 +76,17 @@
 ;; * predicates
 (defun elsa--analyse:stringp (form scope state)
   (elsa--analyse-function-call form scope state)
-  (oset form type
-        (elsa--infer-unary-fn form
-          (lambda (arg-type)
-            (cond
-             ((elsa-type-accept (elsa-type-string) arg-type)
-              (elsa-type-t))
-             ;; if the arg-type has string as a component, for
-             ;; example int | string, then it might evaluate
-             ;; sometimes to true and sometimes to false
-             ((elsa-type-accept arg-type (elsa-type-string))
-              (elsa-make-type T?))
-             (t (elsa-type-nil)))))))
+  (-when-let* ((arg (elsa-nth 1 form))
+               (arg-type (oref arg type)))
+    (oset form type
+          (cond
+           ((elsa-type-accept (elsa-type-string) arg-type)
+            (elsa-type-t))
+           ;; if the arg-type has string as a component, for
+           ;; example int | string, then it might evaluate
+           ;; sometimes to true and sometimes to false
+           ((elsa-type-accept arg-type (elsa-type-string))
+            (elsa-make-type T?))
+           (t (elsa-type-nil))))))
 
 (provide 'elsa-extension-builtin)
