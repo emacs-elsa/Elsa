@@ -253,6 +253,9 @@ type and none of the negative types.")
 
 (defclass elsa-type-sequence (elsa-type) ())
 
+(cl-defmethod elsa-type-describe ((this elsa-type-sequence))
+  "Sequence")
+
 (cl-defmethod elsa-type-get-item-type ((this elsa-type))
   "Get the type of items of a sequence type."
   nil)
