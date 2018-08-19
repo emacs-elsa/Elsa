@@ -270,6 +270,40 @@ number by symbol 'many."
       (setq return-type (elsa-type-make-non-nullable return-type)))
     (oset form type return-type)))
 
+(defun elsa--analyse:and (form scope state)
+  (let* ((body (elsa-cdr form))
+         (vars-to-pop)
+         (return-type (elsa-type-t))
+         (can-be-nil-p nil)
+         (must-be-nil-p nil))
+    (-each body
+      (lambda (arg)
+        (elsa--analyse-form arg scope state)
+        (when (elsa-type-accept arg (elsa-type-nil))
+          (setq can-be-nil-p t)
+          (when (elsa-type-accept (elsa-type-nil) arg)
+            (setq must-be-nil-p t)))
+        (--each (oref arg narrow-types)
+          (-when-let (scope-var (elsa-scope-get-var scope it))
+            (elsa-scope-add-variable scope (elsa-type-intersect scope-var it))
+            (push it vars-to-pop)))))
+    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (-when-let (grouped (elsa-variables-group-and-intersect
+                         (-non-nil (--mapcat (oref it narrow-types) body))))
+      (oset form narrow-types grouped))
+    (cond
+     (must-be-nil-p
+      (setq return-type (elsa-type-nil)))
+     ((-any-p
+       (lambda (var) (elsa-type-equivalent-p (oref var type) (elsa-type-empty)))
+       (oref form narrow-types))
+      (setq return-type (elsa-type-nil)))
+     (body
+      (setq return-type (oref (-last-item body) type))
+      (when can-be-nil-p
+        (setq return-type (elsa-type-make-nullable return-type)))))
+    (oset form type return-type)))
+
 (defun elsa--get-default-function-types (args)
   "Return a default list of types based on ARGS.
 

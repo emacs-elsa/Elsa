@@ -216,7 +216,7 @@ type and none of the negative types.")
 
 (defclass elsa-type-nil (elsa-type) ())
 
-(cl-defmethod elsa-type-accept ((this elsa-type-nil) other)
+(cl-defmethod elsa-type-accept ((this elsa-type-nil) (other elsa-type))
   (elsa-type-nil-p other))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-nil))

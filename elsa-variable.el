@@ -44,6 +44,10 @@ will assume during analysis."))
   (elsa-variable :name (oref this name)
                  :type (elsa-type-diff (oref this type) (oref other type))))
 
+(cl-defmethod elsa-type-intersect ((this elsa-variable) (other elsa-variable))
+  (elsa-variable :name (oref this name)
+                 :type (elsa-type-intersect (oref this type) (oref other type))))
+
 (cl-defmethod elsa-type-sum ((this elsa-variable) (other elsa-variable))
   (elsa-variable :name (oref this name)
                  :type (elsa-type-sum (oref this type) (oref other type))))
@@ -52,6 +56,11 @@ will assume during analysis."))
   "Take a list of variables VARS, group them by name and sum the types."
   (let ((groups (--group-by (oref it name) vars)))
     (-map (lambda (group) (-reduce 'elsa-type-sum (cdr group))) groups)))
+
+(defun elsa-variables-group-and-intersect (vars)
+  "Take a list of variables VARS, group them by name and intersect the types."
+  (let ((groups (--group-by (oref it name) vars)))
+    (-map (lambda (group) (-reduce 'elsa-type-intersect (cdr group))) groups)))
 
 (provide 'elsa-variable)
 ;;; elsa-variable.el ends here
