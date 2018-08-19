@@ -129,7 +129,7 @@
 ;; File: fns.c
 ;; (put 'identity 'elsa-type (elsa-make-type ))
 ;; (put 'random 'elsa-type (elsa-make-type ))
-(put 'length 'elsa-type (elsa-make-type List -> Int))
+(put 'length 'elsa-type (elsa-make-type Sequence -> Int))
 (put 'safe-length 'elsa-type (elsa-make-type Mixed -> Int))
 ;; (put 'string-bytes 'elsa-type (elsa-make-type ))
 ;; (put 'string-equal 'elsa-type (elsa-make-type ))
