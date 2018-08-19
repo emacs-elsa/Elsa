@@ -29,7 +29,7 @@
     (when (and (eq (elsa-form-name then-body) 'progn)
                (= 2 (length (oref then-body sequence))))
       (elsa-state-add-error state
-        (elsa-make-notice "Useless `progn' around body of then branch." (elsa-form-car then-body))))))
+        (elsa-make-notice "Useless `progn' around body of then branch." (elsa-car then-body))))))
 
 (defclass elsa-check-if-useless-else-progn (elsa-check-if) ())
 
@@ -37,7 +37,7 @@
   (let ((else-body (nth 3 (oref form sequence))))
     (when (eq (elsa-form-name else-body) 'progn)
       (elsa-state-add-error state
-        (elsa-make-notice "Useless `progn' around body of else branch." (elsa-form-car else-body))))))
+        (elsa-make-notice "Useless `progn' around body of else branch." (elsa-car else-body))))))
 
 (defclass elsa-check-if-to-when (elsa-check-if) ())
 
@@ -47,7 +47,7 @@
     (unless else-body
       (when (eq (elsa-form-name then-body) 'progn)
         (elsa-state-add-error state
-          (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-form-car form)))))))
+          (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-car form)))))))
 
 (defclass elsa-check-symbol (elsa-check) ())
 
@@ -77,11 +77,11 @@
       (let ((msg (oref error-message sequence)))
         (when (equal (substring msg -1) ".")
           (elsa-state-add-error state
-            (elsa-make-notice "Error messages should not end with a period." (elsa-form-car form))))
+            (elsa-make-notice "Error messages should not end with a period." (elsa-car form))))
         (let ((case-fold-search nil))
           (unless (string-match-p "[A-Z]" msg)
             (elsa-state-add-error state
-              (elsa-make-notice "Error messages should start with a capital letter." (elsa-form-car form)))))))))
+              (elsa-make-notice "Error messages should start with a capital letter." (elsa-car form)))))))))
 
 (defclass elsa-check-unbound-variable (elsa-check) ())
 
@@ -148,7 +148,7 @@
               (elsa-state-add-error state
                 (elsa-make-notice (format "You can eta convert the lambda form and use the function `%s' directly"
                                           (symbol-name (elsa-form-name fn-form)))
-                                  (elsa-form-car form))))))))))
+                                  (elsa-car form))))))))))
 
 (defclass elsa-check-or-unreachable-code (elsa-check) ())
 

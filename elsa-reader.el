@@ -196,11 +196,29 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-form-print ((this elsa-form-list))
   (format "(%s)" (mapconcat 'elsa-form-print (oref this sequence) " ")))
 
-(cl-defmethod elsa-form-car ((this elsa-form-list))
-  (car (oref this sequence)))
+(cl-defmethod elsa-car ((this list))
+  (car this))
 
-(cl-defmethod elsa-form-cdr ((this elsa-form-list))
-  (cdr (oref this sequence)))
+(cl-defmethod elsa-car ((this elsa-form))
+  (car (elsa-form-sequence this)))
+
+(cl-defmethod elsa-cdr ((this list))
+  (cdr list))
+
+(cl-defmethod elsa-cdr ((this elsa-form))
+  (cdr (elsa-form-sequence this)))
+
+(cl-defmethod elsa-nth (n (this list))
+  (nth n this))
+
+(cl-defmethod elsa-nth (n (this elsa-form))
+  (nth n (elsa-form-sequence this)))
+
+(cl-defmethod elsa-nthcdr (n (this list))
+  (nthcdr this))
+
+(cl-defmethod elsa-nthcdr (n (this elsa-form))
+  (nthcdr n (elsa-form-sequence this)))
 
 (cl-defmethod elsa-form-sequence ((this elsa-form-list))
   (oref this sequence))
@@ -208,12 +226,12 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-list)) t)
 
 (cl-defmethod elsa-form-name ((this elsa-form-list))
-  (-when-let (head (elsa-form-car this))
+  (-when-let (head (elsa-car this))
     (and (elsa-form-symbol-p head)
          (oref head name))))
 
 (cl-defmethod elsa-form-function-call-p ((this elsa-form-list) &optional name)
-  (-when-let (head (elsa-form-car this))
+  (-when-let (head (elsa-car this))
     (and (elsa-form-symbol-p head)
          (or (not name)
              (eq (oref head name) name)))))
@@ -230,10 +248,10 @@ Nil if FORM is not a quoted symbol."
             (mapconcat 'elsa-form-print prefix " ")
             (elsa-form-print last))))
 
-(cl-defmethod elsa-form-car ((this elsa-form-improper-list))
+(cl-defmethod elsa-car ((this elsa-form-improper-list))
   (car (oref this conses)))
 
-(cl-defmethod elsa-form-cdr ((this elsa-form-improper-list))
+(cl-defmethod elsa-cdr ((this elsa-form-improper-list))
   (cdr (oref this conses)))
 
 ;; (elsa--read-cons :: [Mixed] -> Mixed)

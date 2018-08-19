@@ -7,7 +7,7 @@
          (args (-map (lambda (arg)
                        (cond
                         ((elsa-form-list-p arg)
-                         (elsa-form-car arg))
+                         (elsa-car arg))
                         (t arg)))
                      (oref (nth 2 sequence) sequence)))
          (body (nthcdr 3 sequence)))

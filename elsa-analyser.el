@@ -302,7 +302,7 @@ nullables and the &rest argument into a variadic."
            (format "Function is expected to return %s but returns %s."
                    (elsa-type-describe function-return-type)
                    (elsa-type-describe body-return-type))
-           (elsa-form-car form)))))
+           (elsa-car form)))))
     (--each vars (elsa-scope-remove-variable scope it))))
 
 (defun elsa--analyse:defun (form scope state)
@@ -377,7 +377,7 @@ nullables and the &rest argument into a variadic."
 ;; (elsa--analyse-macro :: Mixed -> Bool | List Bool -> Mixed -> Mixed -> Mixed)
 (defun elsa--analyse-macro (form spec scope state)
   (setq spec (elsa--analyse-normalize-spec spec form))
-  (let* ((head (elsa-form-car form))
+  (let* ((head (elsa-car form))
          (name (oref head name))
          (args (cdr (oref form sequence)))
          (type (get name 'elsa-type))
@@ -458,7 +458,7 @@ nullables and the &rest argument into a variadic."
 
 (defun elsa--analyse-list (form scope state)
   ;; handle special forms
-  (let ((head (elsa-form-car form)))
+  (let ((head (elsa-car form)))
     (when (elsa-form-symbol-p head)
       (let* ((name (oref head name))
              (analyse-fn-name (intern (concat "elsa--analyse:" (symbol-name name)))))
