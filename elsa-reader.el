@@ -71,6 +71,12 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-type-sum ((this elsa-form) (other elsa-type))
   (elsa-type-sum (oref this type) other))
 
+(cl-defmethod elsa-type-accept ((this elsa-type) (other elsa-form))
+  (elsa-type-accept this (oref other type)))
+
+(cl-defmethod elsa-type-accept ((this elsa-form) (other elsa-type))
+  (elsa-type-accept (oref this type) other))
+
 (cl-defmethod elsa-form-print ((this elsa-form)) "")
 
 (cl-defmethod elsa-form-length ((this elsa-form))
