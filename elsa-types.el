@@ -144,13 +144,6 @@ because the actual type can be any of them.")
     (oset new types types)
     new))
 
-;; TODO: handle sum types and diff types as arguments
-(cl-defmethod elsa-sum-type-remove ((this elsa-sum-type) other)
-  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
-  (oset this types (--remove (eq (eieio-object-class it)
-                                 (eieio-object-class other))
-                             (oref this types))))
-
 (cl-defmethod elsa-type-accept ((this elsa-sum-type) other)
   (cond
    ((= 0 (length (oref this types))) nil)
