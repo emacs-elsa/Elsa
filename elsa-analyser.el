@@ -247,15 +247,16 @@ number by symbol 'many."
       (oset form type (elsa-type-unbound)))))
 
 (defun elsa--analyse:or (form scope state)
-  (let* ((body (cdr (oref form sequence)))
+  (let* ((body (elsa-cdr form))
          (vars-to-pop)
          (return-type (elsa-type-nil))
          (can-be-nil-p t))
     (-each body
       (lambda (arg)
         (elsa--analyse-form arg scope state)
-        (setq return-type (elsa-type-sum return-type (oref arg type)))
-        (unless (elsa-type-accept (oref arg type) (elsa-type-nil))
+        (when can-be-nil-p
+          (setq return-type (elsa-type-sum return-type (oref arg type))))
+        (unless (elsa-type-accept arg (elsa-type-nil))
           (setq can-be-nil-p nil))
         (--each (oref arg narrow-types)
           (-when-let (scope-var (elsa-scope-get-var scope it))
