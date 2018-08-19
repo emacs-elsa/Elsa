@@ -11,4 +11,5 @@
  symbol
  error
  variables
+ elsa
  )
