@@ -236,6 +236,17 @@ not accepted by OTHER.")
   "Mixed is one with everything, so we need to subtract OTHER from the world."
   (elsa-type-normalize (elsa-diff-type :negative (clone other))))
 
+(cl-defmethod elsa-type-diff ((this elsa-type-mixed) (other elsa-diff-type))
+  "Mixed without (Mixed without something) is something.
+
+This uses the rule that A \ (A \ B) = A ∩ B where A is
+everything (Mixed)."
+  (let ((pos (oref other positive))
+        (neg (oref other negative)))
+    (if (elsa-type-equivalent-p this pos)
+        (clone neg)
+      (elsa-diff-type :negative (clone other)))))
+
 (cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-int))
   "Number without int must be float."
   (cond
