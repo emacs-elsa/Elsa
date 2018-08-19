@@ -62,8 +62,18 @@ number by symbol 'many."
   nil)
 
 (defun elsa--analyse-symbol (form scope state)
-  (oset form type (elsa--infer-symbol form scope))
-  nil)
+  (let* ((name (oref form name))
+         (type (cond
+                ((eq name t) (elsa-make-type T))
+                ((eq name nil) (elsa-make-type Nil))
+                ((-when-let (var (elsa-scope-get-var scope form))
+                   (clone (oref var type))))
+                ((get name 'elsa-type-var))
+                (t (elsa-make-type Unbound)))))
+    (oset form type type)
+    (oset form narrow-types
+          (list (elsa-variable :name name
+                               :type (elsa-type-make-non-nullable type))))))
 
 (defun elsa--analyse-vector (form scope state)
   nil)
