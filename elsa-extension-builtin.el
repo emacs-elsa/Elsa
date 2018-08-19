@@ -87,4 +87,41 @@
             (elsa-make-type T?))
            (t (elsa-type-nil))))))
 
+;; * control flow
+(defun elsa--analyse:when (form scope state)
+  (let ((condition (elsa-nth 1 form))
+        (body (elsa-nthcdr 2 form))
+        (return-type (elsa-type-empty)))
+    (elsa--analyse-form condition scope state)
+    (elsa--with-narrowed-variables condition scope
+      (--each body (elsa--analyse-form it scope state)))
+    (when body
+      (setq return-type (oref (-last-item body) type)))
+    (when (elsa-type-accept condition (elsa-type-nil))
+      (setq return-type (elsa-type-make-nullable return-type))
+      (when (elsa-type-accept (elsa-type-nil) condition)
+        (setq return-type (elsa-type-nil))))
+    (oset form type return-type)))
+
+(defun elsa--analyse:unless (form scope state)
+  (let ((condition (elsa-nth 1 form))
+        (body (elsa-nthcdr 2 form))
+        (return-type (elsa-type-nil))
+        (vars-to-pop))
+    (elsa--analyse-form condition scope state)
+    (--each (oref condition narrow-types)
+      (-when-let (scope-var (elsa-scope-get-var scope it))
+        (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
+        (push it vars-to-pop)))
+    (--each body (elsa--analyse-form it scope state))
+    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (if (not (elsa-type-accept condition (elsa-type-nil)))
+        (elsa-type-nil)
+      (when body
+        (setq return-type (oref (-last-item body) type)))
+      (unless (elsa-type-equivalent-p (elsa-type-nil) condition)
+        (setq return-type (elsa-type-make-nullable return-type))))
+    (oset form type return-type)))
+
+
 (provide 'elsa-extension-builtin)
