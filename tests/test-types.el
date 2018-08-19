@@ -231,8 +231,8 @@
   (describe "Simple type"
 
 
-    (it "should not be possible to make non-nullable"
-      (expect (elsa-type-make-non-nullable (elsa-make-type String)) :to-throw))
+    (it "should not be changed by being made non-nullable"
+      (expect (elsa-type-make-non-nullable (elsa-make-type String)) :to-equal (elsa-make-type String)))
 
     (it "should not share data with its clone"
       (let* ((old (elsa-make-type Int))
