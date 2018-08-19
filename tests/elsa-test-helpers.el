@@ -25,4 +25,8 @@
          (let ((,errors (oref ,state errors)))
            ,@body)))))
 
+(buttercup-define-matcher-for-binary-function :to-be-type-equivalent elsa-type-equivalent-p
+  :expect-match-phrase "Expected %A to be equivalent to %B, was %a."
+  :expect-mismatch-phrase "Expected %A to not to be equivalent to %B, was %a")
+
 (provide 'elsa-test-helpers)
