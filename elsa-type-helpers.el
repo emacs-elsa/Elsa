@@ -129,8 +129,10 @@ The grammar is as follows (in eBNF):
         (-mapcat 'elsa--eieio-class-parents-recursive
                  (-map 'eieio-class-name (eieio-class-parents type)))))
 
-(defun elsa-type-equivalent-p (this other)
-  "Test if THIS and OTHER are equivalent types."
+(cl-defgeneric elsa-type-equivalent-p (this other)
+  "Test if THIS and OTHER are equivalent types.")
+
+(cl-defmethod elsa-type-equivalent-p ((this elsa-type) (other elsa-type))
   (and (elsa-type-accept this other)
        (elsa-type-accept other this)))
 
@@ -157,6 +159,9 @@ The grammar is as follows (in eBNF):
 
 (cl-defgeneric elsa-type-normalize (type)
   "Normalize TYPE to its most simplest form.")
+
+(cl-defgeneric elsa-type-normalize ((this elsa-type))
+  this)
 
 (cl-defmethod elsa-type-normalize ((this elsa-sum-type))
   "Normalize a sum type."
@@ -185,6 +190,8 @@ The grammar is as follows (in eBNF):
     (cond
      ((elsa-type-equivalent-p pos neg)
       (elsa-type-empty))
+     ((elsa-type-equivalent-p neg (elsa-type-empty))
+      (clone pos))
      (t this))))
 
 (cl-defgeneric elsa-type-intersect (this other)
@@ -338,8 +345,7 @@ THIS and OTHER at the same time.")
   (let ((pos (oref this positive))
         (neg (oref this negative)))
     (elsa-type-normalize
-     (elsa-diff-type :positive (elsa-type-intersect pos other)
-                     :negative (clone neg)))))
+     (elsa-type-diff (elsa-type-intersect pos other) (clone neg)))))
 
 (cl-defmethod elsa-type-intersect ((this elsa-intersection-type) (other elsa-type))
   (if (-any? (lambda (type) (elsa-type-accept other type)) (oref this types))
