@@ -6,6 +6,51 @@
 
 (describe "Elsa analyser"
 
+  (describe "and"
+
+    (it "should set return type to nil if we empty domain of some variable"
+      (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) (integerp x)))" form
+        (let ((and-form (elsa-nth 3 form)))
+          (expect and-form :to-be-type-equivalent (elsa-type-nil)))))
+
+    (it "should set return type to nil if there is a surely nil expression"
+      (elsa-test-with-analysed-form "|(defun a (x) (and nil (1+ x)))" form
+        (let ((and-form (elsa-nth 3 form)))
+          (expect and-form :to-be-type-equivalent (elsa-type-nil)))))
+
+    (it "should set return type to narrowed variable type"
+      (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) x))" form
+        (let ((and-form (elsa-nth 3 form)))
+          (expect and-form :to-be-type-equivalent (elsa-make-type String?)))))
+
+    (it "should set return type to t for empty (and) form"
+      (elsa-test-with-analysed-form "|(and)" form
+        (expect form :to-be-type-equivalent (elsa-type-t)))))
+
+  (describe "or"
+
+    (it "should set return type to nullable sum if there is no sure single branch."
+      (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) x)))" form
+        (let ((or-form (elsa-nth 3 form)))
+          (expect or-form :to-be-type-equivalent
+                  (elsa-make-type String?)))))
+
+    (it "should set return type to nullable sum if there is no sure branch of multiple branches."
+      (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) x) (and (integerp x) x)))" form
+        (let ((or-form (elsa-nth 3 form)))
+          (expect or-form :to-be-type-equivalent
+                  (elsa-make-type String | Int | Nil)))))
+
+    (it "should set return type to non-nullable sum if there is a sure branch."
+      (elsa-test-with-analysed-form "|(defun a (x) (or (stringp x) 2 nil))" form
+        (let ((or-form (elsa-nth 3 form)))
+          (expect or-form :to-be-type-equivalent
+                  (elsa-make-type T | Int)))))
+
+    (it "should set return type to nil for empty (or) form"
+      (elsa-test-with-analysed-form "|(or)" form
+        (expect form :to-be-type-equivalent (elsa-type-nil)))))
+
   (describe "Normalize spec"
 
     (it "should evaluate all arguments when the spec is t"
