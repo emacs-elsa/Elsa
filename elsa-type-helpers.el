@@ -160,12 +160,24 @@ The grammar is as follows (in eBNF):
 
 (cl-defmethod elsa-type-normalize ((this elsa-sum-type))
   "Normalize a sum type."
-  (let ((types (oref this types)))
-    (if (= 1 (length types))
-        (car types)
-      this)))
+  (let ((types (--remove (elsa-type-accept (elsa-make-type Empty) it)
+                         (oref this types))))
+    (cond
+     ((not types)
+      (elsa-type-empty))
+     ((= 1 (length types))
+      (car types))
+     (t (elsa-sum-type :types types)))))
 
-(cl-defmethod elsa-type-normalize ((diff elsa-diff-type))
+(cl-defmethod elsa-type-normalize ((this elsa-intersection-type))
+  "Normalize a sum type."
+  (let ((types (--remove (elsa-type-accept it (elsa-make-type Mixed))
+                         (oref this types))))
+    (cond
+     ((= 1 (length types))
+      (car types))
+     (t (elsa-intersection-type :types types)))))
+
 (cl-defmethod elsa-type-normalize ((this elsa-diff-type))
   "Normalize a diff type."
   (let ((pos (oref this positive))
@@ -301,6 +313,38 @@ everything (Mixed)."
   (elsa-type-normalize
    (elsa-diff-type :positive (elsa-type-diff (oref this positive) other)
                    :negative (elsa-type-sum (oref this negative) other))))
+
+(cl-defgeneric elsa-type-intersect (this other)
+  "Return the intersection of THIS and OTHER.
+
+The intersection type only accepts those types which are both
+THIS and OTHER at the same time.")
+
+(cl-defmethod elsa-type-intersect ((this elsa-type) (other elsa-type))
+  (cond
+   ((elsa-type-accept this other)
+    (clone other))
+   ((elsa-type-accept other this)
+    (clone this))
+   (t (elsa-type-empty))))
+
+(cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-type))
+  (let ((types (oref this types)))
+    (elsa-type-normalize
+     (elsa-sum-type :types
+       (-map (lambda (type) (elsa-type-intersect type other)) types)))))
+
+(cl-defmethod elsa-type-intersect ((this elsa-diff-type) (other elsa-type))
+  (let ((pos (oref this positive))
+        (neg (oref this negative)))
+    (elsa-type-normalize
+     (elsa-diff-type :positive (elsa-type-intersect pos other)
+                     :negative (clone neg)))))
+
+(cl-defmethod elsa-type-intersect ((this elsa-intersection-type) (other elsa-type))
+  (if (-any? (lambda (type) (elsa-type-accept other type)) (oref this types))
+      (clone this)
+    (elsa-intersection-type :types (-snoc (oref this types) other))))
 
 (provide 'elsa-type-helpers)
 ;;; elsa-type-helpers.el ends here

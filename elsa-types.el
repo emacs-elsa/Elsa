@@ -90,10 +90,16 @@ This is not accepted by any type because we don't know what it is.")
 (defclass elsa-type-empty (elsa-type) ()
   :documentation "Empty type.  Has no domain.
 
-This is not accepted by any type and does not accept any type.")
+This is accepted by any type and does not accept any type.")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-empty))
   "()")
+
+(cl-defmethod elsa-type-accept ((this elsa-type-empty) other)
+  (elsa-type-empty-p other))
+
+(cl-defmethod elsa-type-accept ((this elsa-type) (this elsa-type-empty))
+  t)
 
 (cl-defmethod elsa-type-accept ((this elsa-type-unbound) other)
   "Unbound type accepts anything.
@@ -105,6 +111,29 @@ not bound to any specific value yet."
 
 (cl-defmethod elsa-type-describe ((this elsa-type-unbound))
   "Unbound")
+
+(defclass elsa-intersection-type (elsa-type)
+  ((types :initform nil :initarg :types))
+  :documentation "Intersection type.
+
+This type is an intersection of multiple types.
+
+It can accept any type that is all the types of the intersection.
+
+It is accepted by any of the intersected types because it is all
+of them.")
+
+(cl-defmethod elsa-type-composite-p ((this elsa-intersection-type)) t)
+
+(cl-defmethod clone ((this elsa-intersection-type))
+  "Make a deep copy of a intersection type."
+  (let ((types (-map 'clone (oref this types)))
+        (new (cl-call-next-method this)))
+    (oset new types types)
+    new))
+
+(cl-defmethod elsa-type-accept ((this elsa-intersection-type) other)
+  (-all? (lambda (type) (elsa-type-accept type other)) (oref this types)))
 
 (defclass elsa-sum-type (elsa-type)
   ((types :type list

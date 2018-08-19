@@ -229,4 +229,61 @@
                         (elsa-make-type Int))
                        negative)
                  (elsa-make-type String | Int))
-                :to-be t)))))
+                :to-be t))))
+
+
+  (describe "elsa-type-intersect"
+
+    (describe "primitive types"
+
+      (it "should resolve to empty for types with no intersection."
+        (expect (elsa-type-intersect
+                 (elsa-type-string)
+                 (elsa-type-int))
+                :to-be-type-equivalent (elsa-type-empty)))
+
+      (it "should resolve to t if intersecting bool with t"
+        (expect (elsa-type-intersect
+                 (elsa-type-bool)
+                 (elsa-type-t))
+                :to-be-type-equivalent (elsa-type-t)))
+
+      (it "should resolve to int if intersecting number with int"
+        (expect (elsa-type-intersect
+                 (elsa-type-number)
+                 (elsa-type-int))
+                :to-be-type-equivalent (elsa-type-int)))
+
+      (it "should resolve to vector if intersecting sequence with vector"
+        (expect (elsa-type-intersect
+                 (elsa-type-sequence)
+                 (elsa-type-vector))
+                :to-be-type-equivalent (elsa-type-vector)))
+
+      (it "should resolve to t if intersecting t with bool"
+        (expect (elsa-type-intersect
+                 (elsa-type-t)
+                 (elsa-type-bool))
+                :to-be-type-equivalent (elsa-type-t)))
+
+      (it "should resolve to int if intersecting int with number"
+        (expect (elsa-type-intersect
+                 (elsa-type-int)
+                 (elsa-type-number))
+                :to-be-type-equivalent (elsa-type-int)))
+
+      (it "should resolve to vector if intersecting vector with sequence"
+        (expect (elsa-type-intersect
+                 (elsa-type-vector)
+                 (elsa-type-sequence))
+                :to-be-type-equivalent (elsa-type-vector))))
+
+    (describe "sum types"
+
+
+      (it "should distribute the intersection over sum"
+        (expect (elsa-type-intersect
+                 (elsa-make-type Number | String)
+                 (elsa-type-int))
+                :to-be-type-equivalent
+          (elsa-make-type Int))))))
