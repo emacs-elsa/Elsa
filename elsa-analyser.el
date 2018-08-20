@@ -148,7 +148,9 @@ number by symbol 'many."
                result-type
                (oref (-last-item false-body) type)))
              ((elsa-type-accept (oref condition type) (elsa-type-nil))
-              (elsa-type-make-nullable result-type))
+              (if (elsa-type-equivalent-p condition (elsa-type-nil))
+                  (elsa-type-nil)
+                (elsa-type-make-nullable result-type)))
              (t result-type)))
       (oset form type result-type))))
 
