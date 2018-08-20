@@ -31,7 +31,7 @@
 
 (defun elsa--analyse:eq (form scope state)
   (elsa--analyse-function-call form scope state)
-  (let* ((args (cdr (oref form sequence)))
+  (let* ((args (elsa-cdr form))
          (first (car args))
          (second (cadr args)))
     (cond
@@ -40,7 +40,11 @@
       (elsa--analyse--eq form first second))
      ((and (elsa-form-symbol-p second)
            (elsa-scope-get-var scope (elsa-form-name second)))
-      (elsa--analyse--eq form second first)))))
+      (elsa--analyse--eq form second first)))
+    (when (elsa-type-equivalent-p
+           (elsa-type-empty)
+           (elsa-type-intersect first second))
+      (oset form type (elsa-type-nil)))))
 
 ;; * list functions
 (defun elsa--analyse:car (form scope state)
