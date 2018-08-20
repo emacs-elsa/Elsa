@@ -19,7 +19,7 @@
      (--each (oref ,form narrow-types)
        (elsa-scope-remove-variable ,scope it))))
 
-;; (elsa--arglist-to-arity :: List Symbol -> Cons Int (Int | Symbol))
+;; (elsa--arglist-to-arity :: List Symbol | T | String -> Cons Int (Int | Symbol))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
