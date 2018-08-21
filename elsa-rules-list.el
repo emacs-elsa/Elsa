@@ -17,10 +17,10 @@
   (let ((condition (cadr (oref form sequence))))
     (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
         (elsa-state-add-error state
-          (elsa-make-warning "Condition always evaluates to true." condition))
+          (elsa-make-warning "Condition always evaluates to non-nil." condition))
       (when (elsa-type-accept (elsa-type-nil) (oref condition type))
         (elsa-state-add-error state
-          (elsa-make-warning "Condition always evaluates to false." condition))))))
+          (elsa-make-warning "Condition always evaluates to nil." condition))))))
 
 (defclass elsa-check-if-useless-then-progn (elsa-check-if) ())
 
@@ -120,10 +120,10 @@
           (if (and (not (elsa-type-accept (oref first-item type) (elsa-type-nil)))
                    (< index (1- total)))
               (elsa-state-add-error state
-                (elsa-make-warning "Condition always evaluates to true." first-item))
+                (elsa-make-warning "Condition always evaluates to non-nil." first-item))
             (when (elsa-type-accept (elsa-type-nil) (oref first-item type))
               (elsa-state-add-error state
-                (elsa-make-warning "Condition always evaluates to false." first-item)))))))))
+                (elsa-make-warning "Condition always evaluates to nil." first-item)))))))))
 
 (defclass elsa-check-lambda-eta-conversion (elsa-check) ())
 
@@ -168,6 +168,6 @@
             (when (and (elsa-type-accept (elsa-type-nil) (oref condition type))
                        can-be-nil-p)
               (elsa-state-add-error state
-                (elsa-make-warning "Condition always evaluates to false." condition)))))))))
+                (elsa-make-warning "Condition always evaluates to nil." condition)))))))))
 
 (provide 'elsa-rules-list)

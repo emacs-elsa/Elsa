@@ -22,28 +22,28 @@
           :state-var state
           (expect (oref state errors) :not :to-be nil)
           (expect (oref (car (oref state errors)) message) :to-equal
-                  "Condition always evaluates to false.")))
+                  "Condition always evaluates to nil.")))
 
       (it "else should not be reachable if the condition is t"
         (elsa-test-with-analysed-form "|(if t 1 2)" form
           :state-var state
           (expect (oref state errors) :not :to-be nil)
           (expect (oref (car (oref state errors)) message) :to-equal
-                  "Condition always evaluates to true.")))
+                  "Condition always evaluates to non-nil.")))
 
       (it "else should not be reachable if the condition is atom"
         (elsa-test-with-analysed-form "|(if \"string\" 1 2)" form
           :state-var state
           (expect (oref state errors) :not :to-be nil)
           (expect (oref (car (oref state errors)) message) :to-equal
-                  "Condition always evaluates to true.")))
+                  "Condition always evaluates to non-nil.")))
 
       (it "else should not be reachable if the condition has non-nullable type"
         (elsa-test-with-analysed-form "|(let ((out 1)) (if out 1 2))" form
           :state-var state
           (expect (oref state errors) :not :to-be nil)
           (expect (oref (car (oref state errors)) message) :to-equal
-                  "Condition always evaluates to true.")))
+                  "Condition always evaluates to non-nil.")))
 
       (it "should not produce any warning for nullable type"
         (elsa-test-with-analysed-form "|(defun foo (out) (if out 1 2))" form
