@@ -156,14 +156,18 @@
   (elsa-form-function-call-p form 'or))
 
 (cl-defmethod elsa-check-check ((_ elsa-check-or-unreachable-code) form scope state)
-  (let ((args (cdr (oref form sequence))))
+  (let ((args (elsa-cdr form))
+        (can-be-nil-p t))
     (-each args
       (lambda (condition)
-        (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
+        (if (not can-be-nil-p)
             (elsa-state-add-error state
-              (elsa-make-warning "Condition always evaluates to true." condition))
-          (when (elsa-type-accept (elsa-type-nil) (oref condition type))
-            (elsa-state-add-error state
-              (elsa-make-warning "Condition always evaluates to false." condition))))))))
+              (elsa-make-warning "Unreachable expression" condition))
+          (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
+              (when can-be-nil-p (setq can-be-nil-p nil))
+            (when (and (elsa-type-accept (elsa-type-nil) (oref condition type))
+                       can-be-nil-p)
+              (elsa-state-add-error state
+                (elsa-make-warning "Condition always evaluates to false." condition)))))))))
 
 (provide 'elsa-rules-list)
