@@ -27,7 +27,7 @@ Currently we only support running Elsa with Cask.
 
 ## Flycheck integration
 
-If you use [flycheck](https://github.com/flycheck/flycheck) you can use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa) package which integrates Elsa with Flycheck.  You need to have `cask` installed as dependency and run `(require 'cask)`.
+If you use [flycheck](https://github.com/flycheck/flycheck) you can use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa) package which integrates Elsa with Flycheck.
 
 # Configuration
 
