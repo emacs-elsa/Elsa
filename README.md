@@ -27,37 +27,7 @@ Currently we only support running Elsa with Cask.
 
 ## Flycheck integration
 
-If you use [flycheck](https://github.com/flycheck/flycheck) you can use the following checker.  You need to have `cask` installed as dependency and run `(require 'cask)`.
-
-``` emacs-lisp
-(flycheck-define-checker emacs-lisp-elsa
-  "Checker for Elsa."
-  :command ("/home/matus/.cask/bin/cask" ;; use your own home
-            "exec"
-            "elsa"
-            source)
-  :error-filter flycheck-increment-error-columns
-  :predicate
-  (lambda ()
-    (-when-let (cask-file (locate-dominating-file default-directory "Cask"))
-      (let ((bundle (cask-initialize (file-name-directory cask-file))))
-        (cask-find-dependency bundle 'elsa))))
-  :error-patterns
-  ((error line-start line ":" column ":error:" (message))
-   (warning line-start line ":" column ":warning:" (message))
-   (info line-start line ":" column ":notice:" (message)))
-  :modes (emacs-lisp-mode))
-
-(add-to-list 'flycheck-checkers 'emacs-lisp-elsa)
-```
-
-Then in the buffer (must be inside a `cask` powered project) you might
-need to enable the checker with `C-u C-c ! x`.  You can also globally
-remove it from disabled checkers by evaluating the following form:
-
-``` emacs-lisp
-(setq flycheck-disabled-checkers (delete 'emacs-lisp-elsa flycheck-disabled-checkers))
-```
+If you use [flycheck](https://github.com/flycheck/flycheck) you can use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa) package which integrates Elsa with Flycheck.  You need to have `cask` installed as dependency and run `(require 'cask)`.
 
 # Configuration
 
