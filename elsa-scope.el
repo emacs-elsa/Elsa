@@ -35,6 +35,43 @@
          :documentation
      "Hash table of variables available in current (lexical) scope.")))
 
+(cl-defgeneric elsa-scope-get-var (scope var)
+  "Get current state of variable."
+  (declare (indent 1)))
+
+(cl-defgeneric elsa-scope-add-var (scope var)
+  "Add a binding for a variable.
+
+Bindings introduced by `elsa-scope-add-var' are lexical and must
+be cleared when the definig form is closed."
+  (declare (indent 1)))
+
+(cl-defgeneric elsa-scope-remove-var (scope var)
+  "Remove a binding for variable.
+
+This must only be used to un-do lexical bindings.
+
+If the last update was made by an assignment or the scope is
+protected signal an error."
+  (declare (indent 1)))
+
+(cl-defgeneric elsa-scope-assign-var (scope var)
+  "Record an assignment to variable."
+  (declare (indent 1)))
+
+(cl-defgeneric elsa-scope-unassign-var (scope var)
+  "Remove all assignments to variable.
+
+If the scope is protected, remove only the assignments done since
+the last protection was applied.
+
+Lexical bindings are not undone, use `elsa-scope-remove-var' to
+do that."
+  (declare (indent 1)))
+
+;;
+;; Implementation
+
 (cl-defmethod elsa-scope-add-variable ((this elsa-scope) (variable elsa-variable))
   "Add VARIABLE to current scope."
   (let* ((vars (oref this vars))
@@ -62,9 +99,6 @@
          (var-stack (gethash var-name vars)))
     (while (and var-stack (symbolp (car var-stack))) (!cdr var-stack))
     (car var-stack)))
-
-(cl-defgeneric elsa-scope-get-var (scope var)
-  "Fetch current binding of elsa-variable from elsa-scope.")
 
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) name)
   "Get binding of variable with NAME in THIS scope."
