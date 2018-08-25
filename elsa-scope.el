@@ -57,23 +57,26 @@
   "Remove VARIABLE from current scope."
   (elsa-scope--remove-variable this (elsa-form-name form)))
 
+(defun elsa-scope--get-var (scope var-name)
+  (let* ((vars (oref scope vars))
+         (var-stack (gethash var-name vars)))
+    (while (and var-stack (symbolp (car var-stack))) (!cdr var-stack))
+    (car var-stack)))
+
 (cl-defgeneric elsa-scope-get-var (scope var)
   "Fetch current binding of elsa-variable from elsa-scope.")
 
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) name)
   "Get binding of variable with NAME in THIS scope."
-  (let ((vars (oref this vars)))
-    (car (gethash name vars))))
+  (elsa-scope--get-var this name))
 
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) (var elsa-variable))
   "Get binding of VAR in THIS scope."
-  (let ((vars (oref this vars)))
-    (car (gethash (oref var name) vars))))
+  (elsa-scope--get-var this (oref var name)))
 
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) (form elsa-form-symbol))
   "Get binding of FORM in THIS scope."
-  (let ((vars (oref this vars)))
-    (car (gethash (elsa-form-name form) vars))))
+  (elsa-scope--get-var this (elsa-form-name form)))
 
 (provide 'elsa-scope)
 ;;; elsa-scope.el ends here
