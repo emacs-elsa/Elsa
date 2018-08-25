@@ -136,7 +136,7 @@ number by symbol 'many."
     ;; `cond' analysis, will also be used in `and' and `or'
     (--each (oref condition narrow-types)
       (-when-let (scope-var (elsa-scope-get-var scope it))
-        (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
+        (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
     (elsa--analyse-body false-body scope state)
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
@@ -171,7 +171,7 @@ number by symbol 'many."
                 (elsa--analyse-form it scope state)))
             (--each (oref head narrow-types)
               (-when-let (scope-var (elsa-scope-get-var scope it))
-                (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
+                (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
                 (push it vars-to-pop)))
             (unless (elsa-type-accept (oref head type) (elsa-type-nil))
               (setq can-be-nil-p nil))))
@@ -262,7 +262,7 @@ number by symbol 'many."
           (setq can-be-nil-p nil))
         (--each (oref arg narrow-types)
           (-when-let (scope-var (elsa-scope-get-var scope it))
-            (elsa-scope-add-variable scope (elsa-type-diff scope-var it))
+            (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
             (push it vars-to-pop)))))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
     (-when-let (grouped (elsa-variables-group-and-sum
@@ -287,7 +287,7 @@ number by symbol 'many."
             (setq must-be-nil-p t)))
         (--each (oref arg narrow-types)
           (-when-let (scope-var (elsa-scope-get-var scope it))
-            (elsa-scope-add-variable scope (elsa-type-intersect scope-var it))
+            (elsa-scope-add-variable scope (elsa-variable-intersect scope-var it))
             (push it vars-to-pop)))))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
     (-when-let (grouped (elsa-variables-group-and-intersect

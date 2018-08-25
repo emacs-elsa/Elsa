@@ -36,31 +36,47 @@ This is the type that the symbol form representing this variable
 will assume during analysis."))
   :documentation "A lexical variable")
 
-(cl-defmethod elsa-type-diff ((this elsa-variable) other)
+;; TODO: propagate assigned/read
+(cl-defmethod elsa-variable-diff ((this elsa-variable) other)
   (elsa-variable :name (oref this name)
                  :type (elsa-type-diff (oref this type) other)))
 
-(cl-defmethod elsa-type-diff ((this elsa-variable) (other elsa-variable))
+;; TODO: propagate assigned/read
+(cl-defmethod elsa-variable-diff ((this elsa-variable) (other elsa-variable))
   (elsa-variable :name (oref this name)
                  :type (elsa-type-diff (oref this type) (oref other type))))
 
-(cl-defmethod elsa-type-intersect ((this elsa-variable) (other elsa-variable))
+;; TODO: propagate assigned/read
+(cl-defmethod elsa-variable-intersect ((this elsa-variable) (other elsa-variable))
   (elsa-variable :name (oref this name)
                  :type (elsa-type-intersect (oref this type) (oref other type))))
 
-(cl-defmethod elsa-type-sum ((this elsa-variable) (other elsa-variable))
+;; TODO: propagate assigned/read
+(cl-defmethod elsa-variable-sum ((this elsa-variable) (other elsa-variable))
   (elsa-variable :name (oref this name)
                  :type (elsa-type-sum (oref this type) (oref other type))))
+
+(cl-defmethod elsa-type-diff ((this elsa-variable) other)
+  (elsa-type-diff (oref this type) other))
+
+(cl-defmethod elsa-type-diff ((this elsa-variable) (other elsa-variable))
+  (elsa-type-diff (oref this type) (oref other type)))
+
+(cl-defmethod elsa-type-intersect ((this elsa-variable) (other elsa-variable))
+  (elsa-type-intersect (oref this type) (oref other type)))
+
+(cl-defmethod elsa-type-sum ((this elsa-variable) (other elsa-variable))
+  (elsa-type-sum (oref this type) (oref other type)))
 
 (defun elsa-variables-group-and-sum (vars)
   "Take a list of variables VARS, group them by name and sum the types."
   (let ((groups (--group-by (oref it name) vars)))
-    (-map (lambda (group) (-reduce 'elsa-type-sum (cdr group))) groups)))
+    (-map (lambda (group) (-reduce 'elsa-variable-sum (cdr group))) groups)))
 
 (defun elsa-variables-group-and-intersect (vars)
   "Take a list of variables VARS, group them by name and intersect the types."
   (let ((groups (--group-by (oref it name) vars)))
-    (-map (lambda (group) (-reduce 'elsa-type-intersect (cdr group))) groups)))
+    (-map (lambda (group) (-reduce 'elsa-variable-intersect (cdr group))) groups)))
 
 (provide 'elsa-variable)
 ;;; elsa-variable.el ends here
