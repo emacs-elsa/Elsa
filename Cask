@@ -8,6 +8,7 @@
 (depends-on "cl-lib" "0.3")
 (depends-on "dash" "2.14")
 (depends-on "emacs" "25.1")
+(depends-on "trinary" "1.0.0")
 
 (development
  (depends-on "elsa")

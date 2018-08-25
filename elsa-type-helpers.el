@@ -28,8 +28,33 @@
 (require 'eieio)
 
 (require 'dash)
+(require 'trinary)
 
 (require 'elsa-types)
+
+(cl-defgeneric elsa-type-is-nil (type)
+  "Test if TYPE is always nil.
+
+Return trinary logic value.")
+
+(cl-defmethod elsa-type-is-nil ((type elsa-type))
+  (if (elsa-type-accept type (elsa-type-nil))
+      (if (elsa-type-equivalent-p type (elsa-type-nil))
+          (trinary-true)
+        (trinary-maybe))
+    (trinary-false)))
+
+(cl-defgeneric elsa-type-is-non-nil (type)
+  "Test if TYPE is always non-nil.
+
+Return trinary logic value.")
+
+(cl-defmethod elsa-type-is-non-nil ((type elsa-type))
+  (if (elsa-type-accept type (elsa-type-nil))
+      (if (elsa-type-equivalent-p type (elsa-type-nil))
+          (trinary-false)
+        (trinary-maybe))
+    (trinary-true)))
 
 (defun elsa--make-union-type (definition)
   (->> (-split-on '| definition)

@@ -286,4 +286,32 @@
                  (elsa-make-type Number | String)
                  (elsa-type-int))
                 :to-be-type-equivalent
-          (elsa-make-type Int))))))
+          (elsa-make-type Int)))))
+
+  (describe "elsa-type-is-nil"
+
+    (it "should return true₃ if type is definitely nil"
+      (expect (elsa-type-is-nil (elsa-type-nil))
+              :to-equal (trinary-true)))
+
+    (it "should return maybe₃ if type can be nil"
+      (expect (elsa-type-is-nil (elsa-make-type String?))
+              :to-equal (trinary-maybe)))
+
+    (it "should return false₃ if type is definitely not nil"
+      (expect (elsa-type-is-nil (elsa-type-string))
+              :to-equal (trinary-false))))
+
+  (describe "elsa-type-is-non-nil"
+
+    (it "should return true₃ if type is definitely non-nil"
+      (expect (elsa-type-is-non-nil (elsa-type-string))
+              :to-equal (trinary-true)))
+
+    (it "should return maybe₃ if type can be nil"
+      (expect (elsa-type-is-non-nil (elsa-make-type String?))
+              :to-equal (trinary-maybe)))
+
+    (it "should return false₃ if type is definitely nil"
+      (expect (elsa-type-is-non-nil (elsa-type-nil))
+              :to-equal (trinary-false)))))
