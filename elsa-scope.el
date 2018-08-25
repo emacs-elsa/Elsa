@@ -42,11 +42,6 @@
          (var-stack (gethash name vars)))
     (puthash name (cons variable var-stack) vars)))
 
-(cl-defmethod elsa-scope-add-variable ((this elsa-scope) (form elsa-form-symbol) type)
-  "Add VARIABLE to current scope."
-  (let* ((name (elsa-form-name form)))
-    (elsa-scope-add-variable this (elsa-variable :name name :type type))))
-
 (defun elsa-scope--remove-variable (scope name)
   (let* ((vars (oref scope vars))
          (var-stack (cdr (gethash name vars))))

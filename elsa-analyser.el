@@ -191,7 +191,8 @@ number by symbol 'many."
     (elsa--analyse-form body scope state)
     (setq return-type (oref body type))
     (unless (eq (elsa-form-name var) 'nil)
-      (elsa-scope-add-variable scope var (elsa-make-type Mixed)))
+      (elsa-scope-add-variable scope
+        (elsa-variable :name (elsa-form-name var))))
     (--each handlers
       (elsa--analyse-form it scope state)
       (let ((last (-last-item (elsa-form-sequence it))))

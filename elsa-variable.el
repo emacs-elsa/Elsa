@@ -30,6 +30,7 @@
 (defclass elsa-variable nil
   ((name :initarg :name)
    (type :initarg :type
+         :initform (elsa-type-mixed)
          :documentation "Type of this variable.
 
 This is the type that the symbol form representing this variable
