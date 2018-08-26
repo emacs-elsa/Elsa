@@ -200,7 +200,7 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-accept ((this elsa-diff-type) (other elsa-type))
   (and (elsa-type-accept (oref this positive) other)
-       (not (elsa-type-accept (oref this negative) other))))
+       (not (elsa-type-accept other (oref this negative)))))
 
 (cl-defmethod elsa-type-describe ((this elsa-diff-type))
   (if (oref this negative)

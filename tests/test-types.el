@@ -3,6 +3,8 @@
 (require 'elsa-undercover)
 (require 'elsa-types)
 
+(require 'elsa-test-helpers)
+
 (describe "Elsa Types"
 
 
@@ -176,16 +178,15 @@
         (expect (elsa-type-accept sumA sumB) :not :to-be-truthy))))
 
 
-  (xdescribe "Diff type"
+  (describe "Diff type"
 
-    (it "should not share data with its clone"
-      (let* ((old (elsa-type-sum (elsa-diff-type) (elsa-make-type Int)))
-             (new (clone old)))
-        (expect (eq old new) :not :to-be-truthy)
-        (expect (eq (oref old positive) (oref new positive)) :not :to-be-truthy)
-        (oset new positive nil)
-        (expect (length (oref old positive)) :to-be 1)
-        (expect (length (oref new positive)) :to-be 0))))
+    (it "should not accept types where the positive does not accept the other type"
+      (expect (elsa-diff-type :positive (elsa-type-int))
+              :not :to-accept-type (elsa-type-keyword)))
+
+    (it "should not accept types where the negative is accepted by the other type"
+      (expect (elsa-diff-type :negative (elsa-type-int))
+              :not :to-accept-type (elsa-type-number))))
 
 
   (describe "Mixed type"
