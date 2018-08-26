@@ -85,6 +85,29 @@ do that."
      (elsa-scope-unassign-var scope k))
    (oref scope vars)))
 
+(defun elsa-scope-format (scope)
+  "Prettyprint SCOPE."
+  (let ((vars (oref scope vars))
+        (out nil))
+    (maphash
+     (lambda (name var-stack)
+       (push (format "== Name: %s ==" name) out)
+       (push (mapconcat
+              (lambda (v)
+                (cond
+                 ((symbolp v)
+                  (symbol-name v))
+                 ((elsa-variable-p v)
+                  (elsa-type-describe (oref v type)))
+                 (t (error "Can not happen"))))
+              var-stack "\n")
+             out))
+     vars)
+    (string-trim (mapconcat 'identity (nreverse out) "\n\n"))))
+
+(defun elsa-scope-print (scope)
+  (message "%s" (elsa-scope-format scope)))
+
 ;;
 ;; Implementation
 
