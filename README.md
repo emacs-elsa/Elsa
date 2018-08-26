@@ -1,4 +1,4 @@
-# <img align="right" src="https://raw.githubusercontent.com/nashamri/elsa-logo/master/elsa-logo.png" width="133" height="100"> Elsa - Emacs Lisp Static Analyser [![Build Status](https://travis-ci.org/Fuco1/Elsa.svg?branch=master)](https://travis-ci.org/Fuco1/Elsa)
+# <img align="right" src="https://raw.githubusercontent.com/nashamri/elsa-logo/master/elsa-logo-transparent.png" width="133" height="100"> Elsa - Emacs Lisp Static Analyser [![Build Status](https://travis-ci.org/Fuco1/Elsa.svg?branch=master)](https://travis-ci.org/Fuco1/Elsa)
 
 <p align="center">(Your favourite princess now in Emacs!)</p>
 
