@@ -13,4 +13,6 @@
          (body (nthcdr 3 sequence)))
     (elsa--analyse-defun-like-form name args body form scope state)))
 
+(defun elsa--analyse:cl-defgeneric (form scope state) nil)
+
 (provide 'elsa-extension-cl)
