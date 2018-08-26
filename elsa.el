@@ -73,6 +73,14 @@
             (end-of-file t)))))
     state))
 
+(defun elsa-process-form ()
+  "Read and analyse form at point."
+  (interactive)
+  (let* ((state (elsa-state))
+         (form (elsa-read-form state)))
+    (elsa--analyse-form form (oref state scope) state)
+    form))
+
 (defun elsa-load-config ()
   "Load config and register extensions."
   (let ((config-buffer (find-file-noselect "Elsafile.el"))
