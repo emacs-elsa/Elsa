@@ -29,4 +29,8 @@
   :expect-match-phrase "Expected %A to be equivalent to %B, was %a."
   :expect-mismatch-phrase "Expected %A to not to be equivalent to %B, was %a")
 
+(buttercup-define-matcher-for-binary-function :to-accept-type elsa-type-accept
+  :expect-match-phrase "Expected %A to accept %B, was %a."
+  :expect-mismatch-phrase "Expected %A to not to accept %B, was %a")
+
 (provide 'elsa-test-helpers)
