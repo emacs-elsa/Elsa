@@ -8,7 +8,6 @@
 (register-ruleset
  dead-code
  style
- symbol
  error
  variables
  elsa
