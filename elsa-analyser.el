@@ -79,9 +79,10 @@ number by symbol 'many."
                 ((get name 'elsa-type-var))
                 (t (elsa-make-type Unbound)))))
     (oset form type type)
-    (oset form narrow-types
-          (list (elsa-variable :name name
-                               :type (elsa-type-make-non-nullable type))))))
+    (unless (memq name '(t nil))
+      (oset form narrow-types
+            (list (elsa-variable :name name
+                                 :type (elsa-type-make-non-nullable type)))))))
 
 (defun elsa--analyse-vector (form scope state)
   nil)
