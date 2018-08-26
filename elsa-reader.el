@@ -4,6 +4,8 @@
 (require 'pcase)
 (require 'backquote)
 
+(require 'trinary)
+
 (require 'elsa-error)
 (require 'elsa-types)
 (require 'elsa-type-helpers)
@@ -59,6 +61,7 @@ Nil if FORM is not a quoted symbol."
    (column :type integer :initarg :column)
    (type :type elsa-type :initarg :type :initform (elsa-make-type Mixed))
    (narrow-types :initarg :narrow-type :initform nil)
+   (reachable :type trinary :initarg :reachable :initform (trinary-true))
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 
@@ -114,6 +117,9 @@ Nil if FORM is not a quoted symbol."
 
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
+
+(defun elsa-form-reachable (form)
+  (oref form reachable))
 
 (cl-defgeneric elsa-form-foreach (elsa-form fn)
   "For each item of ELSA-FORM execute FN with the item as first argument.

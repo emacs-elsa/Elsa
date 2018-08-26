@@ -583,6 +583,7 @@ nullables and the &rest argument into a variadic."
   "Analyse FORM.
 
 FORM is a result of `elsa-read-form'."
+  (oset form reachable (elsa-state-get-reachability state))
   (cond
    ((elsa-form-float-p form) (elsa--analyse-float form scope state))
    ((elsa-form-integer-p form) (elsa--analyse-integer form scope state))
