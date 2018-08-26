@@ -115,6 +115,17 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
 
+(cl-defgeneric elsa-form-foreach (elsa-form fn)
+  "For each item of ELSA-FORM execute FN with the item as first argument.
+
+This only makes sense for the sequence forms:
+
+- `elsa-form-vector'
+- `elsa-form-list'
+- `elsa-form-improper-list'"
+  (declare (indent 1))
+  nil)
+
 ;;; Atoms
 (defclass elsa-form-atom (elsa-form)
   nil
@@ -218,6 +229,9 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-form-print ((this elsa-form-vector))
   (format "[%s]" (mapconcat 'elsa-form-print (oref this sequence) " ")))
 
+(cl-defmethod elsa-form-foreach ((this elsa-form-vector) fn)
+  (mapc fn (oref this sequence)))
+
 (defsubst elsa--read-vector (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-vector
@@ -234,6 +248,9 @@ Nil if FORM is not a quoted symbol."
 
 (cl-defmethod elsa-form-print ((this elsa-form-list))
   (format "(%s)" (mapconcat 'elsa-form-print (oref this sequence) " ")))
+
+(cl-defmethod elsa-form-foreach ((this elsa-form-list) fn)
+  (mapc fn (oref this sequence)))
 
 (cl-defmethod elsa-car ((this list))
   (car this))
@@ -286,6 +303,13 @@ Nil if FORM is not a quoted symbol."
     (format "(%s . %s)"
             (mapconcat 'elsa-form-print prefix " ")
             (elsa-form-print last))))
+
+(cl-defmethod elsa-form-foreach ((this elsa-form-improper-list) fn)
+  (let* ((seq (oref this conses))
+         (len (safe-length seq))
+         (prefix (-take len seq))
+         (last (cdr (last seq))))
+    (mapc fn (-snoc prefix last))))
 
 (cl-defmethod elsa-car ((this elsa-form-improper-list))
   (car (oref this conses)))
