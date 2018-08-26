@@ -423,20 +423,33 @@ This only makes sense for the sequence forms:
              (eval `(elsa-make-type ,@(cddr comment-form))))))))))
 
 (defun elsa--read-form (form &optional state)
+  "Read FORM.
+
+FORM is a lisp object that was produced by calling `read'.  This
+function walks the buffer according to the structure of the form
+and produces an object of type `elsa-form' which serves as input
+for the analysis."
   (let ((reader-form
          (cond
           ((floatp form) (elsa--read-float form))
           ((integerp form) (elsa--read-integer form))
           ((keywordp form) (elsa--read-keyword form))
           ((symbolp form) (elsa--read-symbol form))
-          ((vectorp form) (elsa--read-vector form))
+          ((vectorp form)
+           (let ((vector-form (elsa--read-vector form)))
+             (elsa-form-foreach vector-form
+               (lambda (f) (oset f parent vector-form)))
+             vector-form))
           ((stringp form) (elsa--read-string form))
           ((consp form)
            ;; special care needs to be taken about the "reader macros" '`,
-           (cond
-            ((elsa--quote-p (car form))
-             (elsa--read-quote form))
-            (t (elsa--read-cons form))))
+           (let ((cons-form (cond
+                             ((elsa--quote-p (car form))
+                              (elsa--read-quote form))
+                             (t (elsa--read-cons form)))))
+             (elsa-form-foreach cons-form
+               (lambda (f) (oset f parent cons-form)))
+             cons-form))
           (t (error "Invalid form")))))
     (oset reader-form line
           (or (get-text-property (save-excursion
