@@ -137,18 +137,47 @@ number by symbol 'many."
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
         (false-body (nthcdr 3 (oref form sequence)))
-        (vars-to-pop nil))
+        (vars-to-pop nil)
+        (mutated-vars-true nil)
+        (mutated-vars-false nil))
     (elsa--analyse-form condition scope state)
     (elsa--with-narrowed-variables condition scope
-      (elsa--analyse-form true-body scope state))
+      (elsa-save-scope scope
+        (elsa--analyse-form true-body scope state)
+        (setq mutated-vars-true (elsa-scope-get-assigned-vars scope))))
     ;; TODO: extract this logic to a helper macro, it's shared with
     ;; `cond' analysis, will also be used in `and' and `or'
     (--each (oref condition narrow-types)
       (-when-let (scope-var (elsa-scope-get-var scope it))
         (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
-    (elsa--analyse-body false-body scope state)
+    (elsa-save-scope scope
+      (elsa--analyse-body false-body scope state)
+      (setq mutated-vars-false (elsa-scope-get-assigned-vars scope)))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (let ((condition-is-nil (elsa-type-is-nil condition))
+          (to-merge))
+      (cond
+       ((trinary-true-p condition-is-nil)
+        (setq to-merge (--each (-map 'clone mutated-vars-false)
+                         (oset it assigned (trinary-maybe)))))
+       ((trinary-false-p condition-is-nil)
+        (setq to-merge (--each (-map 'clone mutated-vars-true)
+                         (oset it assigned (trinary-maybe)))))
+       ((trinary-maybe-p condition-is-nil)
+        (-let (((true false both) (elsa--variables-partition mutated-vars-true mutated-vars-false)))
+          (-each (-concat true false)
+            (lambda (var)
+              (push (elsa-variable
+                     :name (oref var name)
+                     :type (-if-let (scope-var (elsa-scope-get-var scope var))
+                               (elsa-type-sum var scope-var)
+                             (clone (oref var type)))
+                     :assigned (trinary-add-maybe (oref var assigned))
+                     :read (trinary-add-maybe (oref var read)))
+                    to-merge)))
+          (setq to-merge (-concat both to-merge)))))
+      (elsa-variables-merge-to-scope to-merge scope))
     (let ((result-type (oref true-body type)))
       (setq result-type
             (cond
@@ -162,6 +191,26 @@ number by symbol 'many."
                 (elsa-type-make-nullable result-type)))
              (t result-type)))
       (oset form type result-type))))
+
+(defun elsa--analyse:setq (form scope state)
+  (let* ((args (elsa-cdr form))
+         (assignments (-partition 2 args)))
+    (-each assignments
+      (lambda (assignment)
+        (let* ((place (car assignment))
+               (val (cadr assignment))
+               (var (elsa-scope-get-var scope place)))
+          (elsa--analyse-form val scope state)
+          (elsa-scope-assign-var scope
+            (elsa-variable :name (elsa-form-name place)
+                           :type (oref val type)))
+          (unless var
+            (elsa-state-add-error state
+              (elsa-make-warning
+               (format "Assigning to free variable %s"
+                       (symbol-name (elsa-form-name place)))
+               place))))))
+    (oset form type (oref (-last-item args) type))))
 
 (defun elsa--analyse:cond (form scope state)
   (let ((branches (cdr (oref form sequence)))

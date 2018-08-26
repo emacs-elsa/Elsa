@@ -80,6 +80,28 @@ will assume during analysis.")
 (cl-defmethod elsa-type-sum ((this elsa-variable) (other elsa-variable))
   (elsa-type-sum (oref this type) (oref other type)))
 
+(defun elsa--variables-partition (first second)
+  "Partition variables in FIRST and SECOND group to those in first, second or both."
+  (let (first-group second-group both-group)
+    (-each first
+      (lambda (first-var)
+        (-if-let (second-var (--first (eq (oref first-var name) (oref it name)) second))
+            (push (elsa-variable :name (oref first-var name)
+                                 :type (elsa-type-sum first-var second-var)
+                                 :assigned (trinary-happened
+                                            (oref first-var assigned)
+                                            (oref second-var assigned))
+                                 :read (trinary-happened
+                                        (oref first-var read)
+                                        (oref second-var read)))
+                  both-group)
+          (push (clone first-var) first-group))))
+    (-each second
+      (lambda (second-var)
+        (unless (--any-p (eq (oref second-var name) (oref it name)) both-group)
+          (push (clone second-var) second-group))))
+    (list (nreverse first-group) (nreverse second-group) (nreverse both-group))))
+
 (defun elsa-variables-group-and-sum (vars)
   "Take a list of variables VARS, group them by name and sum the types."
   (let ((groups (--group-by (oref it name) vars)))
