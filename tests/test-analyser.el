@@ -145,7 +145,7 @@
           (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
             (expect test-form :to-be-type-equivalent (elsa-type-diff (elsa-type-mixed) (elsa-type-string))))))
 
-      (it "should not narrow the type by the unreachable expressions"
+      (xit "should not narrow the type by the unreachable expressions"
         (elsa-test-with-analysed-form "|(defun a (x) (if (or t x) x x))" form
           (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
             (expect test-form :to-be-type-equivalent (elsa-make-type Mixed)))))
