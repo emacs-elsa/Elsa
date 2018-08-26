@@ -342,8 +342,9 @@ everything (Mixed)."
      (elsa-sum-type :types (nreverse new)))))
 
 (cl-defmethod elsa-type-diff ((this elsa-diff-type) other)
+  "This uses the rule that (A \ B) \ C = A \ (B ∪ C)"
   (elsa-type-normalize
-   (elsa-diff-type :positive (elsa-type-diff (oref this positive) other)
+   (elsa-diff-type :positive (clone (oref this positive))
                    :negative (elsa-type-sum (oref this negative) other))))
 
 (cl-defgeneric elsa-type-intersect (this other)
