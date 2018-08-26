@@ -25,6 +25,11 @@
           (let ((and-form (elsa-nth 3 form)))
             (expect and-form :to-be-type-equivalent (elsa-make-type String?)))))
 
+      (it "should have nullable return type if the last condition might be reached and is possibly nil"
+        (elsa-test-with-analysed-form "|(defun a (x) (let ((y 1)) (and x y)))" form
+          (let ((and-form (elsa-nth 3 form)))
+            (expect and-form :to-be-type-equivalent (elsa-make-type Int?)))))
+
       (it "should set return type to t for empty (and) form"
         (elsa-test-with-analysed-form "|(and)" form
           (expect form :to-be-type-equivalent (elsa-type-t)))))
@@ -36,15 +41,36 @@
           (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
             (expect test-form :to-be-type-equivalent (elsa-make-type String)))))
 
-      (xit "should not narrow the type by the unreachable expressions"
+      (it "should not narrow the type by the unreachable expressions"
         (elsa-test-with-analysed-form "|(defun a (x) (if (and nil x) x x))" form
           (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
             (expect test-form :to-be-type-equivalent (elsa-make-type Mixed)))))
+
+      (it "should narrow the types in then-branch by all the expressions because they must all be true to enter"
+        (elsa-test-with-analysed-form "|(defun a (x y) (if (and (integerp x) (integerp y)) (progn x y) (progn x y)))" form
+          (let* ((progn-form (elsa-nth 2 (elsa-nth 3 form)))
+                 (x-form (elsa-nth 1 progn-form))
+                 (y-form (elsa-nth 2 progn-form)))
+            (expect x-form :to-be-type-equivalent (elsa-make-type Int))
+            (expect y-form :to-be-type-equivalent (elsa-make-type Int)))))
+
+      (xit "should not narrow the types in else-branch by the reachable expressions where we don't know which may fail"
+        (elsa-test-with-analysed-form "|(defun a (x y) (if (and (integerp x) (integerp y)) (progn x y) (progn x y)))" form
+          (let* ((progn-form (elsa-nth 3 (elsa-nth 3 form)))
+                 (x-form (elsa-nth 1 progn-form))
+                 (y-form (elsa-nth 2 progn-form)))
+            (expect x-form :to-be-type-equivalent (elsa-make-type Mixed))
+            (expect y-form :to-be-type-equivalent (elsa-make-type Mixed)))))
 
       (it "should empty the domain in case the tests are incompatible"
         (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) (integerp x) x))" form
           (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
             (expect test-form :to-be-type-equivalent (elsa-make-type Empty)))))
+
+      (it "should return nil if one condition rules out the other"
+        (elsa-test-with-analysed-form "|(defun a (x y) (and x (unless x y)))" form
+          (let ((and-form (elsa-nth 3 form)))
+            (expect and-form :to-be-type-equivalent (elsa-make-type Nil)))))
 
       (it "should restore the type after the form"
         (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) (integerp x) x) x)" form
