@@ -358,7 +358,7 @@ number by symbol 'many."
     (-when-let (grouped
                 (elsa-variables-group-and-intersect
                  (->> body
-                      (--filter (trinary-possible-p (elsa-form-reachable it)) )
+                      (--filter (trinary-possible-p (elsa-form-reachable it)))
                       (--mapcat (oref it narrow-types))
                       (-non-nil))))
       (oset form narrow-types grouped))
