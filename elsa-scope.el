@@ -25,9 +25,12 @@
 ;;; Code:
 
 (require 'eieio)
+(require 'trinary)
 
 (require 'elsa-variable)
 (require 'elsa-reader)
+
+(require 'subr-x)
 
 (defclass elsa-scope nil
   ((vars :initarg :vars
@@ -69,6 +72,19 @@ Lexical bindings are not undone, use `elsa-scope-remove-var' to
 do that."
   (declare (indent 1)))
 
+(defun elsa-scope-protect (scope barrier)
+  (let ((vars (oref scope vars)))
+    (maphash
+     (lambda (k v)
+       (puthash k (cons barrier v) vars))
+     vars)))
+
+(defun elsa-scope-unassign (scope barrier)
+  (maphash
+   (lambda (k _v)
+     (elsa-scope-unassign-var scope k))
+   (oref scope vars)))
+
 ;;
 ;; Implementation
 
@@ -80,10 +96,12 @@ do that."
     (puthash name (cons variable var-stack) vars)))
 
 (defun elsa-scope--remove-variable (scope name)
+  (elsa-scope--unassign-var scope name)
   (let* ((vars (oref scope vars))
-         (var-stack (cdr (gethash name vars))))
-    (if var-stack
-        (puthash name var-stack vars)
+         (var-stack (gethash name vars)))
+    (cl-assert (not (symbolp (car var-stack))))
+    (if (cdr var-stack)
+        (puthash name (cdr var-stack) vars)
       (remhash name vars))))
 
 (cl-defmethod elsa-scope-remove-variable ((this elsa-scope) (variable elsa-variable))
@@ -111,6 +129,57 @@ do that."
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) (form elsa-form-symbol))
   "Get binding of FORM in THIS scope."
   (elsa-scope--get-var this (elsa-form-name form)))
+
+(cl-defmethod elsa-scope-assign-var ((scope elsa-scope) (var elsa-variable))
+  (let* ((vars (oref scope vars))
+         (name (oref var name))
+         (var-stack (gethash name vars)))
+    (puthash name (cons (elsa-variable :name name
+                                       :type (oref var type)
+                                       :assigned (trinary-true))
+                        (cons 'setq var-stack)) vars)))
+
+(defun elsa-scope--unassign-var (scope name)
+  (let* ((vars (oref scope vars))
+         (var-stack (gethash name vars)))
+    (while (and var-stack
+                (not (symbolp (car var-stack)))
+                (eq (cadr var-stack) 'setq))
+      (setq var-stack (cddr var-stack)))
+    (when (symbolp (car var-stack))
+      (pop var-stack))
+    (if var-stack
+        (puthash name var-stack vars)
+      (remhash name vars))))
+
+(cl-defmethod elsa-scope-unassign-var ((scope elsa-scope) name)
+  (elsa-scope--unassign-var scope name))
+
+(cl-defmethod elsa-scope-unassign-var ((scope elsa-scope) (var elsa-variable))
+  (elsa-scope--unassign-var scope (oref var name)))
+
+(defun elsa-variables-merge-to-scope (vars scope)
+  "Merge VARS to SCOPE.
+
+Update types of VARS in place or add them if they are missing.
+Propagate the assigned/read flags."
+  (-each vars
+    (lambda (var)
+      (-if-let (scope-var (elsa-scope-get-var scope var))
+          (progn
+            (oset scope-var type (oref var type))
+            (oset scope-var assigned (oref var assigned))
+            (oset scope-var read (oref var read)))
+        (elsa-scope-add-variable scope (clone var))))))
+
+(defun elsa-scope-get-assigned-vars (scope)
+  (let ((mutated nil))
+    (maphash (lambda (_k v)
+               (when (and (eq (cadr v) 'setq)
+                          (not (symbolp (car v))))
+                 (push (clone (car v)) mutated)))
+             (oref scope vars))
+    mutated))
 
 (provide 'elsa-scope)
 ;;; elsa-scope.el ends here
