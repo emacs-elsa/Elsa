@@ -142,19 +142,21 @@ number by symbol 'many."
         (mutated-vars-true nil)
         (mutated-vars-false nil))
     (elsa--analyse-form condition scope state)
-    (elsa--with-narrowed-variables condition scope
-      (elsa-save-scope scope
-        (elsa--analyse-form true-body scope state)
-        (setq mutated-vars-true (elsa-scope-get-assigned-vars scope))))
+    (elsa-with-reachability state (elsa-type-is-non-nil condition)
+      (elsa--with-narrowed-variables condition scope
+        (elsa-save-scope scope
+          (elsa--analyse-form true-body scope state)
+          (setq mutated-vars-true (elsa-scope-get-assigned-vars scope)))))
     ;; TODO: extract this logic to a helper macro, it's shared with
     ;; `cond' analysis, will also be used in `and' and `or'
     (--each (oref condition narrow-types)
       (-when-let (scope-var (elsa-scope-get-var scope it))
         (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
-    (elsa-save-scope scope
-      (elsa--analyse-body false-body scope state)
-      (setq mutated-vars-false (elsa-scope-get-assigned-vars scope)))
+    (elsa-with-reachability state (elsa-type-is-nil condition)
+      (elsa-save-scope scope
+        (elsa--analyse-body false-body scope state)
+        (setq mutated-vars-false (elsa-scope-get-assigned-vars scope))))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
     (let ((condition-is-nil (elsa-type-is-nil condition))
           (to-merge))
