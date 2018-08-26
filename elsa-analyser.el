@@ -179,19 +179,17 @@ number by symbol 'many."
                     to-merge)))
           (setq to-merge (-concat both to-merge)))))
       (elsa-variables-merge-to-scope to-merge scope))
-    (let ((result-type (oref true-body type)))
-      (setq result-type
+    (let ((true-result-type (oref true-body type))
+          (false-result-type (if false-body
+                                 (oref (-last-item false-body) type)
+                               (elsa-type-nil))))
+      (oset form type
             (cond
-             (false-body
-              (elsa-type-sum
-               result-type
-               (oref (-last-item false-body) type)))
-             ((elsa-type-accept (oref condition type) (elsa-type-nil))
-              (if (elsa-type-equivalent-p condition (elsa-type-nil))
-                  (elsa-type-nil)
-                (elsa-type-make-nullable result-type)))
-             (t result-type)))
-      (oset form type result-type))))
+             ((trinary-true-p (elsa-type-is-non-nil condition))
+              true-result-type)
+             ((trinary-true-p (elsa-type-is-nil condition))
+              false-result-type)
+             (t (elsa-type-sum true-result-type false-result-type)))))))
 
 (defun elsa--analyse:setq (form scope state)
   (let* ((args (elsa-cdr form))

@@ -190,11 +190,11 @@
           (let ((test-form (elsa-nth 3 form)))
             (expect test-form :to-be-type-equivalent (elsa-make-type Int | Keyword)))))
 
-      (xit "should return true-body type if condition is always true and false body is defined"
+      (it "should return true-body type if condition is always true and false body is defined"
         (elsa-test-with-analysed-form "|(if t 1 :key)" form
           (expect form :to-be-type-equivalent (elsa-type-int))))
 
-      (xit "should return false-body type if condition is always false and false body is defined"
+      (it "should return false-body type if condition is always false and false body is defined"
         (elsa-test-with-analysed-form "|(if nil 1 :key)" form
           (expect form :to-be-type-equivalent (elsa-type-keyword)))))
 
