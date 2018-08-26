@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'eieio)
+(require 'trinary)
 
 ;; TODO: maybe move the acceptance resolution into an expression type?
 (defclass elsa-variable nil
@@ -34,7 +35,17 @@
          :documentation "Type of this variable.
 
 This is the type that the symbol form representing this variable
-will assume during analysis."))
+will assume during analysis.")
+   (assigned :initarg :assigned
+             :initform (trinary-false)
+             :type trinary
+             :documentation
+     "Non-nil if this variable was assigned in the current scope.")
+   (read :initarg :read
+         :initform (trinary-false)
+         :type trinary
+         :documentation
+     "Non-nil if this variable was read in the current scope."))
   :documentation "A lexical variable")
 
 ;; TODO: propagate assigned/read
