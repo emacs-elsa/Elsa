@@ -259,7 +259,19 @@
 
     (describe "return type analysis"
 
-      (xit "should short-circuit if some form's condition is always true"
+      (it "should return nil if cond is empty"
+        (elsa-test-with-analysed-form "|(cond)" form
+          (expect form :to-be-type-equivalent (elsa-type-nil))))
+
+      (it "should return nil if cond has one empty branch"
+        (elsa-test-with-analysed-form "|(cond ())" form
+          (expect form :to-be-type-equivalent (elsa-type-nil))))
+
+      (it "should return nil if cond has one empty branch with empty condition"
+        (elsa-test-with-analysed-form "|(cond (()))" form
+          (expect form :to-be-type-equivalent (elsa-type-nil))))
+
+      (it "should short-circuit if some form's condition is always true"
         (elsa-test-with-analysed-form "|(defun fn (x) (cond (t :foo) (x 'bar)))" form
           (let ((test-form (elsa-nth 3 form)))
             (expect test-form :to-be-type-equivalent (elsa-type-keyword)))))
@@ -274,8 +286,8 @@
           (let ((test-form (elsa-nth 3 form)))
             (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int | Nil)))))
 
-      (xit "should return nullable if last condition is catch-all but returns nullable"
-        (elsa-test-with-analysed-form "|(defun fn (x) (cond (x 1) (t (if x :foo nil))))" form
+      (it "should return nullable if last condition is catch-all but returns nullable"
+        (elsa-test-with-analysed-form "|(defun fn (x y) (cond (x 1) (t (if y :foo nil))))" form
           (let ((test-form (elsa-nth 3 form)))
             (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int | Nil))))))
 

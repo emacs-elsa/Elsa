@@ -213,30 +213,35 @@ number by symbol 'many."
 
 (defun elsa--analyse:cond (form scope state)
   (let ((branches (cdr (oref form sequence)))
-        (return-type (elsa-type-nil))
+        (return-type (elsa-type-empty))
         (vars-to-pop nil)
-        (can-be-nil-p t))
+        (condition-reachable (trinary-true)))
     (-each branches
       (lambda (branch)
         (let* ((branch-seq (elsa-form-sequence branch))
                (head (car branch-seq))
                (body (cdr branch-seq)))
-          (when head
-            (elsa--analyse-form head scope state)
-            (elsa--with-narrowed-variables head scope
-              (--each body
-                (elsa--analyse-form it scope state)))
-            (--each (oref head narrow-types)
-              (-when-let (scope-var (elsa-scope-get-var scope it))
-                (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
-                (push it vars-to-pop)))
-            (unless (elsa-type-accept (oref head type) (elsa-type-nil))
-              (setq can-be-nil-p nil))))
-        (-when-let (last-item (-last-item (elsa-form-sequence branch)))
-          (setq return-type (elsa-type-sum return-type (oref last-item type))))))
+          (elsa-with-reachability state condition-reachable
+            (when head
+              (elsa--analyse-form head scope state)
+              (elsa-with-reachability state (elsa-type-is-non-nil head)
+                (elsa--with-narrowed-variables head scope
+                  (--each body
+                    (elsa--analyse-form it scope state)))
+                (--each (oref head narrow-types)
+                  (-when-let (scope-var (elsa-scope-get-var scope it))
+                    (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
+                    (push it vars-to-pop))))
+              (when (trinary-possible-p condition-reachable)
+                (setq return-type
+                      (elsa-type-sum return-type (-last-item branch-seq))))
+              (setq condition-reachable
+                    (trinary-and
+                     condition-reachable
+                     (elsa-type-is-nil head))))))))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
-    (unless can-be-nil-p
-      (setq return-type (elsa-type-make-non-nullable return-type)))
+    (when (trinary-possible-p condition-reachable)
+      (setq return-type (elsa-type-make-nullable return-type)))
     (oset form type return-type)))
 
 (defun elsa--analyse:condition-case (form scope state)
