@@ -34,6 +34,12 @@ By default Elsa core comes with very little built-in logic, only
 understanding the elisp [special
 forms](https://www.gnu.org/software/emacs/manual/html_node/elisp/Special-Forms.html).
 
+However, we ship a large number of extensions for popular packages
+such as `eieio`, `cl`, `dash` or even `elsa` itself.
+
+You can configure Elsa by adding an `Elsafile.el` to your project.
+The `Elsafile.el` should be located next to the `Cask` file.
+
 There are multiple ways to extend the capabilities of Elsa.
 
 ## Analysis extension
@@ -64,17 +70,15 @@ your `Elsafile.el` the `register-extensions` form, like so
  )
 ```
 
-The `Elsafile.el` should be located next to the `Cask` file of your project.
-
 ## Rulesets
 
 After analysis of the forms is done we have all the type information
 and the AST ready to be further processed by various checks and rules.
 
-These can be:
+These can be (non-exhaustive list):
 
-* Stylistic, such as checking that a variable uses lisp-case for
-  naming instead of snake_case.
+* Stylistic, such as checking that a variable uses `lisp-case` for
+  naming instead of `snake_case`.
 * Syntactic, such as checking we are not wrapping the else branch of
   `if` with a useless `progn`.
 * Semantic, such as checking that the condition of `if` does not
@@ -87,8 +91,8 @@ To register a ruleset, add the following form to `Elsafile.el`
 
 ``` emacs-lisp
 (register-ruleset
- if
- symbol
+ dead-code
+ style
  ;; more rulesets here
  )
 ```
@@ -164,6 +168,12 @@ You can provide type definitions for built-in functions by extending
 `elsa-typed-builtin.el`.  There is plenty to go.  Some of the types
 necessary to express what we want might not exist or be supported yet,
 open an issue so we can discuss how to model things.
+
+# F.A.Q.
+
+## What's up with the logo?
+
+See the [discussion](https://github.com/emacs-elsa/Elsa/issues/80).
 
 # For developers
 
