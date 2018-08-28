@@ -8,21 +8,6 @@
 
   (describe "Working with variables"
 
-
-    (it "should recognize unbound variables"
-      (expect (eieio-object-class
-               (elsa--get-expression-type (elsa-state) 'a))
-              :to-equal 'elsa-type-unbound))
-
-    (it "should recognize lexically-bound variables"
-      (let* ((state (elsa-state))
-             (scope (oref state scope)))
-        (elsa-scope-add-variable
-         scope (elsa-variable :name 'a :type (elsa-make-type String)))
-        (expect (eieio-object-class
-                 (elsa--get-expression-type state 'a))
-                :to-equal 'elsa-type-string)))
-
     (it "should recognize defvars"
       (let* ((state (elsa-state)))
         (elsa-state-add-defvar state 'a (elsa-make-type String))
@@ -38,24 +23,7 @@
         (elsa-state-add-defvar state 'a (elsa-make-type Int))
         (expect (eieio-object-class
                  (elsa--get-expression-type state 'a))
-                :to-equal 'elsa-type-string)))
-
-    (it "should not recognize nil as unbound variable"
-      (expect (eieio-object-class
-               (elsa--get-expression-type (elsa-state) nil))
-              :to-equal 'elsa-type-nil))
-
-    (it "should not recognize t as unbound variable"
-      (expect (elsa-type-accept
-               (elsa--get-expression-type (elsa-state) t)
-               (elsa-make-type Mixed))
-              :to-be-truthy))
-
-    (it "should not recognize keywords as unbound variable"
-      (expect (elsa-type-accept
-               (elsa--get-expression-type (elsa-state) :foo)
-               (elsa-make-type Mixed))
-              :to-be-truthy)))
+                :to-equal 'elsa-type-string))))
 
 
   (describe "Working with function calls"

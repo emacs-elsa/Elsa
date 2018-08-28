@@ -369,6 +369,13 @@
           (let ((test-form (elsa-nth 4 form)))
             (expect test-form :to-be-type-equivalent (elsa-type-mixed)))))))
 
+  (describe "Analysis defun"
+
+    (it "should introduce the arguments as variables into the scope"
+      (elsa-test-with-analysed-form "|(defun x (a b) a b)" form
+        (expect (elsa-nth 3 form) :to-be-type-equivalent (elsa-type-mixed))
+        (expect (elsa-nth 4 form) :to-be-type-equivalent (elsa-type-mixed)))))
+
   (describe "Normalize spec"
 
     (it "should evaluate all arguments when the spec is t"
@@ -381,4 +388,26 @@
 
     (it "should keep the spec as provided otherwise"
       (elsa-test-with-analysed-form "|(fun a b c d)" form
-        (expect (elsa--analyse-normalize-spec (list nil t nil t) form) :to-equal (list nil t nil t))))))
+        (expect (elsa--analyse-normalize-spec (list nil t nil t) form) :to-equal (list nil t nil t)))))
+
+  (describe "Analyzing symbols"
+
+    (it "should recognize unbound variables."
+      (elsa-test-with-analysed-form "|x" form
+        (expect form :to-be-type-equivalent (elsa-type-unbound))))
+
+    (it "should recognize lexically bound let-variables"
+      (elsa-test-with-analysed-form "|(let ((x 1)) x)" form
+        (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-type-int))))
+
+    (it "should not recognize nil as unbound variable"
+      (elsa-test-with-analysed-form "|nil" form
+        (expect form :to-be-type-equivalent (elsa-type-nil))))
+
+    (it "should not recognize t as unbound variable"
+      (elsa-test-with-analysed-form "|t" form
+        (expect form :to-be-type-equivalent (elsa-type-t))))
+
+    (it "should not recognize keywords as unbound variable"
+      (elsa-test-with-analysed-form "|:foo" form
+        (expect form :to-be-type-equivalent (elsa-type-keyword))))))
