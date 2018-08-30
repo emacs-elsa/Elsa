@@ -91,11 +91,14 @@
             (pcase form
               (`(register-extensions . ,extensions)
                (--each extensions
-                 (require (intern (concat "elsa-extension-" (symbol-name it))))))
+                 (unless (require (intern (concat "elsa-extension-" (symbol-name it))) nil t)
+                   (princ (format "An error occured during startup: Extension %s not found\n" (symbol-name it))))))
               (`(register-ruleset . ,rulesets)
                (--each rulesets
-                 (elsa-ruleset-load
-                  (funcall (intern (concat "elsa-ruleset-" (symbol-name it)))))))))
+                 (let ((ruleset-constructor (intern (concat "elsa-ruleset-" (symbol-name it)))))
+                   (if (functionp ruleset-constructor)
+                       (elsa-ruleset-load (funcall ruleset-constructor))
+                     (princ (format "An error occured during startup: Ruleset %s not found\n" (symbol-name it)))))))))
         (end-of-file t)))))
 
 (defun elsa-run ()
