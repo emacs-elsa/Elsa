@@ -2,6 +2,8 @@
 (require 'elsa-check)
 (require 'elsa-ruleset)
 
+(require 'find-func)
+
 (defclass elsa-ruleset-elsa (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-elsa))
@@ -45,5 +47,23 @@
 
 (defun elsa--analyse:elsa-make-type (form scope state)
   (elsa--analyse-macro form nil scope state))
+
+(defun elsa--analyse:register-extensions (form scope state)
+  (-each (elsa-cdr form)
+    (lambda (ext)
+      (unless (ignore-errors (find-library-name (concat "elsa-extension-" (symbol-name (elsa-form-name ext)))))
+        (elsa-state-add-error state
+          (elsa-make-error
+           (format "Extension %s not found." (symbol-name (elsa-form-name ext)))
+           ext))))))
+
+(defun elsa--analyse:register-ruleset (form scope state)
+  (-each (elsa-cdr form)
+    (lambda (ruleset)
+      (unless (functionp (intern (concat "elsa-ruleset-" (symbol-name (elsa-form-name ruleset)))))
+        (elsa-state-add-error state
+          (elsa-make-error
+           (format "Ruleset %s not found." (symbol-name (elsa-form-name ruleset)))
+           ruleset))))))
 
 (provide 'elsa-extension-elsa)
