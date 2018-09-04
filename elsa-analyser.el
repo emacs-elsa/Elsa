@@ -440,6 +440,12 @@ make it explicit and precise."
     (elsa--analyse-form value scope state)
     (put (elsa-form-name name) 'elsa-type-var (oref value type))))
 
+(defun elsa--analyse:defconst (form scope state)
+  "Analyze `defconst'.
+
+See `elsa--analyse:defvar'."
+  (elsa--analyse:defvar form scope state))
+
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))
 
