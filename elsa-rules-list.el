@@ -99,6 +99,7 @@
                 ;; FIXME: this actually includes the variables bound
                 ;; during analysis, so this is not the proper way to
                 ;; check.
+                (get name 'elsa-type-var)
                 (boundp name))
       (elsa-state-add-error state
         (elsa-make-error
