@@ -425,6 +425,21 @@ nullables and the &rest argument into a variadic."
          (body (nthcdr 3 sequence)))
     (elsa--analyse-defun-like-form name args body form scope state)))
 
+(defun elsa--analyse:defvar (form scope state)
+  "Analyze `defvar'.
+
+We infer the type of the variable by the type of the default
+form.  This might not always make sense, for example if the value
+is `nil' we will infer the type to be always nil, but it might be
+a list or something else.
+
+The user can provide a type annotation over the `defvar' form to
+make it explicit and precise."
+  (let* ((name (elsa-nth 1 form))
+         (value (elsa-nth 2 form)))
+    (elsa--analyse-form value scope state)
+    (put (elsa-form-name name) 'elsa-type-var (oref value type))))
+
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))
 

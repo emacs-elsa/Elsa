@@ -8,6 +8,12 @@
 
   (describe "Special forms"
 
+    (describe "defvar"
+
+      (it "should analyze the default form of the defvar and assign that type"
+        (elsa-test-with-analysed-form "(progn (defvar foo :keyword) foo)" form
+          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-type-keyword)))))
+
     (describe "quote"
 
       (it "should resolve to type list if the quoted argument is a list"
