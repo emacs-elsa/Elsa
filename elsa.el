@@ -39,7 +39,7 @@
 
 (require 'elsa-extension-builtin)
 
-(require 'elsa-typed-emacs-syntax)
+(require 'elsa-typed-syntax)
  ;; TODO: figure out how to load these based on `(require)' forms
 (require 'elsa-typed-thingatpt)
 (require 'elsa-typed-subr)

@@ -3,4 +3,4 @@
 
 (put 'syntax-ppss 'elsa-type (elsa-make-type Number? -> List))
 
-(provide 'elsa-typed-emacs-syntax)
+(provide 'elsa-typed-syntax)
