@@ -438,8 +438,11 @@ The user can provide a type annotation over the `defvar' form to
 make it explicit and precise."
   (let* ((name (elsa-nth 1 form))
          (value (elsa-nth 2 form)))
-    (elsa--analyse-form value scope state)
-    (put (elsa-form-name name) 'elsa-type-var (oref value type))))
+    (if value
+        (progn
+          (elsa--analyse-form value scope state)
+          (put (elsa-form-name name) 'elsa-type-var (oref value type)))
+      (put (elsa-form-name name) 'elsa-type-var (elsa-make-type Unbound)))))
 
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
