@@ -407,7 +407,8 @@ This only makes sense for the sequence forms:
           (form-name (elsa-form-name (cadr (elsa-form-sequence reader-form)))))
       (cond
        ((or (elsa-form-function-call-p reader-form 'defun)
-            (elsa-form-function-call-p reader-form 'defsubst))
+            (elsa-form-function-call-p reader-form 'defsubst)
+            (elsa-form-function-call-p reader-form 'cl-defgeneric))
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-error state
             (elsa-make-warning (format "The function name `%s' and the annotation name `%s' do not match"
