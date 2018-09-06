@@ -151,6 +151,7 @@ number by symbol 'many."
     ;; `cond' analysis, will also be used in `and' and `or'
     (--each (oref condition narrow-types)
       (-when-let (scope-var (elsa-scope-get-var scope it))
+        ;; TODO: in the macro make the combinator `elsa-variable-diff' configurable
         (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
     (elsa-with-reachability state (elsa-type-is-nil condition)

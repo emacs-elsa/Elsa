@@ -213,6 +213,11 @@
     (elsa--analyse-function-call form scope state)
     (elsa-dash--restore-anaphora-scope it-var scope)))
 
+;; TODO: this does not follow the rules of `when' for reachability
+;; propagation.  We really need to find some better way to unify these
+;; kinds of macros because it will get unwieldy to copy the code
+;; everywhere (also built-in `when-let' and possibly other control
+;; macros)
 (defun elsa--analyse:-when-let (form scope state)
   (let ((binding (cadr (oref form sequence)))
         (body (cddr (oref form sequence)))
