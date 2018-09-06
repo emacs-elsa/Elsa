@@ -51,26 +51,24 @@
 
 (defun elsa-process-file (file)
   "Process FILE."
-  (let ((buffer (find-file-noselect file))
-        (state (elsa-state))
+  (let ((state (elsa-state))
         (form))
-    (with-current-buffer buffer
-      (save-excursion
-        (save-restriction
-          (widen)
-          (goto-char (point-min))
-          (let ((line 1))
-            (put-text-property (point) (1+ (point)) 'elsa-line line)
-            (while (= (forward-line) 0)
-              (cl-incf line)
-              (put-text-property (point) (min
-                                          (buffer-size)
-                                          (1+ (point))) 'elsa-line line)))
-          (goto-char (point-min))
-          (condition-case _err
-              (while (setq form (elsa-read-form state))
-                (elsa-analyse-form state form))
-            (end-of-file t)))))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (emacs-lisp-mode)
+      (goto-char (point-min))
+      (let ((line 1))
+        (put-text-property (point) (1+ (point)) 'elsa-line line)
+        (while (= (forward-line) 0)
+          (cl-incf line)
+          (put-text-property (point) (min
+                                      (buffer-size)
+                                      (1+ (point))) 'elsa-line line)))
+      (goto-char (point-min))
+      (condition-case _err
+          (while (setq form (elsa-read-form state))
+            (elsa-analyse-form state form))
+        (end-of-file t)))
     state))
 
 (defun elsa-process-form ()
