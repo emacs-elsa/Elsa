@@ -240,12 +240,12 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-foreach ((this elsa-form-vector) fn)
   (mapc fn (oref this sequence)))
 
-(defsubst elsa--read-vector (form)
+(defsubst elsa--read-vector (form state)
   (elsa--skip-whitespace-forward)
   (elsa-form-vector
    :type (elsa-make-type Vector)
    :start (prog1 (point) (down-list))
-   :sequence (apply 'vector (-map 'elsa--read-form form))
+   :sequence (apply 'vector (-map (lambda (f) (elsa--read-form f state)) form))
    :end (progn (up-list) (point))))
 
 ;;; Conses
@@ -325,8 +325,8 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-cdr ((this elsa-form-improper-list))
   (cdr (oref this conses)))
 
-;; (elsa--read-cons :: [Mixed] -> Mixed)
-(defsubst elsa--read-cons (form)
+;; (elsa--read-cons :: [Mixed] -> Mixed -> Mixed)
+(defsubst elsa--read-cons (form state)
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
       (elsa-form-improper-list
@@ -335,7 +335,7 @@ This only makes sense for the sequence forms:
        :conses (let ((depth 0)
                      (items))
                  (while (consp form)
-                   (let ((head (elsa--read-form (car form))))
+                   (let ((head (elsa--read-form (car form) state)))
                      (push head items)
                      (!cdr form)
                      (elsa--skip-whitespace-forward)
@@ -344,7 +344,7 @@ This only makes sense for the sequence forms:
                            (progn
                              (cl-incf depth)
                              (down-list))
-                         (push (elsa--read-form form) items)))))
+                         (push (elsa--read-form form state) items)))))
                  (while (>= (cl-decf depth) 0) (up-list))
                  (apply 'cl-list* (nreverse items)))
        :end (progn (up-list) (point)))
@@ -356,13 +356,13 @@ This only makes sense for the sequence forms:
         (while form
           (cond
            ((elsa--quote-p (car form))
-            (let ((quoted-form (elsa--read-form form)))
+            (let ((quoted-form (elsa--read-form form state)))
               (setq items
                     (-concat (reverse (oref quoted-form sequence))
                              items)))
             (setq form nil))
            (t
-            (push (elsa--read-form (car form)) items)
+            (push (elsa--read-form (car form) state) items)
             (!cdr form)))
           (elsa--skip-whitespace-forward)
           (when (and form (looking-at-p "\\."))
@@ -374,7 +374,7 @@ This only makes sense for the sequence forms:
         (nreverse items))
       :end (progn (up-list) (point)))))
 
-(defun elsa--read-quote (form)
+(defun elsa--read-quote (form state)
   (elsa--skip-whitespace-forward)
   (let ((expanded-form nil))
     (elsa-form-list
@@ -395,12 +395,12 @@ This only makes sense for the sequence forms:
                               (forward-char (length (symbol-name (car form)))))))
                  :name (car form)
                  :end (point))
-                (-map 'elsa--read-form (cdr form)))
+                (-map (lambda (f) (elsa--read-form f state)) (cdr form)))
      :end (progn
             (when expanded-form (up-list))
             (point)))))
 
-(defsubst elsa--process-annotation (reader-form comment-form &optional state)
+(defsubst elsa--process-annotation (reader-form comment-form state)
   (cond
    ;; type annotation
    ((and (eq (cadr comment-form) ::)
@@ -431,7 +431,7 @@ This only makes sense for the sequence forms:
              'elsa-type-var
              (eval `(elsa-make-type ,@(cddr comment-form))))))))))
 
-(defun elsa--read-form (form &optional state)
+(defun elsa--read-form (form state)
   "Read FORM.
 
 FORM is a lisp object that was produced by calling `read'.  This
@@ -445,7 +445,7 @@ for the analysis."
           ((keywordp form) (elsa--read-keyword form))
           ((symbolp form) (elsa--read-symbol form))
           ((vectorp form)
-           (let ((vector-form (elsa--read-vector form)))
+           (let ((vector-form (elsa--read-vector form state)))
              (elsa-form-foreach vector-form
                (lambda (f) (oset f parent vector-form)))
              vector-form))
@@ -454,8 +454,8 @@ for the analysis."
            ;; special care needs to be taken about the "reader macros" '`,
            (let ((cons-form (cond
                              ((elsa--quote-p (car form))
-                              (elsa--read-quote form))
-                             (t (elsa--read-cons form)))))
+                              (elsa--read-quote form state))
+                             (t (elsa--read-cons form state)))))
              (elsa-form-foreach cons-form
                (lambda (f) (oset f parent cons-form)))
              cons-form))
@@ -491,7 +491,7 @@ for the analysis."
               (elsa--process-annotation reader-form comment-form state))))))
     reader-form))
 
-(defun elsa-read-form (&optional state)
+(defun elsa-read-form (state)
   "Read form at point."
   (let* ((form (save-excursion
                  (read (current-buffer)))))
