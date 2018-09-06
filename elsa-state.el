@@ -5,10 +5,15 @@
 ;; TODO: add some methods for looking up variables/defuns, so we don't
 ;; directly work with the hashtable
 (defclass elsa-state nil
-  ((defvars :initform (make-hash-table))
+  ((defuns :initform nil)
+   (defvars :initform (make-hash-table))
    (errors :initform nil)
    (reachable :initform (list (trinary-true)))
    (scope :initform (elsa-scope))))
+
+(defun elsa-state-add-defun (state name type)
+  (put name 'elsa-type type)
+  (push `(defun ,name ,type) (oref state defuns)))
 
 ;; TODO: take defvar directly? For consistency
 (cl-defmethod elsa-state-add-defvar ((this elsa-state) name type)
