@@ -61,7 +61,7 @@
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(a b c d)")))
 
-    (it "should"
+    (it "should read a list in dot notation with cdr having nested lists"
       (elsa-test-with-read-form "(a . ((b) (x)))" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(a (b) (x))")))
@@ -71,32 +71,32 @@
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(a b)")))
 
-    (it "should"
+    (it "should read a list with the cdr having a nested list in dot notation"
       (elsa-test-with-read-form "(a . ((b . nil)))" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(a (b))")))
 
-    (it "should"
+    (it "should read a nested list with the cdr having a nested list in dot notation"
       (elsa-test-with-read-form "((((a . (b . nil)))))" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "((((a b))))")))
 
-    (it "should"
+    (it "should read a long list in dot notation with a nested dotted list"
       (elsa-test-with-read-form "(a . (b . ((c . nil) x)))" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(a b (c) x)")))
 
-    (it "should"
+    (it "should read a regular list"
       (elsa-test-with-read-form "(a b c)" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(a b c)")))
 
-    (it "should"
+    (it "should read a nested regular list"
       (elsa-test-with-read-form "((a b c))" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "((a b c))")))
 
-    (it "should"
+    (it "should read a deeply nested regular list"
       (elsa-test-with-read-form "(((a b c)))" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-print form) :to-equal "(((a b c)))")))
