@@ -1,4 +1,34 @@
+(require 'f)
+
 (require 'elsa-analyser)
+
+(defvar elsa-analyzed nil
+  "List of already analyzed files.")
+
+(defun elsa--get-cache-file-name (library &optional compiled)
+  "Return the cache file name for LIBRARY."
+  (f-expand (format "%s-elsa-cache.el%s"
+                    (f-base library)
+                    (if compiled "c" ""))
+            (f-parent library)))
+
+(defun elsa--analyse:require (form scope state)
+  (let ((feature (elsa-nth 1 form)))
+    (when (elsa--quoted-symbol-p feature)
+      (let* ((load-suffixes (list ".el"))
+             (load-file-rep-suffixes (list ""))
+             (library-name (symbol-name (elsa-form-name (elsa-nth 1 feature))))
+             (library (locate-library library-name)))
+        (when (and library
+                   (not (member library elsa-analyzed)))
+          (let* ((elsa-cache-file (elsa--get-cache-file-name library 'compiled)))
+            (if (file-newer-than-file-p library elsa-cache-file)
+                (progn
+                  (require (intern (concat "elsa-typed-" library-name)) nil t)
+                  (require (intern (concat "elsa-extension-" library-name)) nil t)
+                  (push library elsa-analyzed)
+                  (elsa-process-file library))
+              (load elsa-cache-file t t))))))))
 
 ;; * boolean functions
 (defun elsa--analyse:not (form scope state)
