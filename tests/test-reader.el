@@ -10,34 +10,34 @@
   (describe "symbols"
 
     (it "should read a symbol"
-      (elsa-test-with-buffer "| foo"
-        (let ((form (elsa-read-form)))
-          (expect (elsa-form-symbol-p form) :to-be-truthy)
-          (expect (oref form name) :to-be 'foo)
-          (expect (oref form start) :to-be 2)
-          (expect (oref form end) :to-be 5)))))
+      (elsa-test-with-read-form "| foo" form
+        (expect (elsa-form-symbol-p form) :to-be-truthy)
+        (expect (oref form name) :to-be 'foo)
+        (expect (oref form start) :to-be 2)
+        (expect (oref form end) :to-be 5)
+        (expect form :to-print-as "foo"))))
 
   (describe "improper lists"
 
     (it "should read a simple cons pair"
       (elsa-test-with-read-form "|(a . b)" form
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
-        (expect (elsa-form-print form) :to-equal "(a . b)")))
+        (expect form :to-print-as "(a . b)")))
 
     (it "should read an improper list containgin a quote."
       (elsa-test-with-read-form "|(a . (quote . c))" form
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
-        (expect (elsa-form-print form) :to-equal "(a quote . c)")))
+        (expect form :to-print-as "(a quote . c)")))
 
     (it "should read an expanded improper list"
       (elsa-test-with-read-form "|(a . (b . (c . d)))" form
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
-        (expect (elsa-form-print form) :to-equal "(a b c . d)")))
+        (expect form :to-print-as "(a b c . d)")))
 
     (it "should read an improper list containing a cons pair"
       (elsa-test-with-read-form "|(a . (b . ((c . d) . e)))" form
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
-        (expect (elsa-form-print form) :to-equal "(a b (c . d) . e)"))))
+        (expect form :to-print-as "(a b (c . d) . e)"))))
 
   (describe "lists"
 

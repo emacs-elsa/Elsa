@@ -33,4 +33,11 @@
   :expect-match-phrase "Expected %A to accept %B, was %a."
   :expect-mismatch-phrase "Expected %A to not to accept %B, was %a")
 
+(defun elsa-test--compare-form-print (form result)
+  (equal (elsa-form-print form) result))
+
+(buttercup-define-matcher-for-binary-function :to-print-as elsa-test--compare-form-print
+  :expect-match-phrase "Expected %A to print as %B, was %a."
+  :expect-mismatch-phrase "Expected %A not to print as %B, was %a")
+
 (provide 'elsa-test-helpers)
