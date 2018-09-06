@@ -30,6 +30,11 @@
 
 (defclass elsa-type nil () :abstract t)
 
+;; (elsa-type-describe :: Mixed -> String)
+(cl-defgeneric elsa-type-describe (type)
+  "Return a string representation of TYPE."
+  (format "%s" type))
+
 ;; (elsa-type-format-arg :: Mixed -> String)
 (defun elsa-type-format-arg (type)
   "Format TYPE as an argument for `elsa-make-type'.
