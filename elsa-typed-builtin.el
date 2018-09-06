@@ -311,7 +311,7 @@
 ;; (put 'message-or-box 'elsa-type (elsa-make-type))
 ;; (put 'current-message 'elsa-type (elsa-make-type))
 ;; (put 'propertize 'elsa-type (elsa-make-type))
-;; (put 'format 'elsa-type (elsa-make-type))
+(put 'format 'elsa-type (elsa-make-type String -> Mixed... -> String))
 ;; (put 'format-message 'elsa-type (elsa-make-type))
 ;; (put 'char-equal 'elsa-type (elsa-make-type))
 ;; (put 'transpose-regions 'elsa-type (elsa-make-type))
