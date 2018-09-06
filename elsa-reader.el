@@ -163,8 +163,10 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-print ((this elsa-form-keyword))
   (symbol-name (oref this name)))
 
+;; (elsa-form-function-call-p :: Mixed -> Symbol? -> Bool)
 (cl-defgeneric elsa-form-function-call-p (this &optional name) nil)
 
+;; (elsa-form-name :: Mixed -> Symbol?)
 (cl-defgeneric elsa-form-name (this) nil)
 
 (cl-defmethod elsa-form-name ((this elsa-form-symbol))
