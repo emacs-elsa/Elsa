@@ -118,7 +118,7 @@ do that."
          (var-stack (gethash name vars)))
     (puthash name (cons variable var-stack) vars)))
 
-(defun elsa-scope--remove-variable (scope name)
+(defun elsa-scope--remove-var (scope name)
   (elsa-scope--unassign-var scope name)
   (let* ((vars (oref scope vars))
          (var-stack (gethash name vars)))
@@ -127,13 +127,13 @@ do that."
         (puthash name (cdr var-stack) vars)
       (remhash name vars))))
 
-(cl-defmethod elsa-scope-remove-variable ((this elsa-scope) (variable elsa-variable))
+(cl-defmethod elsa-scope-remove-var ((this elsa-scope) (variable elsa-variable))
   "Remove VARIABLE from current scope."
-  (elsa-scope--remove-variable this (oref variable name)))
+  (elsa-scope--remove-var this (oref variable name)))
 
-(cl-defmethod elsa-scope-remove-variable ((this elsa-scope) (form elsa-form-symbol))
+(cl-defmethod elsa-scope-remove-var ((this elsa-scope) (form elsa-form-symbol))
   "Remove VARIABLE from current scope."
-  (elsa-scope--remove-variable this (elsa-form-name form)))
+  (elsa-scope--remove-var this (elsa-form-name form)))
 
 (defun elsa-scope--get-var (scope var-name)
   (let* ((vars (oref scope vars))

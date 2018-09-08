@@ -148,7 +148,7 @@
         (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
     (--each body (elsa--analyse-form it scope state))
-    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (--each vars-to-pop (elsa-scope-remove-var scope it))
     (if (not (elsa-type-accept condition (elsa-type-nil)))
         (elsa-type-nil)
       (when body

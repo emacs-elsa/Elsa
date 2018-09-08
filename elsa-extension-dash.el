@@ -205,7 +205,7 @@
 
 (defun elsa-dash--restore-anaphora-scope (it-var scope)
   "Remove the IT-VAR variable representing `it' from SCOPE."
-  (elsa-scope-remove-variable scope it-var))
+  (elsa-scope-remove-var scope it-var))
 
 (defun elsa-dash--analyse-anaphora (form scope state)
   (let ((it-var (elsa-dash--update-anaphora-scope scope)))
@@ -226,7 +226,7 @@
       (elsa-scope-add-var scope var))
     (elsa--analyse-body body scope state)
     (when var
-      (elsa-scope-remove-variable scope var))))
+      (elsa-scope-remove-var scope var))))
 
 (defun elsa--analyse:-lambda (form scope state)
   (let ((body (elsa-nthcdr 2 form)))

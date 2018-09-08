@@ -26,7 +26,7 @@
        (elsa-scope-add-var ,scope it))
      ,@body
      (--each (oref ,form narrow-types)
-       (elsa-scope-remove-variable ,scope it))))
+       (elsa-scope-remove-var ,scope it))))
 
 ;; (elsa--arglist-to-arity :: List Symbol | T | String -> Cons Int (Int | Symbol))
 (defun elsa--arglist-to-arity (arglist)
@@ -117,7 +117,7 @@ number by symbol 'many."
         (oset form type (elsa-type-nil))
       (--each body (elsa--analyse-form it scope state))
       (oset form type (oref (-last-item body) type)))
-    (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
+    (-each new-vars (lambda (v) (elsa-scope-remove-var scope v)))))
 
 (defun elsa--analyse:let* (form scope state)
   (let ((new-vars nil)
@@ -132,7 +132,7 @@ number by symbol 'many."
         (oset form type (elsa-type-nil))
       (--each body (elsa--analyse-form it scope state))
       (oset form type (oref (-last-item body) type)))
-    (-each new-vars (lambda (v) (elsa-scope-remove-variable scope v)))))
+    (-each new-vars (lambda (v) (elsa-scope-remove-var scope v)))))
 
 (defun elsa--analyse:if (form scope state)
   (let ((condition (nth 1 (oref form sequence)))
@@ -158,7 +158,7 @@ number by symbol 'many."
       (elsa-save-scope scope
         (elsa--analyse-body false-body scope state)
         (setq mutated-vars-false (elsa-scope-get-assigned-vars scope))))
-    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (--each vars-to-pop (elsa-scope-remove-var scope it))
     (let ((condition-is-nil (elsa-type-is-nil condition))
           (to-merge))
       (cond
@@ -242,7 +242,7 @@ number by symbol 'many."
                     (trinary-and
                      condition-reachable
                      (elsa-type-is-nil head))))))))
-    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (--each vars-to-pop (elsa-scope-remove-var scope it))
     (when (trinary-possible-p condition-reachable)
       (setq return-type (elsa-type-make-nullable return-type)))
     (oset form type return-type)))
@@ -263,7 +263,7 @@ number by symbol 'many."
       (let ((last (-last-item (elsa-form-sequence it))))
         (setq return-type (elsa-type-sum return-type last))))
     (unless (eq (elsa-form-name var) 'nil)
-      (elsa-scope-remove-variable scope var))
+      (elsa-scope-remove-var scope var))
     (oset form type return-type)))
 
 (defun elsa--analyse:unwind-protect (form scope state)
@@ -330,7 +330,7 @@ number by symbol 'many."
           (-when-let (scope-var (elsa-scope-get-var scope it))
             (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
             (push it vars-to-pop)))))
-    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (--each vars-to-pop (elsa-scope-remove-var scope it))
     (-when-let (grouped (elsa-variables-group-and-sum
                          (-non-nil (--mapcat (oref it narrow-types) body))))
       (oset form narrow-types grouped))
@@ -355,7 +355,7 @@ number by symbol 'many."
                 (trinary-and
                  condition-reachable
                  (elsa-type-is-non-nil arg))))))
-    (--each vars-to-pop (elsa-scope-remove-variable scope it))
+    (--each vars-to-pop (elsa-scope-remove-var scope it))
     (-when-let (grouped
                 (elsa-variables-group-and-intersect
                  (->> body
@@ -417,7 +417,7 @@ nullables and the &rest argument into a variadic."
                    (elsa-type-describe function-return-type)
                    (elsa-type-describe body-return-type))
            (elsa-car form)))))
-    (--each vars (elsa-scope-remove-variable scope it))))
+    (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:defun (form scope state)
   (let* ((sequence (oref form sequence))
@@ -469,7 +469,7 @@ See `elsa--analyse:defvar'."
             (push var vars)
             (elsa-scope-add-var scope var)))))
     (--each body (elsa--analyse-form it scope state))
-    (--each vars (elsa-scope-remove-variable scope it))
+    (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-function-type
                      :args arg-types
                      :return (oref (-last-item body) type)))))
