@@ -72,6 +72,15 @@ Lexical bindings are not undone, use `elsa-scope-remove-var' to
 do that."
   (declare (indent 1)))
 
+(defmacro elsa-save-scope (scope &rest body)
+  "Protect all variables in SCOPE from unassignment."
+  (declare (indent 1))
+  (let ((barrier (make-symbol "elsa--barrier")))
+    `(progn
+       (elsa-scope-protect ,scope ',barrier)
+       ,@body
+       (elsa-scope-unassign ,scope ',barrier))))
+
 (defun elsa-scope-protect (scope barrier)
   (let ((vars (oref scope vars)))
     (maphash

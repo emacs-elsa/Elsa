@@ -7,17 +7,9 @@
 (require 'elsa-type-helpers)
 (require 'elsa-english)
 (require 'elsa-state)
+(require 'elsa-scope)
 
 (require 'elsa-typed-builtin)
-
-(defmacro elsa-save-scope (scope &rest body)
-  "Protect all variables in SCOPE from unassignment."
-  (declare (indent 1))
-  (let ((barrier (make-symbol "elsa--barrier")))
-    `(progn
-       (elsa-scope-protect ,scope ',barrier)
-       ,@body
-       (elsa-scope-unassign ,scope ',barrier))))
 
 (defmacro elsa--with-narrowed-variables (form scope &rest body)
   (declare (indent 2))
