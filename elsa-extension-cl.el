@@ -3,7 +3,7 @@
 
 (defun elsa--analyse:cl-defmethod (form scope state)
   (let* ((sequence (oref form sequence))
-         (name (elsa-form-name (nth 1 sequence)))
+         (name (elsa-get-name (nth 1 sequence)))
          (args (-map (lambda (arg)
                        (cond
                         ((elsa-form-list-p arg)

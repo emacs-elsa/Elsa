@@ -156,7 +156,7 @@ do that."
 
 (cl-defmethod elsa-scope-remove-var ((this elsa-scope) (form elsa-form-symbol))
   "Remove VARIABLE from current scope."
-  (elsa-scope--remove-var this (elsa-form-name form)))
+  (elsa-scope--remove-var this (elsa-get-name form)))
 
 (defun elsa-scope--get-var (scope var-name)
   (let* ((vars (oref scope vars))
@@ -178,7 +178,7 @@ do that."
 
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) (form elsa-form-symbol))
   "Get binding of FORM in THIS scope."
-  (elsa-scope--get-var this (elsa-form-name form)))
+  (elsa-scope--get-var this (elsa-get-name form)))
 
 (cl-defmethod elsa-scope-assign-var ((scope elsa-scope) (var elsa-variable))
   (let* ((vars (oref scope vars))

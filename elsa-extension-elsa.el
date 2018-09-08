@@ -24,8 +24,8 @@
     (when (elsa-form-sequence-p car-arg)
       (let ((head (elsa-car car-arg))
             (prop (elsa-nth 2 car-arg)))
-        (when (and (eq (elsa-form-name head) 'oref)
-                   (eq (elsa-form-name prop) 'sequence))
+        (when (and (eq (elsa-get-name head) 'oref)
+                   (eq (elsa-get-name prop) 'sequence))
           (elsa-state-add-error state
             (elsa-make-notice
              "Prefer (elsa-car form) to (car (oref form sequence))."
@@ -41,8 +41,8 @@
     (when (elsa-form-sequence-p car-arg)
       (let ((head (elsa-car car-arg))
             (prop (elsa-nth 2 car-arg)))
-        (when (and (eq (elsa-form-name head) 'oref)
-                   (eq (elsa-form-name prop) 'sequence))
+        (when (and (eq (elsa-get-name head) 'oref)
+                   (eq (elsa-get-name prop) 'sequence))
           (elsa-state-add-error state
             (elsa-make-notice
              "Prefer (elsa-cdr form) to (cdr (oref form sequence))."
@@ -56,7 +56,7 @@
 (defclass elsa-check-elsa-prefer-elsa-get-type (elsa-check-elsa-oref) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-get-type) form scope state)
-  (let* ((prop (elsa-form-name (elsa-nth 2 form))))
+  (let* ((prop (elsa-get-name (elsa-nth 2 form))))
     (when (eq prop 'type)
       (elsa-state-add-error state
         (elsa-make-notice
@@ -66,7 +66,7 @@
 (defclass elsa-check-elsa-prefer-elsa-form-sequence (elsa-check-elsa-oref) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-form-sequence) form scope state)
-  (let* ((prop (elsa-form-name (elsa-nth 2 form))))
+  (let* ((prop (elsa-get-name (elsa-nth 2 form))))
     (when (eq prop 'sequence)
       (elsa-state-add-error state
         (elsa-make-notice
@@ -76,7 +76,7 @@
 (defclass elsa-check-elsa-prefer-elsa-get-name (elsa-check-elsa-oref) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-get-name) form scope state)
-  (let* ((prop (elsa-form-name (elsa-nth 2 form))))
+  (let* ((prop (elsa-get-name (elsa-nth 2 form))))
     (when (eq prop 'name)
       (elsa-state-add-error state
         (elsa-make-notice
@@ -89,19 +89,19 @@
 (defun elsa--analyse:register-extensions (form scope state)
   (-each (elsa-cdr form)
     (lambda (ext)
-      (unless (ignore-errors (find-library-name (concat "elsa-extension-" (symbol-name (elsa-form-name ext)))))
+      (unless (ignore-errors (find-library-name (concat "elsa-extension-" (symbol-name (elsa-get-name ext)))))
         (elsa-state-add-error state
           (elsa-make-error
-           (format "Extension %s not found." (symbol-name (elsa-form-name ext)))
+           (format "Extension %s not found." (symbol-name (elsa-get-name ext)))
            ext))))))
 
 (defun elsa--analyse:register-ruleset (form scope state)
   (-each (elsa-cdr form)
     (lambda (ruleset)
-      (unless (functionp (intern (concat "elsa-ruleset-" (symbol-name (elsa-form-name ruleset)))))
+      (unless (functionp (intern (concat "elsa-ruleset-" (symbol-name (elsa-get-name ruleset)))))
         (elsa-state-add-error state
           (elsa-make-error
-           (format "Ruleset %s not found." (symbol-name (elsa-form-name ruleset)))
+           (format "Ruleset %s not found." (symbol-name (elsa-get-name ruleset)))
            ruleset))))))
 
 (provide 'elsa-extension-elsa)

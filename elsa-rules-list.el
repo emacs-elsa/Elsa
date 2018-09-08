@@ -26,7 +26,7 @@
 
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-then-progn) form scope state)
   (let ((then-body (nth 2 (oref form sequence))))
-    (when (and (eq (elsa-form-name then-body) 'progn)
+    (when (and (eq (elsa-get-name then-body) 'progn)
                (= 2 (length (oref then-body sequence))))
       (elsa-state-add-error state
         (elsa-make-notice "Useless `progn' around body of then branch." (elsa-car then-body))))))
@@ -35,7 +35,7 @@
 
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-else-progn) form scope state)
   (let ((else-body (nth 3 (oref form sequence))))
-    (when (eq (elsa-form-name else-body) 'progn)
+    (when (eq (elsa-get-name else-body) 'progn)
       (elsa-state-add-error state
         (elsa-make-notice "Useless `progn' around body of else branch." (elsa-car else-body))))))
 
@@ -45,7 +45,7 @@
   (let ((then-body (nth 2 (oref form sequence)))
         (else-body (nth 3 (oref form sequence))))
     (unless else-body
-      (when (eq (elsa-form-name then-body) 'progn)
+      (when (eq (elsa-get-name then-body) 'progn)
         (elsa-state-add-error state
           (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-car form)))))))
 
@@ -57,7 +57,7 @@
 (defclass elsa-check-symbol-naming (elsa-check-symbol) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-symbol-naming) form scope state)
-  (let ((name (symbol-name (elsa-form-name form))))
+  (let ((name (symbol-name (elsa-get-name form))))
     (when (string-match-p ".+_" name)
       (elsa-state-add-error state
         (elsa-make-notice "Use lisp-case for naming symbol instead of snake_case." form)))
@@ -90,7 +90,7 @@
        (not (elsa-form-keyword-p form))))
 
 (cl-defmethod elsa-check-check ((_ elsa-check-unbound-variable) form scope state)
-  (let* ((name (elsa-form-name form))
+  (let* ((name (elsa-get-name form))
          (var (elsa-scope-get-var scope name)))
     (unless (or (eq name 't)
                 (eq name 'nil)
@@ -143,12 +143,12 @@
                        (-all-p
                         (-lambda ((lambda-arg . fn-arg))
                           (and (elsa-form-symbol-p fn-arg)
-                               (eq (elsa-form-name lambda-arg)
-                                   (elsa-form-name fn-arg))))
+                               (eq (elsa-get-name lambda-arg)
+                                   (elsa-get-name fn-arg))))
                         (-zip arg-list fn-args)))
               (elsa-state-add-error state
                 (elsa-make-notice (format "You can eta convert the lambda form and use the function `%s' directly"
-                                          (symbol-name (elsa-form-name fn-form)))
+                                          (symbol-name (elsa-get-name fn-form)))
                                   (elsa-car form))))))))))
 
 (defclass elsa-check-or-unreachable-code (elsa-check) ())

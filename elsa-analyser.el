@@ -196,13 +196,13 @@ number by symbol 'many."
                (var (elsa-scope-get-var scope place)))
           (elsa--analyse-form val scope state)
           (elsa-scope-assign-var scope
-            (elsa-variable :name (elsa-form-name place)
+            (elsa-variable :name (elsa-get-name place)
                            :type (oref val type)))
           (unless var
             (elsa-state-add-error state
               (elsa-make-warning
                (format "Assigning to free variable %s"
-                       (symbol-name (elsa-form-name place)))
+                       (symbol-name (elsa-get-name place)))
                place))))))
     (oset form type (oref (-last-item args) type))))
 
@@ -244,14 +244,14 @@ number by symbol 'many."
          (return-type))
     (elsa--analyse-form body scope state)
     (setq return-type (oref body type))
-    (unless (eq (elsa-form-name var) 'nil)
+    (unless (eq (elsa-get-name var) 'nil)
       (elsa-scope-add-var scope
-        (elsa-variable :name (elsa-form-name var))))
+        (elsa-variable :name (elsa-get-name var))))
     (--each handlers
       (elsa--analyse-form it scope state)
       (let ((last (-last-item (elsa-form-sequence it))))
         (setq return-type (elsa-type-sum return-type last))))
-    (unless (eq (elsa-form-name var) 'nil)
+    (unless (eq (elsa-get-name var) 'nil)
       (elsa-scope-remove-var scope var))
     (oset form type return-type)))
 
@@ -380,15 +380,15 @@ nullables and the &rest argument into a variadic."
          (function-type (get name 'elsa-type))
          (arg-types (or (elsa-type-get-args function-type)
                         (elsa--get-default-function-types
-                         (-map 'elsa-form-name args))))
+                         (-map 'elsa-get-name args))))
          (vars))
     (when args
       (-each-indexed (--remove
-                      (memq (elsa-form-name it) '(&rest &optional))
+                      (memq (elsa-get-name it) '(&rest &optional))
                       args)
         (lambda (index arg)
           (let ((var (elsa-variable
-                      :name (elsa-form-name arg)
+                      :name (elsa-get-name arg)
                       :type (nth index arg-types))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
@@ -410,7 +410,7 @@ nullables and the &rest argument into a variadic."
 
 (defun elsa--analyse:defun (form scope state)
   (let* ((sequence (oref form sequence))
-         (name (elsa-form-name (nth 1 sequence)))
+         (name (elsa-get-name (nth 1 sequence)))
          (args (elsa-form-sequence (nth 2 sequence)))
          (body (nthcdr 3 sequence)))
     (elsa--analyse-defun-like-form name args body form scope state)))
@@ -430,8 +430,8 @@ make it explicit and precise."
     (if value
         (progn
           (elsa--analyse-form value scope state)
-          (put (elsa-form-name name) 'elsa-type-var (oref value type)))
-      (put (elsa-form-name name) 'elsa-type-var (elsa-make-type Unbound)))))
+          (put (elsa-get-name name) 'elsa-type-var (oref value type)))
+      (put (elsa-get-name name) 'elsa-type-var (elsa-make-type Unbound)))))
 
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
@@ -453,7 +453,7 @@ See `elsa--analyse:defvar'."
       (-each-indexed (elsa-form-sequence args)
         (lambda (index arg)
           (let ((var (elsa-variable
-                      :name (elsa-form-name arg)
+                      :name (elsa-get-name arg)
                       :type (nth index arg-types))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
@@ -574,7 +574,7 @@ See `elsa--analyse:defvar'."
             (let ((arg (nth index args)))
               (when (and (elsa-form-symbol-p arg)
                          (not (oref arg quote-type)))
-                (-when-let* ((varname (elsa-form-name arg))
+                (-when-let* ((varname (elsa-get-name arg))
                              (var (elsa-scope-get-var scope varname)))
                   (push (elsa-variable :name varname :type narrow-type)
                         form-narrow-types))))))

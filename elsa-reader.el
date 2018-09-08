@@ -35,7 +35,7 @@
 
 Nil if FORM is not a quoted symbol."
   (when (elsa--quoted-symbol-p form)
-    (elsa-form-name (cadr (elsa-form-sequence form)))))
+    (elsa-get-name (cadr (elsa-form-sequence form)))))
 
 (defsubst elsa--quote-p (symbol)
   "Return non-nil if SYMBOL is a type of quote."
@@ -138,12 +138,12 @@ This only makes sense for the sequence forms:
   (symbol-name (oref this name)))
 
 (cl-defmethod elsa-form-sequence ((this elsa-form-symbol))
-  (if (eq (elsa-form-name this) 'nil)
+  (if (eq (elsa-get-name this) 'nil)
       nil
     (error "Can not get sequence out of symbol form")))
 
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-symbol))
-  (eq (elsa-form-name this) 'nil))
+  (eq (elsa-get-name this) 'nil))
 
 (defsubst elsa--read-symbol (form)
   (elsa--skip-whitespace-forward)
@@ -160,10 +160,10 @@ This only makes sense for the sequence forms:
 ;; (elsa-form-function-call-p :: Mixed -> Symbol? -> Bool)
 (cl-defgeneric elsa-form-function-call-p (this &optional name) nil)
 
-;; (elsa-form-name :: Mixed -> Symbol?)
-(cl-defgeneric elsa-form-name (this) nil)
+;; (elsa-get-name :: Mixed -> Symbol?)
+(cl-defgeneric elsa-get-name (this) nil)
 
-(cl-defmethod elsa-form-name ((this elsa-form-symbol))
+(cl-defmethod elsa-get-name ((this elsa-form-symbol))
   (oref this name))
 
 (defsubst elsa--read-keyword (form)
@@ -283,10 +283,9 @@ This only makes sense for the sequence forms:
 
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-list)) t)
 
-(cl-defmethod elsa-form-name ((this elsa-form-list))
+(cl-defmethod elsa-get-name ((this elsa-form-list))
   (-when-let (head (elsa-car this))
-    (and (elsa-form-symbol-p head)
-         (oref head name))))
+    (elsa-get-name head)))
 
 (cl-defmethod elsa-form-function-call-p ((this elsa-form-list) &optional name)
   (-when-let (head (elsa-car this))
@@ -400,7 +399,7 @@ This only makes sense for the sequence forms:
    ((and (eq (cadr comment-form) ::)
          (elsa-form-sequence-p reader-form))
     (let ((annotation-name (car comment-form))
-          (form-name (elsa-form-name (cadr (elsa-form-sequence reader-form)))))
+          (form-name (elsa-get-name (cadr (elsa-form-sequence reader-form)))))
       (cond
        ((or (elsa-form-function-call-p reader-form 'defun)
             (elsa-form-function-call-p reader-form 'defsubst)
@@ -413,7 +412,7 @@ This only makes sense for the sequence forms:
                                reader-form)))
         (elsa-state-add-defun
          state
-         (elsa-form-name (cadr (oref reader-form sequence)))
+         (elsa-get-name (cadr (oref reader-form sequence)))
          (eval `(elsa-make-type ,@(cddr comment-form)))))
        ((elsa-form-function-call-p reader-form 'defvar)
         (when (and state (not (eq form-name annotation-name)))
@@ -422,7 +421,7 @@ This only makes sense for the sequence forms:
                                        (symbol-name form-name)
                                        (symbol-name annotation-name))
                                reader-form)))
-        (put (elsa-form-name (cadr (oref reader-form sequence)))
+        (put (elsa-get-name (cadr (oref reader-form sequence)))
              'elsa-type-var
              (eval `(elsa-make-type ,@(cddr comment-form))))))))))
 

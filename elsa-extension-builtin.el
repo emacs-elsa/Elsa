@@ -17,7 +17,7 @@
     (when (elsa--quoted-symbol-p feature)
       (let* ((load-suffixes (list ".el"))
              (load-file-rep-suffixes (list ""))
-             (library-name (symbol-name (elsa-form-name (elsa-nth 1 feature))))
+             (library-name (symbol-name (elsa-get-name (elsa-nth 1 feature))))
              (library (locate-library library-name)))
         (when (and library
                    (not (member library elsa-analyzed)))
@@ -43,17 +43,17 @@
      (t (oset form type (elsa-make-type T?))))))
 
 (defun elsa--analyse--eq (eq-form symbol-form constant-form)
-  (let ((name (elsa-form-name symbol-form))
+  (let ((name (elsa-get-name symbol-form))
         (type))
     (setq type
           (cond
            ((elsa-form-keyword-p constant-form) (elsa-make-type Keyword))
            ((elsa--quoted-symbol-p constant-form) (elsa-make-type Symbol))
            ((and (elsa-form-symbol-p constant-form)
-                 (eq (elsa-form-name constant-form) t))
+                 (eq (elsa-get-name constant-form) t))
             (elsa-make-type T))
            ((and (elsa-form-symbol-p constant-form)
-                 (eq (elsa-form-name constant-form) nil))
+                 (eq (elsa-get-name constant-form) nil))
             (elsa-make-type Nil))
            ((elsa-form-integer-p constant-form) (elsa-make-type Int))
            ((elsa-form-float-p constant-form) (elsa-make-type Float))))
@@ -66,10 +66,10 @@
          (second (cadr args)))
     (cond
      ((and (elsa-form-symbol-p first)
-           (elsa-scope-get-var scope (elsa-form-name first)))
+           (elsa-scope-get-var scope (elsa-get-name first)))
       (elsa--analyse--eq form first second))
      ((and (elsa-form-symbol-p second)
-           (elsa-scope-get-var scope (elsa-form-name second)))
+           (elsa-scope-get-var scope (elsa-get-name second)))
       (elsa--analyse--eq form second first)))
     (when (elsa-type-equivalent-p
            (elsa-type-empty)
