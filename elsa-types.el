@@ -78,6 +78,8 @@ Accepting in this context means that OTHER can be assigned to
 THIS."
   (cond
    ((elsa-instance-of other this))
+   ((and (elsa-type-list-p this)
+         (elsa-type-nil-p other)))
    ((and (elsa-sum-type-p other)
          (-all? (lambda (other-type)
                   (elsa-type-accept this other-type))
