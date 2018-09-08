@@ -261,7 +261,7 @@ This only makes sense for the sequence forms:
   (car (elsa-form-sequence this)))
 
 (cl-defmethod elsa-cdr ((this list))
-  (cdr list))
+  (cdr this))
 
 (cl-defmethod elsa-cdr ((this elsa-form))
   (cdr (elsa-form-sequence this)))
