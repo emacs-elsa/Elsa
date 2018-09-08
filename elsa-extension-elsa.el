@@ -9,6 +9,7 @@
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-elsa))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-car))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-cdr))
+  (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-nth))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-form-sequence))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-get-type))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-get-name))
@@ -46,6 +47,23 @@
           (elsa-state-add-error state
             (elsa-make-notice
              "Prefer (elsa-cdr form) to (cdr (oref form sequence))."
+             (elsa-car form))))))))
+
+(defclass elsa-check-elsa-prefer-elsa-nth (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-elsa-prefer-elsa-nth) form scope state)
+  (elsa-form-function-call-p form 'nth))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-nth) form scope state)
+  (let* ((nth-arg (elsa-nth 2 form)))
+    (when (elsa-form-sequence-p nth-arg)
+      (let ((head (elsa-car nth-arg))
+            (prop (elsa-nth 2 nth-arg)))
+        (when (and (eq (elsa-get-name head) 'oref)
+                   (eq (elsa-get-name prop) 'sequence))
+          (elsa-state-add-error state
+            (elsa-make-notice
+             "Prefer (elsa-nth n form) to (nth n (oref form sequence))."
              (elsa-car form))))))))
 
 (defclass elsa-check-elsa-oref (elsa-check) ())
