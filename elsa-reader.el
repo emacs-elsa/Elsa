@@ -101,15 +101,6 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-type-accept ((this elsa-form) (other elsa-type))
   (elsa-type-accept (oref this type) other))
 
-(cl-defmethod elsa-type-equivalent-p ((this elsa-form) (other elsa-type))
-  (elsa-type-equivalent-p (oref this type) other))
-
-(cl-defmethod elsa-type-equivalent-p ((this elsa-type) (other elsa-form))
-  (elsa-type-equivalent-p this (oref other type)))
-
-(cl-defmethod elsa-type-equivalent-p ((this elsa-form) (other elsa-form))
-  (elsa-type-equivalent-p (oref this type) (oref other type)))
-
 (cl-defmethod elsa-type-is-nil ((condition elsa-form))
   (elsa-type-is-nil (oref condition type)))
 

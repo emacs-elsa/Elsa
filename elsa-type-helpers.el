@@ -154,12 +154,10 @@ The grammar is as follows (in eBNF):
         (-mapcat 'elsa--eieio-class-parents-recursive
                  (-map 'eieio-class-name (eieio-class-parents type)))))
 
-(cl-defgeneric elsa-type-equivalent-p (this other)
-  "Test if THIS and OTHER are equivalent types.")
-
-(cl-defmethod elsa-type-equivalent-p ((this elsa-type) (other elsa-type))
-  (and (elsa-type-accept this other)
-       (elsa-type-accept other this)))
+(defun elsa-type-equivalent-p (this other)
+  "Test if THIS and OTHER are equivalent types."
+  (and (elsa-type-accept (elsa-get-type this) (elsa-get-type other))
+       (elsa-type-accept (elsa-get-type other) (elsa-get-type this))))
 
 ;; TODO: what is the relationship of `a' and `a?'
 (defun elsa-instance-of (this other)
