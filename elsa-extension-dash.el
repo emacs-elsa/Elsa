@@ -136,7 +136,6 @@
 ;; (put '-if-let* 'elsa-type (elsa-make-type))
 ;; (put '-let* 'elsa-type (elsa-make-type))
 ;; (put '-let 'elsa-type (elsa-make-type))
-;; (put '-lambda 'elsa-type (elsa-make-type))
 ;; (put '-distinct 'elsa-type (elsa-make-type))
 ;; (put '-uniq 'elsa-type (elsa-make-type))
 ;; (put '-union 'elsa-type (elsa-make-type))
@@ -228,6 +227,14 @@
     (elsa--analyse-body body scope state)
     (when var
       (elsa-scope-remove-variable scope var))))
+
+(defun elsa--analyse:-lambda (form scope state)
+  (let ((body (elsa-nthcdr 2 form)))
+    (elsa--analyse-body body scope state)
+    (oset form type
+          (elsa-function-type
+           :args (list (elsa-make-type Mixed))
+           :return (clone (oref (-last-item body) type))))))
 
 (defun elsa--analyse:--> (form scope state)
   (elsa-dash--analyse-anaphora form scope state))
