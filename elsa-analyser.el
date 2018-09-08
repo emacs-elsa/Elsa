@@ -83,18 +83,26 @@ number by symbol 'many."
   nil)
 
 (defun elsa--analyse-variable-from-binding (binding scope state)
+  "Analyze let-like BINDING and return the resulting variable.
+
+The BINDING should have one of the following forms:
+
+- place   ; initial is nil
+- (place) ; initial is nil
+- (place initial-value)"
   (cond
    ((elsa-form-list-p binding)
     (-let [(var source) (oref binding sequence)]
-      (if (not source)
+      (when (elsa-form-symbol-p var)
+        (if (not source)
+            (elsa-variable
+             :name (oref var name) :type (elsa-type-nil))
+          (elsa--analyse-form source scope state)
           (elsa-variable
-           :name (oref var name) :type (elsa-type-nil))
-        (elsa--analyse-form source scope state)
-        (elsa-variable
-         :name (oref var name) :type (oref source type)))))
+           :name (oref var name) :type (oref source type))))))
    ((elsa-form-symbol-p binding)
     (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))
-   (t "Error while analysing variable binding")))
+   (t nil)))
 
 (defun elsa--analyse:let (form scope state)
   (let ((new-vars nil)
