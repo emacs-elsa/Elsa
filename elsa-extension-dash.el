@@ -225,8 +225,8 @@
       (setq var (elsa--analyse-variable-from-binding binding scope state))
       (elsa-scope-add-var scope var))
     (elsa--analyse-body body scope state)
-    (when var
-      (elsa-scope-remove-var scope var))))
+    (when var (elsa-scope-remove-var scope var))
+    (oset form type (elsa-get-type (-last-item body)))))
 
 ;; This is not always correct but at least we try to bind variables in
 ;; case the place is a simple symbol.  The logic is handled in
@@ -240,7 +240,8 @@
         (elsa-scope-add-var scope var)
         (push var vars)))
     (elsa--analyse-body body scope state)
-    (--each vars (elsa-scope-remove-var scope it))))
+    (--each vars (elsa-scope-remove-var scope it))
+    (oset form type (elsa-get-type (-last-item body)))))
 
 (defun elsa--analyse:-lambda (form scope state)
   (let ((body (elsa-nthcdr 2 form)))
