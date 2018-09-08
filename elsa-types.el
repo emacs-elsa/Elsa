@@ -35,6 +35,13 @@
   "Return a string representation of TYPE."
   (format "%s" type))
 
+(cl-defgeneric elsa-get-type (thing)
+  "Return type of THING."
+  nil)
+
+(cl-defmethod elsa-get-type ((this elsa-type))
+  this)
+
 ;; (elsa-type-format-arg :: Mixed -> String)
 (defun elsa-type-format-arg (type)
   "Format TYPE as an argument for `elsa-make-type'.

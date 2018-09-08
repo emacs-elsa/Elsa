@@ -65,6 +65,9 @@ Nil if FORM is not a quoted symbol."
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 
+(cl-defmethod elsa-get-type ((this elsa-form))
+  (oref this type))
+
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-form))
   (elsa-type-sum this (oref other type)))
 

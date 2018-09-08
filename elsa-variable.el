@@ -48,6 +48,9 @@ will assume during analysis.")
      "Non-nil if this variable was read in the current scope."))
   :documentation "A lexical variable")
 
+(cl-defmethod elsa-get-type ((this elsa-variable))
+  (oref this type))
+
 ;; TODO: propagate assigned/read
 (cl-defmethod elsa-variable-diff ((this elsa-variable) other)
   (elsa-variable :name (oref this name)
