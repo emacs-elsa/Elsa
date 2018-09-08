@@ -9,6 +9,9 @@
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-elsa))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-car))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-cdr))
+  (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-form-sequence))
+  (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-get-type))
+  (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-get-name))
   )
 
 (defclass elsa-check-elsa-prefer-elsa-car (elsa-check) ())
@@ -44,6 +47,41 @@
             (elsa-make-notice
              "Prefer (elsa-cdr form) to (cdr (oref form sequence))."
              (elsa-car form))))))))
+
+(defclass elsa-check-elsa-oref (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-elsa-oref) form scope state)
+  (elsa-form-function-call-p form 'oref))
+
+(defclass elsa-check-elsa-prefer-elsa-get-type (elsa-check-elsa-oref) ())
+
+(cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-get-type) form scope state)
+  (let* ((prop (elsa-form-name (elsa-nth 2 form))))
+    (when (eq prop 'type)
+      (elsa-state-add-error state
+        (elsa-make-notice
+         "Prefer (elsa-get-type x) to (oref x type)."
+         (elsa-car form))))))
+
+(defclass elsa-check-elsa-prefer-elsa-form-sequence (elsa-check-elsa-oref) ())
+
+(cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-form-sequence) form scope state)
+  (let* ((prop (elsa-form-name (elsa-nth 2 form))))
+    (when (eq prop 'sequence)
+      (elsa-state-add-error state
+        (elsa-make-notice
+         "Prefer (elsa-form-sequence form) to (oref form sequence)."
+         (elsa-car form))))))
+
+(defclass elsa-check-elsa-prefer-elsa-get-name (elsa-check-elsa-oref) ())
+
+(cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-get-name) form scope state)
+  (let* ((prop (elsa-form-name (elsa-nth 2 form))))
+    (when (eq prop 'name)
+      (elsa-state-add-error state
+        (elsa-make-notice
+         "Prefer (elsa-get-name x) to (oref x name)."
+         (elsa-car form))))))
 
 (defun elsa--analyse:elsa-make-type (form scope state)
   (elsa--analyse-macro form nil scope state))
