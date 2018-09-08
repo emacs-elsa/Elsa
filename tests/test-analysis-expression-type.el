@@ -18,7 +18,7 @@
     (it "should prefer lexically-bound variables over defvars"
       (let* ((state (elsa-state))
              (scope (oref state scope)))
-        (elsa-scope-add-variable
+        (elsa-scope-add-var
          scope (elsa-variable :name 'a :type (elsa-make-type String)))
         (elsa-state-add-defvar state 'a (elsa-make-type Int))
         (expect (eieio-object-class

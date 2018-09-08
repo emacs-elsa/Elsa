@@ -145,7 +145,7 @@
     (elsa--analyse-form condition scope state)
     (--each (oref condition narrow-types)
       (-when-let (scope-var (elsa-scope-get-var scope it))
-        (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
+        (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
     (--each body (elsa--analyse-form it scope state))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))

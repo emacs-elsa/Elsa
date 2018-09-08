@@ -23,7 +23,7 @@
   (declare (indent 2))
   `(progn
      (--each (oref ,form narrow-types)
-       (elsa-scope-add-variable ,scope it))
+       (elsa-scope-add-var ,scope it))
      ,@body
      (--each (oref ,form narrow-types)
        (elsa-scope-remove-variable ,scope it))))
@@ -112,7 +112,7 @@ number by symbol 'many."
     (-each bindings
       (lambda (binding)
         (push (elsa--analyse-variable-from-binding binding scope state) new-vars)))
-    (-each new-vars (lambda (v) (elsa-scope-add-variable scope v)))
+    (-each new-vars (lambda (v) (elsa-scope-add-var scope v)))
     (if (not body)
         (oset form type (elsa-type-nil))
       (--each body (elsa--analyse-form it scope state))
@@ -127,7 +127,7 @@ number by symbol 'many."
       (lambda (binding)
         (let ((variable (elsa--analyse-variable-from-binding binding scope state)))
           (push variable new-vars)
-          (elsa-scope-add-variable scope variable))))
+          (elsa-scope-add-var scope variable))))
     (if (not body)
         (oset form type (elsa-type-nil))
       (--each body (elsa--analyse-form it scope state))
@@ -152,7 +152,7 @@ number by symbol 'many."
     (--each (oref condition narrow-types)
       (-when-let (scope-var (elsa-scope-get-var scope it))
         ;; TODO: in the macro make the combinator `elsa-variable-diff' configurable
-        (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
+        (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
     (elsa-with-reachability state (elsa-type-is-nil condition)
       (elsa-save-scope scope
@@ -233,7 +233,7 @@ number by symbol 'many."
                     (elsa--analyse-form it scope state)))
                 (--each (oref head narrow-types)
                   (-when-let (scope-var (elsa-scope-get-var scope it))
-                    (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
+                    (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
                     (push it vars-to-pop))))
               (when (trinary-possible-p condition-reachable)
                 (setq return-type
@@ -256,7 +256,7 @@ number by symbol 'many."
     (elsa--analyse-form body scope state)
     (setq return-type (oref body type))
     (unless (eq (elsa-form-name var) 'nil)
-      (elsa-scope-add-variable scope
+      (elsa-scope-add-var scope
         (elsa-variable :name (elsa-form-name var))))
     (--each handlers
       (elsa--analyse-form it scope state)
@@ -328,7 +328,7 @@ number by symbol 'many."
           (setq can-be-nil-p nil))
         (--each (oref arg narrow-types)
           (-when-let (scope-var (elsa-scope-get-var scope it))
-            (elsa-scope-add-variable scope (elsa-variable-diff scope-var it))
+            (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
             (push it vars-to-pop)))))
     (--each vars-to-pop (elsa-scope-remove-variable scope it))
     (-when-let (grouped (elsa-variables-group-and-sum
@@ -349,7 +349,7 @@ number by symbol 'many."
           (elsa--analyse-form arg scope state)
           (--each (oref arg narrow-types)
             (-when-let (scope-var (elsa-scope-get-var scope it))
-              (elsa-scope-add-variable scope (elsa-variable-intersect scope-var it))
+              (elsa-scope-add-var scope (elsa-variable-intersect scope-var it))
               (push it vars-to-pop)))
           (setq condition-reachable
                 (trinary-and
@@ -402,7 +402,7 @@ nullables and the &rest argument into a variadic."
                       :name (elsa-form-name arg)
                       :type (nth index arg-types))))
             (push var vars)
-            (elsa-scope-add-variable scope var)))))
+            (elsa-scope-add-var scope var)))))
     (--each body (elsa--analyse-form it scope state))
     ;; check if return type of defun corresponds with the last form of
     ;; the body
@@ -467,7 +467,7 @@ See `elsa--analyse:defvar'."
                       :name (elsa-form-name arg)
                       :type (nth index arg-types))))
             (push var vars)
-            (elsa-scope-add-variable scope var)))))
+            (elsa-scope-add-var scope var)))))
     (--each body (elsa--analyse-form it scope state))
     (--each vars (elsa-scope-remove-variable scope it))
     (oset form type (elsa-function-type

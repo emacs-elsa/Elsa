@@ -200,7 +200,7 @@
                  :name 'it
                   ;; TODO: derive type based on the list argument type
                  :type (elsa-make-type Mixed))))
-    (elsa-scope-add-variable scope it-var)
+    (elsa-scope-add-var scope it-var)
     it-var))
 
 (defun elsa-dash--restore-anaphora-scope (it-var scope)
@@ -223,7 +223,7 @@
         (var))
     (when binding
       (setq var (elsa--analyse-variable-from-binding binding scope state))
-      (elsa-scope-add-variable scope var))
+      (elsa-scope-add-var scope var))
     (elsa--analyse-body body scope state)
     (when var
       (elsa-scope-remove-variable scope var))))

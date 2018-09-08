@@ -111,7 +111,7 @@ do that."
 ;;
 ;; Implementation
 
-(cl-defmethod elsa-scope-add-variable ((this elsa-scope) (variable elsa-variable))
+(cl-defmethod elsa-scope-add-var ((this elsa-scope) (variable elsa-variable))
   "Add VARIABLE to current scope."
   (let* ((vars (oref this vars))
          (name (oref variable name))
@@ -141,7 +141,7 @@ do that."
     (while (and var-stack (symbolp (car var-stack))) (!cdr var-stack))
     (car var-stack)))
 
-(cl-defmethod elsa-scope-get-var ((this elsa-scope) name)
+(cl-defmethod elsa-scope-get-var ((this elsa-scope) (name symbol))
   "Get binding of variable with NAME in THIS scope."
   (elsa-scope--get-var this name))
 
@@ -193,7 +193,7 @@ Propagate the assigned/read flags."
             (oset scope-var type (oref var type))
             (oset scope-var assigned (oref var assigned))
             (oset scope-var read (oref var read)))
-        (elsa-scope-add-variable scope (clone var))))))
+        (elsa-scope-add-var scope (clone var))))))
 
 (defun elsa-scope-get-assigned-vars (scope)
   (let ((mutated nil))
