@@ -106,8 +106,10 @@ do that."
                 (cond
                  ((symbolp v)
                   (symbol-name v))
-                 ((elsa-variable-p v)
-                  (elsa-type-describe (oref v type)))
+                 ((and (consp v) (elsa-variable-p (cdr v)))
+                  (format "%s: %s"
+                          (car v)
+                          (elsa-type-describe (elsa-get-type (cdr v)))))
                  (t (error "Can not happen"))))
               var-stack "\n")
              out))
