@@ -62,6 +62,14 @@ protected signal an error."
   "Record an assignment to variable."
   (declare (indent 1)))
 
+(cl-defgeneric elsa-scope-narrow-var (scope var &optional updater)
+  "Record a narrowing of a variable.
+
+UPDATER is a function taking the current binding in SCOPE and the
+new VAR and combines their types.  Defaults to simply taking the
+new var."
+  (declare (indent 1)))
+
 (cl-defgeneric elsa-scope-unassign-var (scope var)
   "Remove all assignments to variable.
 
@@ -182,12 +190,30 @@ do that."
                :assigned (trinary-true))))
     (puthash name (cons (cons 'assign var) var-stack) vars)))
 
+(cl-defmethod elsa-scope-narrow-var ((scope elsa-scope) (var elsa-variable) &optional updater)
+  (let* ((vars (oref scope vars))
+         (name (oref var name))
+         (var-stack (gethash name vars))
+         (scope-var (elsa-scope-get-var scope name)))
+    (cl-assert scope-var)
+    (message "updater %s" updater)
+    (let ((narrowed-var (funcall (or updater
+                                     (lambda (a b)
+                                       (elsa-variable
+                                        :name name
+                                        :type (elsa-get-type b))))
+                                 scope-var var)))
+      (puthash name (cons (cons 'narrow-by-return narrowed-var) var-stack) vars))))
+
+(cl-defmethod elsa-scope-narrow-var ((scope elsa-scope) (var list) &optional updater)
+  (--each var (elsa-scope-narrow-var scope it updater)))
+
 (defun elsa-scope--unassign-var (scope name)
   (let* ((vars (oref scope vars))
          (var-stack (gethash name vars)))
     (while (and var-stack
                 (not (symbolp (car var-stack)))
-                (eq (caar var-stack) 'assign))
+                (memq (caar var-stack) '(assign narrow-by-return)))
       (!cdr var-stack))
     (when (symbolp (car var-stack))
       (pop var-stack))

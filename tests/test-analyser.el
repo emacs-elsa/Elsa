@@ -334,7 +334,7 @@
             (let ((test-form (elsa-nth 1 (elsa-nth 2 (elsa-nth 3 form)))))
               (expect test-form :to-be-type-equivalent (elsa-type-int)))))
 
-        (it "should use the inference from first body in the second body"
+        (it "should use the inference from first body in the second condition"
           (elsa-test-with-analysed-form "|(defun fn (x) (cond ((stringp x) x) ((stringp x) x) (t x)))" form
             (let ((test-form (elsa-car (elsa-nth 2 (elsa-nth 3 form)))))
               (expect test-form :to-be-type-equivalent (elsa-type-nil)))))
