@@ -125,7 +125,7 @@ do that."
   (let* ((vars (oref this vars))
          (name (oref variable name))
          (var-stack (gethash name vars)))
-    (puthash name (cons variable var-stack) vars)))
+    (puthash name (cons (cons 'lexical variable) var-stack) vars)))
 
 (defun elsa-scope--remove-var (scope name)
   (elsa-scope--unassign-var scope name)
@@ -140,6 +140,10 @@ do that."
   "Remove VARIABLE from current scope."
   (elsa-scope--remove-var this (oref variable name)))
 
+(cl-defmethod elsa-scope-remove-var ((this elsa-scope) (variables list))
+  "Remove VARIABLE from current scope."
+  (--each variables (elsa-scope-remove-var this it)))
+
 (cl-defmethod elsa-scope-remove-var ((this elsa-scope) (form elsa-form-symbol))
   "Remove VARIABLE from current scope."
   (elsa-scope--remove-var this (elsa-form-name form)))
@@ -148,7 +152,11 @@ do that."
   (let* ((vars (oref scope vars))
          (var-stack (gethash var-name vars)))
     (while (and var-stack (symbolp (car var-stack))) (!cdr var-stack))
-    (car var-stack)))
+    (let ((var (car var-stack)))
+      (cond
+       ((consp var)
+        (cdr var))
+       (t var)))))
 
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) (name symbol))
   "Get binding of variable with NAME in THIS scope."
@@ -165,26 +173,27 @@ do that."
 (cl-defmethod elsa-scope-assign-var ((scope elsa-scope) (var elsa-variable))
   (let* ((vars (oref scope vars))
          (name (oref var name))
-         (var-stack (gethash name vars)))
-    (puthash name (cons (elsa-variable :name name
-                                       :type (oref var type)
-                                       :assigned (trinary-true))
-                        (cons 'setq var-stack)) vars)))
+         (var-stack (gethash name vars))
+         (var (elsa-variable
+               :name name
+               :type (oref var type)
+               :assigned (trinary-true))))
+    (puthash name (cons (cons 'assign var) var-stack) vars)))
 
 (defun elsa-scope--unassign-var (scope name)
   (let* ((vars (oref scope vars))
          (var-stack (gethash name vars)))
     (while (and var-stack
                 (not (symbolp (car var-stack)))
-                (eq (cadr var-stack) 'setq))
-      (setq var-stack (cddr var-stack)))
+                (eq (caar var-stack) 'assign))
+      (!cdr var-stack))
     (when (symbolp (car var-stack))
       (pop var-stack))
     (if var-stack
         (puthash name var-stack vars)
       (remhash name vars))))
 
-(cl-defmethod elsa-scope-unassign-var ((scope elsa-scope) name)
+(cl-defmethod elsa-scope-unassign-var ((scope elsa-scope) (name symbol))
   (elsa-scope--unassign-var scope name))
 
 (cl-defmethod elsa-scope-unassign-var ((scope elsa-scope) (var elsa-variable))
@@ -207,9 +216,8 @@ Propagate the assigned/read flags."
 (defun elsa-scope-get-assigned-vars (scope)
   (let ((mutated nil))
     (maphash (lambda (_k v)
-               (when (and (eq (cadr v) 'setq)
-                          (not (symbolp (car v))))
-                 (push (clone (car v)) mutated)))
+               (when (eq (car-safe (car v)) 'assign)
+                 (push (clone (cdar v)) mutated)))
              (oref scope vars))
     mutated))
 
