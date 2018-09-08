@@ -51,6 +51,10 @@ will assume during analysis.")
 (cl-defmethod elsa-get-type ((this elsa-variable))
   (oref this type))
 
+(defun elsa-make-variable (name type)
+  "Make variable NAME with TYPE."
+  (elsa-variable :name name :type type))
+
 ;; TODO: propagate assigned/read
 (cl-defmethod elsa-variable-diff ((this elsa-variable) other)
   (elsa-variable :name (oref this name)
