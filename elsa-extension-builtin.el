@@ -128,7 +128,7 @@
         (return-type (elsa-type-empty)))
     (elsa--analyse-form condition scope state)
     (elsa--with-narrowed-variables condition scope
-      (--each body (elsa--analyse-form it scope state)))
+      (elsa--analyse-body body scope state))
     (when body
       (setq return-type (oref (-last-item body) type)))
     (when (elsa-type-accept condition (elsa-type-nil))
@@ -147,7 +147,7 @@
       (-when-let (scope-var (elsa-scope-get-var scope it))
         (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
         (push it vars-to-pop)))
-    (--each body (elsa--analyse-form it scope state))
+    (elsa--analyse-body body scope state)
     (--each vars-to-pop (elsa-scope-remove-var scope it))
     (if (not (elsa-type-accept condition (elsa-type-nil)))
         (elsa-type-nil)

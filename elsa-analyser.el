@@ -107,7 +107,7 @@ number by symbol 'many."
     (-each new-vars (lambda (v) (elsa-scope-add-var scope v)))
     (if (not body)
         (oset form type (elsa-type-nil))
-      (--each body (elsa--analyse-form it scope state))
+      (elsa--analyse-body body scope state)
       (oset form type (oref (-last-item body) type)))
     (-each new-vars (lambda (v) (elsa-scope-remove-var scope v)))))
 
@@ -122,7 +122,7 @@ number by symbol 'many."
           (elsa-scope-add-var scope variable))))
     (if (not body)
         (oset form type (elsa-type-nil))
-      (--each body (elsa--analyse-form it scope state))
+      (elsa--analyse-body body scope state)
       (oset form type (oref (-last-item body) type)))
     (-each new-vars (lambda (v) (elsa-scope-remove-var scope v)))))
 
@@ -222,7 +222,7 @@ number by symbol 'many."
                   (elsa--analyse-form head scope state)
                   (elsa-scope-narrow-var scope (oref head narrow-types))
                   (elsa-with-reachability state (elsa-type-is-non-nil head)
-                    (--each body (elsa--analyse-form it scope state))))
+                    (elsa--analyse-body body scope state)))
                 (elsa-scope-narrow-var scope (oref head narrow-types)
                                        'elsa-variable-diff)
                 (when (trinary-possible-p condition-reachable)
@@ -262,7 +262,7 @@ number by symbol 'many."
          (return-type))
     (elsa--analyse-form body scope state)
     (setq return-type (oref body type))
-    (--each unwind-forms (elsa--analyse-form it scope state))
+    (elsa--analyse-body unwind-forms scope state)
     (let ((last (-last-item unwind-forms)))
       (setq return-type (elsa-type-sum return-type last)))
     (oset form type return-type)))
@@ -270,7 +270,7 @@ number by symbol 'many."
 (defun elsa--analyse:progn (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (last (-last-item (oref form sequence))))
-    (--each body (elsa--analyse-form it scope state))
+    (elsa--analyse-body body scope state)
     (if body
         (oset form type (oref last type))
       (oset form type (elsa-type-nil)))))
@@ -290,7 +290,7 @@ number by symbol 'many."
 (defun elsa--analyse:prog1 (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (first (car body)))
-    (--each body (elsa--analyse-form it scope state))
+    (elsa--analyse-body body scope state)
     (if first
         (oset form type (oref first type))
       (oset form type (elsa-type-unbound)))))
@@ -298,7 +298,7 @@ number by symbol 'many."
 (defun elsa--analyse:prog2 (form scope state)
   (let* ((body (cdr (oref form sequence)))
          (second (cadr body)))
-    (--each body (elsa--analyse-form it scope state))
+    (elsa--analyse-body body scope state)
     (if second
         (oset form type (oref second type))
       (oset form type (elsa-type-unbound)))))
@@ -392,7 +392,7 @@ nullables and the &rest argument into a variadic."
                       :type (nth index arg-types))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
-    (--each body (elsa--analyse-form it scope state))
+    (elsa--analyse-body body scope state)
     ;; check if return type of defun corresponds with the last form of
     ;; the body
     (let* ((body-return-type (oref (-last-item body) type))
@@ -457,7 +457,7 @@ See `elsa--analyse:defvar'."
                       :type (nth index arg-types))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
-    (--each body (elsa--analyse-form it scope state))
+    (elsa--analyse-body body scope state)
     (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-function-type
                      :args arg-types
