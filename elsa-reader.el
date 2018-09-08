@@ -65,6 +65,13 @@ Nil if FORM is not a quoted symbol."
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 
+;; (elsa-get-name :: Mixed -> Symbol?)
+(cl-defgeneric elsa-get-name (this) nil)
+
+;; (elsa-form-sequence :: Mixed -> [Mixed])
+(cl-defgeneric elsa-form-sequence (form)
+  "Return the sequence of things contained in FORM.")
+
 (cl-defmethod elsa-get-type ((this elsa-form))
   (oref this type))
 
@@ -160,9 +167,6 @@ This only makes sense for the sequence forms:
 ;; (elsa-form-function-call-p :: Mixed -> Symbol? -> Bool)
 (cl-defgeneric elsa-form-function-call-p (this &optional name) nil)
 
-;; (elsa-get-name :: Mixed -> Symbol?)
-(cl-defgeneric elsa-get-name (this) nil)
-
 (cl-defmethod elsa-get-name ((this elsa-form-symbol))
   (oref this name))
 
@@ -254,11 +258,19 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-foreach ((this elsa-form-list) fn)
   (mapc fn (oref this sequence)))
 
+;; (elsa-car :: Mixed -> Mixed)
+(cl-defgeneric elsa-car (thing)
+  "Return `car' of THING")
+
 (cl-defmethod elsa-car ((this list))
   (car this))
 
 (cl-defmethod elsa-car ((this elsa-form))
   (car (elsa-form-sequence this)))
+
+;; (elsa-cdr :: Mixed -> [Mixed])
+(cl-defgeneric elsa-cdr (thing)
+  "Return `cdr' of THING")
 
 (cl-defmethod elsa-cdr ((this list))
   (cdr this))
@@ -266,11 +278,19 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-cdr ((this elsa-form))
   (cdr (elsa-form-sequence this)))
 
+;; (elsa-nth :: Int -> Mixed -> Mixed)
+(cl-defgeneric elsa-nth (n thing)
+  "Return nth item of THING")
+
 (cl-defmethod elsa-nth (n (this list))
   (nth n this))
 
 (cl-defmethod elsa-nth (n (this elsa-form))
   (nth n (elsa-form-sequence this)))
+
+;; (elsa-nthcdr :: Int -> Mixed -> [Mixed])
+(cl-defgeneric elsa-nthcdr (n thing)
+  "Return nth `cdr' of THING")
 
 (cl-defmethod elsa-nthcdr (n (this list))
   (nthcdr this))
