@@ -53,6 +53,15 @@
             (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
                     (elsa-make-type Float)))))))
 
+  (describe "cons"
+
+    (describe "return type analysis"
+
+      (it "should set car and cdr types to actual types of the args"
+        (elsa-test-with-analysed-form "(cons 1 :keyword)" form
+          (expect form :to-be-type-equivalent
+                  (elsa-make-type Cons Int Keyword))))))
+
   (describe "when"
 
     (describe "return type analysis"

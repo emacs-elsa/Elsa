@@ -89,8 +89,8 @@
 
 (defun elsa--analyse:cons (form scope state)
   (elsa--analyse-function-call form scope state)
-  (-when-let* ((car-type (oref (nth 1 (oref form sequence)) type))
-               (cdr-type (oref (nth 2 (oref form sequence)) type)))
+  (-when-let* ((car-type (elsa-get-type (elsa-nth 1 form)))
+               (cdr-type (elsa-get-type (elsa-nth 2 form))))
     (oset form type (elsa-type-cons :car-type car-type :cdr-type cdr-type))))
 
 (defun elsa--analyse:elt (form scope state)
