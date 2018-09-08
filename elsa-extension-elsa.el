@@ -37,10 +37,10 @@
   (elsa-form-function-call-p form 'cdr))
 
 (cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-cdr) form scope state)
-  (let* ((car-arg (elsa-nth 1 form)))
-    (when (elsa-form-sequence-p car-arg)
-      (let ((head (elsa-car car-arg))
-            (prop (elsa-nth 2 car-arg)))
+  (let* ((cdr-arg (elsa-nth 1 form)))
+    (when (elsa-form-sequence-p cdr-arg)
+      (let ((head (elsa-car cdr-arg))
+            (prop (elsa-nth 2 cdr-arg)))
         (when (and (eq (elsa-get-name head) 'oref)
                    (eq (elsa-get-name prop) 'sequence))
           (elsa-state-add-error state
