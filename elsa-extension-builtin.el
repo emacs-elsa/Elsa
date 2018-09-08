@@ -66,10 +66,10 @@
          (second (cadr args)))
     (cond
      ((and (elsa-form-symbol-p first)
-           (elsa-scope-get-var scope (elsa-get-name first)))
+           (elsa-scope-get-var scope first))
       (elsa--analyse--eq form first second))
      ((and (elsa-form-symbol-p second)
-           (elsa-scope-get-var scope (elsa-get-name second)))
+           (elsa-scope-get-var scope second))
       (elsa--analyse--eq form second first)))
     (when (elsa-type-equivalent-p
            (elsa-type-empty)

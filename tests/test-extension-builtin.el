@@ -7,6 +7,52 @@
 
 (describe "Elsa analyser"
 
+  (describe "eq"
+
+    (describe "return type analysis"
+
+      (it "should return nil if intersection of domains of arguments is nil"
+        (elsa-test-with-analysed-form "|(eq :keyword 1)" form
+          (expect form :to-be-type-equivalent (elsa-type-nil)))))
+
+    (describe "narrowing types"
+
+      (it "should narrow a variable to the type of t constant in first argument"
+        (elsa-test-with-analysed-form "|(defun fn (x) (eq t x))" form
+          (let ((eq-form (elsa-nth 3 form)))
+            (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
+                    (elsa-make-type T)))))
+
+      (it "should narrow a variable to the type of t constant in second argument"
+        (elsa-test-with-analysed-form "|(defun fn (x) (eq x t))" form
+          (let ((eq-form (elsa-nth 3 form)))
+            (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
+                    (elsa-make-type T)))))
+
+      (it "should narrow a variable to the type of keyword in second argument"
+        (elsa-test-with-analysed-form "|(defun fn (x) (eq x :keyword))" form
+          (let ((eq-form (elsa-nth 3 form)))
+            (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
+                    (elsa-make-type Keyword)))))
+
+      (it "should narrow a variable to the type of symbol in second argument"
+        (elsa-test-with-analysed-form "|(defun fn (x) (eq x 'symbol))" form
+          (let ((eq-form (elsa-nth 3 form)))
+            (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
+                    (elsa-make-type Symbol)))))
+
+      (it "should narrow a variable to the type of int in second argument"
+        (elsa-test-with-analysed-form "|(defun fn (x) (eq x 1))" form
+          (let ((eq-form (elsa-nth 3 form)))
+            (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
+                    (elsa-make-type Int)))))
+
+      (it "should narrow a variable to the type of float in second argument"
+        (elsa-test-with-analysed-form "|(defun fn (x) (eq x 1.1))" form
+          (let ((eq-form (elsa-nth 3 form)))
+            (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
+                    (elsa-make-type Float)))))))
+
   (describe "when"
 
     (describe "return type analysis"
