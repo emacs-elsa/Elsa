@@ -278,6 +278,16 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-cdr ((this elsa-form))
   (cdr (elsa-form-sequence this)))
 
+;; (elsa-cadr :: Mixed -> Mixed)
+(cl-defgeneric elsa-cadr (thing)
+  "Return `cadr' of THING")
+
+(cl-defmethod elsa-cadr ((this list))
+  (cadr this))
+
+(cl-defmethod elsa-cadr ((this elsa-form))
+  (cadr (elsa-form-sequence this)))
+
 ;; (elsa-nth :: Int -> Mixed -> Mixed)
 (cl-defgeneric elsa-nth (n thing)
   "Return nth item of THING")
