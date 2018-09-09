@@ -23,6 +23,7 @@
   (add-to-list 'elsa-checks (elsa-check-if-to-when))
   (add-to-list 'elsa-checks (elsa-check-lambda-eta-conversion))
   (add-to-list 'elsa-checks (elsa-check-symbol-naming))
+  (add-to-list 'elsa-checks (elsa-check-public-functions-have-docstring))
   )
 
 (defclass elsa-ruleset-error (elsa-ruleset) ())

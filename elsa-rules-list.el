@@ -171,4 +171,20 @@
               (elsa-state-add-error state
                 (elsa-make-warning "Condition always evaluates to nil." condition)))))))))
 
+(defclass elsa-check-public-functions-have-docstring (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-public-functions-have-docstring) form scope state)
+  (and (or (elsa-form-function-call-p form 'defun)
+           (elsa-form-function-call-p form 'defmacro)
+           (elsa-form-function-call-p form 'cl-defgeneric)
+           (elsa-form-function-call-p form 'defsubst))
+       (not (string-match-p "--" (symbol-name (elsa-get-name (elsa-nth 1 form)))))))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-public-functions-have-docstring) form scope state)
+  (let ((docstring-maybe (elsa-nth 3 form)))
+    (unless (elsa-form-string-p docstring-maybe)
+      (elsa-state-add-error state
+        (elsa-make-notice "Public functions should have a docstring."
+                          (elsa-car form))))))
+
 (provide 'elsa-rules-list)
