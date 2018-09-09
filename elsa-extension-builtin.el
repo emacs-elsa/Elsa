@@ -127,8 +127,10 @@
         (body (elsa-nthcdr 2 form))
         (return-type (elsa-type-empty)))
     (elsa--analyse-form condition scope state)
-    (elsa--with-narrowed-variables condition scope
-      (elsa--analyse-body body scope state))
+    (elsa-with-reachability state (elsa-type-is-non-nil condition)
+      (elsa-save-scope scope
+        (elsa-scope-narrow-var scope (oref condition narrow-types))
+        (elsa--analyse-body body scope state)))
     (when body
       (setq return-type (oref (-last-item body) type)))
     (when (elsa-type-accept condition (elsa-type-nil))

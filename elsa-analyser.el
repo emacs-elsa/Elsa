@@ -11,15 +11,6 @@
 
 (require 'elsa-typed-builtin)
 
-(defmacro elsa--with-narrowed-variables (form scope &rest body)
-  (declare (indent 2))
-  `(progn
-     (--each (oref ,form narrow-types)
-       (elsa-scope-add-var ,scope it))
-     ,@body
-     (--each (oref ,form narrow-types)
-       (elsa-scope-remove-var ,scope it))))
-
 ;; (elsa--arglist-to-arity :: List Symbol | T | String -> Cons Int (Int | Symbol))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
@@ -138,27 +129,20 @@ The BINDING should have one of the following forms:
   (let ((condition (nth 1 (oref form sequence)))
         (true-body (nth 2 (oref form sequence)))
         (false-body (nthcdr 3 (oref form sequence)))
-        (vars-to-pop nil)
         (mutated-vars-true nil)
         (mutated-vars-false nil))
     (elsa--analyse-form condition scope state)
     (elsa-with-reachability state (elsa-type-is-non-nil condition)
-      (elsa--with-narrowed-variables condition scope
-        (elsa-save-scope scope
-          (elsa--analyse-form true-body scope state)
-          (setq mutated-vars-true (elsa-scope-get-assigned-vars scope)))))
-    ;; TODO: extract this logic to a helper macro, it's shared with
-    ;; `cond' analysis, will also be used in `and' and `or'
-    (--each (oref condition narrow-types)
-      (-when-let (scope-var (elsa-scope-get-var scope it))
-        ;; TODO: in the macro make the combinator `elsa-variable-diff' configurable
-        (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
-        (push it vars-to-pop)))
+      (elsa-save-scope scope
+        (elsa-scope-narrow-var scope (oref condition narrow-types))
+        (elsa--analyse-form true-body scope state)
+        (setq mutated-vars-true (elsa-scope-get-assigned-vars scope))))
     (elsa-with-reachability state (elsa-type-is-nil condition)
       (elsa-save-scope scope
+        (elsa-scope-narrow-var scope (oref condition narrow-types)
+                               'elsa-variable-diff)
         (elsa--analyse-body false-body scope state)
         (setq mutated-vars-false (elsa-scope-get-assigned-vars scope))))
-    (--each vars-to-pop (elsa-scope-remove-var scope it))
     (let ((condition-is-nil (elsa-type-is-nil condition))
           (to-merge))
       (cond
