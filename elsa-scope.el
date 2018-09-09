@@ -194,8 +194,8 @@ do that."
   (let* ((vars (oref scope vars))
          (name (oref var name))
          (var-stack (gethash name vars))
-         (scope-var (elsa-scope-get-var scope name)))
-    (cl-assert scope-var)
+         (scope-var (or (elsa-scope-get-var scope name)
+                        (elsa-make-variable name (elsa-make-type Mixed)))))
     (message "updater %s" updater)
     (let ((narrowed-var (funcall (or updater
                                      (lambda (a b)
