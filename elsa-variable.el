@@ -51,6 +51,9 @@ will assume during analysis.")
 (cl-defmethod elsa-get-type ((this elsa-variable))
   (oref this type))
 
+(cl-defmethod elsa-get-name ((this elsa-variable))
+  (oref this name))
+
 (defun elsa-make-variable (name type)
   "Make variable NAME with TYPE."
   (elsa-variable :name name :type type))
