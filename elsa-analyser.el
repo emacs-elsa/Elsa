@@ -295,6 +295,7 @@ The BINDING should have one of the following forms:
         (oset form type (oref second type))
       (oset form type (elsa-type-unbound)))))
 
+;; TODO: add reachability analysis
 (defun elsa--analyse:or (form scope state)
   (let* ((body (elsa-cdr form))
          (return-type (elsa-type-nil))
@@ -316,6 +317,7 @@ The BINDING should have one of the following forms:
       (setq return-type (elsa-type-make-non-nullable return-type)))
     (oset form type return-type)))
 
+;; TODO: add tests for reachability
 (defun elsa--analyse:and (form scope state)
   (let* ((body (elsa-cdr form))
          (return-type (elsa-type-t))
