@@ -33,6 +33,9 @@ get the type:
 - =integerp= → =integer= (=int= is also accepted)
 - =markerp= → =marker=
 - =hash-table-p= → =hash-table=
+
+Some additional special types:
+
 - =t= stands for =t= and is always true
 - =nil= stands for =nil= and is always false
 - =bool= is a combination of explicitly =t= or =nil=
