@@ -30,6 +30,11 @@
           (elsa-state-add-error state
             (elsa-make-notice
              "Prefer (elsa-car form) to (car (oref form sequence))."
+             (elsa-car form))))
+        (when (eq (elsa-get-name head) 'elsa-form-sequence)
+          (elsa-state-add-error state
+            (elsa-make-notice
+             "Prefer (elsa-car form) to (car (elsa-form-sequence form))."
              (elsa-car form))))))))
 
 (defclass elsa-check-elsa-prefer-elsa-cdr (elsa-check) ())
@@ -47,6 +52,11 @@
           (elsa-state-add-error state
             (elsa-make-notice
              "Prefer (elsa-cdr form) to (cdr (oref form sequence))."
+             (elsa-car form))))
+        (when (eq (elsa-get-name head) 'elsa-form-sequence)
+          (elsa-state-add-error state
+            (elsa-make-notice
+             "Prefer (elsa-cdr form) to (cdr (elsa-form-sequence form))."
              (elsa-car form))))))))
 
 (defclass elsa-check-elsa-prefer-elsa-nth (elsa-check) ())
@@ -64,6 +74,11 @@
           (elsa-state-add-error state
             (elsa-make-notice
              "Prefer (elsa-nth n form) to (nth n (oref form sequence))."
+             (elsa-car form))))
+        (when (eq (elsa-get-name head) 'elsa-form-sequence)
+          (elsa-state-add-error state
+            (elsa-make-notice
+             "Prefer (elsa-nth n form) to (nth n (elsa-form-sequence form))."
              (elsa-car form))))))))
 
 (defclass elsa-check-elsa-oref (elsa-check) ())
