@@ -97,7 +97,7 @@ The BINDING should have one of the following forms:
 
 (defun elsa--analyse:let (form scope state)
   (let ((new-vars nil)
-        (bindings (elsa-form-sequence (cadr (oref form sequence))))
+        (bindings (elsa-form-sequence (elsa-cadr form)))
         (body (cddr (oref form sequence))))
     ;; TODO: move this to extension?
     (-each bindings
@@ -126,9 +126,9 @@ The BINDING should have one of the following forms:
     (-each new-vars (lambda (v) (elsa-scope-remove-var scope v)))))
 
 (defun elsa--analyse:if (form scope state)
-  (let ((condition (nth 1 (oref form sequence)))
-        (true-body (nth 2 (oref form sequence)))
-        (false-body (nthcdr 3 (oref form sequence)))
+  (let ((condition (elsa-nth 1 form))
+        (true-body (elsa-nth 2 form))
+        (false-body (elsa-nthcdr 3 form))
         (mutated-vars-true nil)
         (mutated-vars-false nil))
     (elsa--analyse-form condition scope state)
@@ -157,18 +157,18 @@ The BINDING should have one of the following forms:
           (-each (-concat true false)
             (lambda (var)
               (push (elsa-variable
-                     :name (oref var name)
+                     :name (elsa-get-name var)
                      :type (-if-let (scope-var (elsa-scope-get-var scope var))
                                (elsa-type-sum var scope-var)
-                             (clone (oref var type)))
+                             (clone (elsa-get-type var)))
                      :assigned (trinary-add-maybe (oref var assigned))
                      :read (trinary-add-maybe (oref var read)))
                     to-merge)))
           (setq to-merge (-concat both to-merge)))))
       (elsa-variables-merge-to-scope to-merge scope))
-    (let ((true-result-type (oref true-body type))
+    (let ((true-result-type (elsa-get-type true-body))
           (false-result-type (if false-body
-                                 (oref (-last-item false-body) type)
+                                 (elsa-get-type (-last-item false-body))
                                (elsa-type-nil))))
       (oset form type
             (cond
@@ -498,7 +498,7 @@ See `elsa--analyse:defvar'."
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-car form))
          (name (oref head name))
-         (args (cdr (oref form sequence)))
+         (args (elsa-cdr form))
          (type (get name 'elsa-type))
          (narrow-types (get name 'elsa-narrow-types)))
     (-each (-zip args spec)
