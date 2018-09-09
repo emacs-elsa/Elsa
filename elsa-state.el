@@ -20,8 +20,11 @@
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar :name name :type type) defvars)))
 
-(cl-defmethod elsa-state-add-error ((this elsa-state) error)
-  (oset this errors (cons error (oref this errors))))
+(defun elsa-state-add-error (state error)
+  "In STATE, record an ERROR.
+
+STATE is `elsa-state', ERROR is `elsa-message'."
+  (push error (oref state errors)))
 
 (defun elsa-state-get-reachability (state)
   (car (oref state reachable)))
