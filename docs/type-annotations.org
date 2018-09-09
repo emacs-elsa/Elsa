@@ -1,0 +1,216 @@
+* Type annotations
+
+In Elisp users are not required to provide type annotations to their
+code.  While at many places the types can be inferred there are
+places, especially in user-defined functions, where we can not infer
+the correct type.
+
+Therefore Elsa provides users with the option to annotate their
+function definitions.  The annotations are placed in the body of the
+function inside a =declare= form:
+
+#+BEGIN_SRC elisp
+(defun add-one (x)
+  (declare (elsa (int) int))
+  (1+ x))
+#+END_SRC
+
+The =declare= form starts with =elsa= followed by one or two values.  If
+two are provided, first must be a list which is the list of input
+types and the second is the return type.
+
+If only one is provided it is taken to be the return type and the
+function must have no input arguments.
+
+Here are general guidelines on how the types are constructed.
+
+** Built-in types
+
+For built-in types with test predicates, drop the =p= or =-p= suffix to
+get the type:
+
+- =stringp= → =string=
+- =integerp= → =integer= (=int= is also accepted)
+- =markerp= → =marker=
+- =hash-table-p= → =hash-table=
+- =t= stands for =t= and is always true
+- =nil= stands for =nil= and is always false
+- =bool= is a combination of explicitly =t= or =nil=
+
+** Nullable types
+
+By default types do not accept =nil= values.  This helps preventing
+errors where you would pass =nil= to a function expecting a value.  To
+mark a type nullable you can combine it with =nil= type using the [[id:5a21a68a-4df1-4d44-a854-1d9700858a1a][or]]
+combinator: =(or string nil)= is a type which takes any string but also
+=nil=.
+
+** Most general type
+
+A type for everything is called =mixed=.  It accepts anything and is
+always nullable (that means it accepts =nil=).  This is the default type
+for when we lack type information.
+
+** Composite (higher order) types
+
+Composite or higher-order types are types which take other types as
+arguments.
+
+Composite types usually correspond to data constructors such as =cons=,
+=list=, =vector=...
+
+- =(cons a b)= where =a= is the type of =car= and =b= is the type of =cdr=.  If
+  the =car= and =cdr= can be anything write =(cons mixed mixed)= or simply
+  =cons= for short.
+- =(list a)= where =a= is the type of items in the list.  If the list can
+  hold anything, write =(list mixed)= or simply =list= for short.
+- =(vector a)= where =a= is the type of items in the vector.  If the
+  vector can hold anything, write =(vector mixed)= or simply =vector= for
+  short.
+- =(hash-table k v)= where =k= is the key type and =v= is the value type.
+  If the hash table can hold anything, write =(hash-table mixed mixed)=
+  or simply =hash-table= for short.
+
+** Function types
+
+Function types are types of functions.  They have input argument types
+and a return type.
+
+The function =add-one= from the introduction has a function type =(function
+(int) int)= which means it takes in one integer and returns an integer.
+
+A =lambda= form =(lambda (x) (number-to-string x))= has function type
+=(function (number) string)=, it takes in a number and returns a string.
+
+A function can have a function type as one of its input types.  An
+example of such a function is =mapcar= which takes a function and a list
+and applies the function to every item of the list.
+
+#+BEGIN_SRC elisp
+(defun app (fn)
+  "Apply FN to the list (1 2 3 4)"
+  (declare (elsa ((function (number) number)) (list number)))
+  (mapcar fn (list 1 2 3 4)))
+
+(app (lambda (x) (* x x)))
+#+END_SRC
+
+The =app= function requires that we pass in a function which processes a
+number into a number and returns a list of numbers.
+
+** Generic types
+
+Generic types are types where some of the type arguments are variable.
+Both basic and composite types can be turned into generic types.
+
+*** Motivation
+
+An example of a generic function is =identity=.  This function takes
+anything in and anything out.  We could therefore give it a type
+annotation =(elsa (mixed) mixed)=.
+
+However, we can do better!  We know that whatever was passed in will
+be returned and so the type actually must be the same.  The =(elsa
+(mixed) mixed)= signature allows us to pass in an =int= and it can return
+back a =string= no problem and so it would not catch a huge number of
+possible errors.
+
+What we want to express here is "X comes in, X comes out".
+
+*** Syntax
+
+The syntax for generic types is "generic type name" + =*= suffix.  Any
+string can be used for the generic type name, but customarily
+single-letter names are used.
+
+For the above mentioned identity function we therefore write the type
+as =(elsa (a*) a*)= where =a*= stands for a generic type =a=.
+
+A function such as =car= can be typed as follows:
+
+#+BEGIN_SRC elisp
+(elsa ((cons a* b*)) a*)
+#+END_SRC
+
+It takes a cons with =a= in the =car= and =b= in the =cdr= and return the =car=
+which is of type =a= , whatever that happens to be.
+
+** Optional types
+
+If a function can take optional arguments we preceed them with
+=&optional= marker just as we do in the argument list.
+
+#+BEGIN_SRC elisp
+(defun drop-items (list &optional n)
+  "Drop first item of LIST or N items if N is provided."
+  (declare (elsa ((list a*) &optional int) (list a*)))
+  (setq n (or n 1))
+  (dotimes (_ n list)
+    (setq list (cdr list))))
+#+END_SRC
+
+** Variadic types
+
+If a function can take arbitrary number of arguments we preceed the
+last variadic argument with =&rest= marker just as we do in the argument
+list.
+
+#+BEGIN_SRC elisp
+(defun join (separator &rest strings)
+  "Join STRINGS with SEPARATOR."
+  (declare (elsa (string &rest string) string))
+  (mapconcat 'identity strings separator))
+#+END_SRC
+
+** Type combinators
+*** Sum types
+:PROPERTIES:
+:ID:       5a21a68a-4df1-4d44-a854-1d9700858a1a
+:END:
+
+Sum types can be specified as a list form starting with =or=, so =(or
+string int)= is a type accepting strings or integers.
+
+A sum type is useful if the function internally checks the passed
+value and decides what processing to do:
+
+*TODO:* I think the double parens in the "argument" portion will lead to
+a lot of confusion.  People might expect to write just =(elsa (or int
+string) int)=.  I'm not sure if we should omit the "argument wrapping"
+parens or not.
+
+#+BEGIN_SRC elisp
+(defun to-number (x)
+  (declare (elsa ((or int string)) int))
+  (cond
+   ((numberp x) x)
+   ((stringp x) (string-to-number x))))
+#+END_SRC
+
+*** Intersection types
+
+Intersection types can be specified as list form starting with =and=, so
+=(and string float)= is a type which is at the same time string and
+float (such a type has empty domain, nothing can be string and float
+at the same time).  Intersection types are used to track impossible
+assignments.
+
+#+BEGIN_SRC elisp
+;; Such a condition can never evaluate to true
+(if (and (stringp x) (integerp x))
+    "Is both string and int"
+  "This is always true")
+#+END_SRC
+
+*** Difference types
+
+Difference types can be specified as list form starting with =-= so =(-
+mixed string)= is a type which can be anything except a string.
+
+Difference types are useful in narrowing the possible values of variables after conditional checks.
+
+#+BEGIN_SRC elisp
+(if (stringp x)
+    "X is definitely string here"
+  "X is anything but string here")
+#+END_SRC
