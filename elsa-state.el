@@ -20,7 +20,7 @@
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar :name name :type type) defvars)))
 
-(defun elsa-state-add-error (state error)
+(defun elsa-state-add-message (state error)
   "In STATE, record an ERROR.
 
 STATE is `elsa-state', ERROR is `elsa-message'."
@@ -36,6 +36,6 @@ STATE is `elsa-state', ERROR is `elsa-message'."
      ,@body
      (pop (oref ,state reachable))))
 
-(put 'elsa-state-add-error 'lisp-indent-function 1)
+(put 'elsa-state-add-message 'lisp-indent-function 1)
 
 (provide 'elsa-state)

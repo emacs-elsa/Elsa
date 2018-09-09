@@ -191,7 +191,7 @@ The BINDING should have one of the following forms:
             (elsa-variable :name (elsa-get-name place)
                            :type (oref val type)))
           (unless var
-            (elsa-state-add-error state
+            (elsa-state-add-message state
               (elsa-make-warning
                (format "Assigning to free variable %s"
                        (symbol-name (elsa-get-name place)))
@@ -386,7 +386,7 @@ nullables and the &rest argument into a variadic."
             (or (elsa-type-get-return function-type)
                 (elsa-make-type Mixed))))
       (unless (elsa-type-accept function-return-type body-return-type)
-        (elsa-state-add-error state
+        (elsa-state-add-message state
           (elsa-make-error
            (format "Function is expected to return %s but returns %s."
                    (elsa-type-describe function-return-type)
@@ -503,7 +503,7 @@ See `elsa--analyse:defvar'."
     (-let (((min . max) (elsa-fn-arity name))
            (num-of-args (length args)))
       (if (< num-of-args min)
-          (elsa-state-add-error state
+          (elsa-state-add-message state
             (elsa-make-error
              (format "Function `%s' expects at least %d %s but received %d"
                      name min
@@ -512,7 +512,7 @@ See `elsa--analyse:defvar'."
              head)))
       (if (and (not (eq max 'many))
                (> num-of-args max))
-          (elsa-state-add-error state
+          (elsa-state-add-message state
             (elsa-make-error
              (format "Function `%s' expects at most %d %s but received %d"
                      name max
@@ -538,7 +538,7 @@ See `elsa--analyse:defvar'."
                     (t (oref argument-form type)))))
              (unless (or (not expected)
                          (elsa-type-accept expected actual))
-               (elsa-state-add-error state
+               (elsa-state-add-message state
                  (elsa-make-error
                   (format "Argument %d accepts type %s but received %s"
                           (1+ index)
