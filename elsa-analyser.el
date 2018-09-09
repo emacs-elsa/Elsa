@@ -297,21 +297,18 @@ The BINDING should have one of the following forms:
 
 (defun elsa--analyse:or (form scope state)
   (let* ((body (elsa-cdr form))
-         (vars-to-pop)
          (return-type (elsa-type-nil))
          (can-be-nil-p t))
-    (-each body
-      (lambda (arg)
-        (elsa--analyse-form arg scope state)
-        (when can-be-nil-p
-          (setq return-type (elsa-type-sum return-type (oref arg type))))
-        (unless (elsa-type-accept arg (elsa-type-nil))
-          (setq can-be-nil-p nil))
-        (--each (oref arg narrow-types)
-          (-when-let (scope-var (elsa-scope-get-var scope it))
-            (elsa-scope-add-var scope (elsa-variable-diff scope-var it))
-            (push it vars-to-pop)))))
-    (--each vars-to-pop (elsa-scope-remove-var scope it))
+    (elsa-save-scope scope
+      (-each body
+        (lambda (arg)
+          (elsa--analyse-form arg scope state)
+          (when can-be-nil-p
+            (setq return-type (elsa-type-sum return-type (oref arg type))))
+          (unless (elsa-type-accept arg (elsa-type-nil))
+            (setq can-be-nil-p nil))
+          (elsa-scope-narrow-var scope (oref arg narrow-types)
+                                 'elsa-variable-diff))))
     (-when-let (grouped (elsa-variables-group-and-sum
                          (-non-nil (--mapcat (oref it narrow-types) body))))
       (oset form narrow-types grouped))
@@ -321,22 +318,19 @@ The BINDING should have one of the following forms:
 
 (defun elsa--analyse:and (form scope state)
   (let* ((body (elsa-cdr form))
-         (vars-to-pop)
          (return-type (elsa-type-t))
          (condition-reachable (trinary-true)))
-    (-each body
-      (lambda (arg)
-        (elsa-with-reachability state condition-reachable
-          (elsa--analyse-form arg scope state)
-          (--each (oref arg narrow-types)
-            (-when-let (scope-var (elsa-scope-get-var scope it))
-              (elsa-scope-add-var scope (elsa-variable-intersect scope-var it))
-              (push it vars-to-pop)))
-          (setq condition-reachable
-                (trinary-and
-                 condition-reachable
-                 (elsa-type-is-non-nil arg))))))
-    (--each vars-to-pop (elsa-scope-remove-var scope it))
+    (elsa-save-scope scope
+      (-each body
+        (lambda (arg)
+          (elsa-with-reachability state condition-reachable
+            (elsa--analyse-form arg scope state)
+            (elsa-scope-narrow-var scope (oref arg narrow-types)
+                                   'elsa-variable-intersect)
+            (setq condition-reachable
+                  (trinary-and
+                   condition-reachable
+                   (elsa-type-is-non-nil arg)))))))
     (-when-let (grouped
                 (elsa-variables-group-and-intersect
                  (->> body

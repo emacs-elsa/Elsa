@@ -118,7 +118,7 @@
             (expect (oref second-cond type) :to-be-type-equivalent
                     (elsa-type-diff (elsa-type-mixed) (elsa-type-string))))))
 
-      (it "should restore the variable type after the if body"
+      (it "should restore the variable type after the unless body"
         (elsa-test-with-analysed-form "|(defun fn (x) (unless x x) x)" form
           (let ((var-form (elsa-nth 4 form)))
             (expect (oref var-form type) :to-be-type-equivalent
