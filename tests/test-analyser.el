@@ -6,6 +6,9 @@
 
 (describe "Elsa analyser"
 
+  (before-each
+    (put 'a 'elsa-type nil))
+
   (describe "Special forms"
 
     (describe "defvar"
@@ -232,19 +235,19 @@
       (describe "narrowing types"
 
         (it "should narrow a variable to its type in true body"
-          (elsa-test-with-analysed-form "|(defun fn (x) (if x x))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (if x x))" form
             (let ((second-cond (elsa-nth 2 (elsa-nth 3 form))))
               (expect (oref second-cond type) :to-be-type-equivalent
                       (elsa-type-diff (elsa-type-mixed) (elsa-type-nil))))))
 
         (it "should narrow a variable to nil in else body"
-          (elsa-test-with-analysed-form "|(defun fn (x) (if x x x))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (if x x x))" form
             (let ((second-cond (elsa-nth 3 (elsa-nth 3 form))))
               (expect (oref second-cond type) :to-be-type-equivalent
                       (elsa-type-nil)))))
 
         (it "should restore the variable type after the if body"
-          (elsa-test-with-analysed-form "|(defun fn (x) (if x x x) x)" form
+          (elsa-test-with-analysed-form "|(defun a (x) (if x x x) x)" form
             (let ((var-form (elsa-nth 4 form)))
               (expect (oref var-form type) :to-be-type-equivalent
                       (elsa-type-mixed))))))
@@ -306,44 +309,44 @@
             (expect form :to-be-type-equivalent (elsa-type-nil))))
 
         (it "should short-circuit if some form's condition is always true"
-          (elsa-test-with-analysed-form "|(defun fn (x) (cond (t :foo) (x 'bar)))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (cond (t :foo) (x 'bar)))" form
             (let ((test-form (elsa-nth 3 form)))
               (expect test-form :to-be-type-equivalent (elsa-type-keyword)))))
 
         (it "should return non-nullable if last condition is catch-all and returns non-nullable"
-          (elsa-test-with-analysed-form "|(defun fn (x) (cond (x 1) (t :foo)))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (cond (x 1) (t :foo)))" form
             (let ((test-form (elsa-nth 3 form)))
               (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int)))))
 
         (it "should return nullable if none of the conditions is surely true"
-          (elsa-test-with-analysed-form "|(defun fn (x) (cond (x 1) (x :foo)))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (cond (x 1) (x :foo)))" form
             (let ((test-form (elsa-nth 3 form)))
               (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int | Nil)))))
 
         (it "should return nullable if last condition is catch-all but returns nullable"
-          (elsa-test-with-analysed-form "|(defun fn (x y) (cond (x 1) (t (if y :foo nil))))" form
+          (elsa-test-with-analysed-form "|(defun a (x y) (cond (x 1) (t (if y :foo nil))))" form
             (let ((test-form (elsa-nth 3 form)))
               (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int | Nil))))))
 
       (describe "narrowing types"
 
         (it "should narrow a variable to its type in the first body"
-          (elsa-test-with-analysed-form "|(defun fn (x) (cond ((stringp x) x) ((integerp x) x) (t x)))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (cond ((stringp x) x) ((integerp x) x) (t x)))" form
             (let ((test-form (elsa-nth 1 (elsa-nth 1 (elsa-nth 3 form)))))
               (expect test-form :to-be-type-equivalent (elsa-type-string)))))
 
         (it "should narrow a variable to its type in the second body"
-          (elsa-test-with-analysed-form "|(defun fn (x) (cond ((stringp x) x) ((integerp x) x) (t x)))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (cond ((stringp x) x) ((integerp x) x) (t x)))" form
             (let ((test-form (elsa-nth 1 (elsa-nth 2 (elsa-nth 3 form)))))
               (expect test-form :to-be-type-equivalent (elsa-type-int)))))
 
         (it "should use the inference from first body in the second condition"
-          (elsa-test-with-analysed-form "|(defun fn (x) (cond ((stringp x) x) ((stringp x) x) (t x)))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (cond ((stringp x) x) ((stringp x) x) (t x)))" form
             (let ((test-form (elsa-car (elsa-nth 2 (elsa-nth 3 form)))))
               (expect test-form :to-be-type-equivalent (elsa-type-nil)))))
 
         (it "should narrow a variable to its type in the last body"
-          (elsa-test-with-analysed-form "|(defun fn (x) (cond ((stringp x) x) ((integerp x) x) (t x)))" form
+          (elsa-test-with-analysed-form "|(defun a (x) (cond ((stringp x) x) ((integerp x) x) (t x)))" form
             (let ((test-form (elsa-nth 1 (elsa-nth 3 (elsa-nth 3 form)))))
               (expect test-form :to-be-type-equivalent
                       (elsa-type-diff
