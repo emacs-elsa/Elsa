@@ -82,13 +82,15 @@ The BINDING should have one of the following forms:
 - (place) ; initial is nil
 - (place initial-value)"
   (cond
-   ((elsa-form-list-p binding)
-    (-let [(var source) (oref binding sequence)]
+   ((or (listp binding)
+        (elsa-form-list-p binding))
+    (-let [(var source) (elsa-form-sequence binding)]
+      (when source
+        (elsa--analyse-form source scope state))
       (when (elsa-form-symbol-p var)
         (if (not source)
             (elsa-variable
              :name (oref var name) :type (elsa-type-nil))
-          (elsa--analyse-form source scope state)
           (elsa-variable
            :name (oref var name) :type (oref source type))))))
    ((elsa-form-symbol-p binding)
