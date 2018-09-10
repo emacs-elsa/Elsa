@@ -45,7 +45,7 @@
 ;; (put '-mapcat 'elsa-type (elsa-make-type))
 ;; (put '-copy 'elsa-type (elsa-make-type))
 ;; (put '-cons* 'elsa-type (elsa-make-type))
-;; (put '-snoc 'elsa-type (elsa-make-type))
+(put '-snoc 'elsa-type (elsa-make-type [Mixed] -> Mixed -> Mixed... -> [Mixed]))
 ;; (put '-first 'elsa-type (elsa-make-type))
 ;; (put '-find 'elsa-type (elsa-make-type))
 ;; (put '-some 'elsa-type (elsa-make-type))
