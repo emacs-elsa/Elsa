@@ -24,6 +24,7 @@
   "In STATE, record an ERROR.
 
 STATE is `elsa-state', ERROR is `elsa-message'."
+  (declare (indent 1))
   (push error (oref state errors)))
 
 (defun elsa-state-get-reachability (state)
@@ -35,7 +36,5 @@ STATE is `elsa-state', ERROR is `elsa-message'."
      (push ,reachability (oref ,state reachable))
      ,@body
      (pop (oref ,state reachable))))
-
-(put 'elsa-state-add-message 'lisp-indent-function 1)
 
 (provide 'elsa-state)
