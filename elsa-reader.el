@@ -436,10 +436,10 @@ This only makes sense for the sequence forms:
             (elsa-form-function-call-p reader-form 'cl-defgeneric))
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
-            (elsa-make-warning (format "The function name `%s' and the annotation name `%s' do not match"
-                                       (symbol-name form-name)
-                                       (symbol-name annotation-name))
-                               reader-form)))
+            (elsa-make-warning reader-form
+              "The function name `%s' and the annotation name `%s' do not match"
+              (symbol-name form-name)
+              (symbol-name annotation-name))))
         (elsa-state-add-defun
          state
          (elsa-get-name (cadr (oref reader-form sequence)))
@@ -447,10 +447,10 @@ This only makes sense for the sequence forms:
        ((elsa-form-function-call-p reader-form 'defvar)
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
-            (elsa-make-warning (format "The variable name `%s' and the annotation name `%s' do not match"
-                                       (symbol-name form-name)
-                                       (symbol-name annotation-name))
-                               reader-form)))
+            (elsa-make-warning reader-form
+              "The variable name `%s' and the annotation name `%s' do not match"
+              (symbol-name form-name)
+              (symbol-name annotation-name))))
         (put (elsa-get-name (cadr (oref reader-form sequence)))
              'elsa-type-var
              (eval `(elsa-make-type ,@(cddr comment-form))))))))))

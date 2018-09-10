@@ -192,10 +192,9 @@ The BINDING should have one of the following forms:
                            :type (oref val type)))
           (unless var
             (elsa-state-add-message state
-              (elsa-make-warning
-               (format "Assigning to free variable %s"
-                       (symbol-name (elsa-get-name place)))
-               place))))))
+              (elsa-make-warning place
+                "Assigning to free variable %s"
+                (symbol-name (elsa-get-name place))))))))
     (oset form type (oref (-last-item args) type))))
 
 (defun elsa--analyse:cond (form scope state)
@@ -391,11 +390,10 @@ nullables and the &rest argument into a variadic."
       (if function-return-type
           (unless (elsa-type-accept function-return-type body-return-type)
             (elsa-state-add-message state
-              (elsa-make-error
-               (format "Function is expected to return %s but returns %s."
-                       (elsa-type-describe function-return-type)
-                       (elsa-type-describe body-return-type))
-               (elsa-car form))))
+              (elsa-make-error (elsa-car form)
+                "Function is expected to return %s but returns %s."
+                (elsa-type-describe function-return-type)
+                (elsa-type-describe body-return-type))))
         ;; infer the type of the function
         (put name 'elsa-type (elsa-function-type
                               :args arg-types
@@ -514,21 +512,19 @@ See `elsa--analyse:defvar'."
            (num-of-args (length args)))
       (if (< num-of-args min)
           (elsa-state-add-message state
-            (elsa-make-error
-             (format "Function `%s' expects at least %d %s but received %d"
-                     name min
-                     (elsa-pluralize "argument" min)
-                     num-of-args)
-             head)))
+            (elsa-make-error head
+              "Function `%s' expects at least %d %s but received %d"
+              name min
+              (elsa-pluralize "argument" min)
+              num-of-args)))
       (if (and (not (eq max 'many))
                (> num-of-args max))
           (elsa-state-add-message state
-            (elsa-make-error
-             (format "Function `%s' expects at most %d %s but received %d"
-                     name max
-                     (elsa-pluralize "argument" max)
-                     num-of-args)
-             head))))
+            (elsa-make-error head
+              "Function `%s' expects at most %d %s but received %d"
+              name max
+              (elsa-pluralize "argument" max)
+              num-of-args))))
     ;; check the types
     (when type
       ;; analyse the arguments
@@ -549,12 +545,11 @@ See `elsa--analyse:defvar'."
              (unless (or (not expected)
                          (elsa-type-accept expected actual))
                (elsa-state-add-message state
-                 (elsa-make-error
-                  (format "Argument %d accepts type %s but received %s"
-                          (1+ index)
-                          (elsa-type-describe expected)
-                          (elsa-type-describe actual))
-                  head)))))
+                 (elsa-make-error head
+                   "Argument %d accepts type %s but received %s"
+                   (1+ index)
+                   (elsa-type-describe expected)
+                   (elsa-type-describe actual))))))
          args
          (number-sequence 0 (1- (length args)))))
 

@@ -17,10 +17,10 @@
   (let ((condition (cadr (oref form sequence))))
     (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
         (elsa-state-add-message state
-          (elsa-make-warning "Condition always evaluates to non-nil." condition))
+          (elsa-make-warning condition "Condition always evaluates to non-nil."))
       (when (elsa-type-accept (elsa-type-nil) (oref condition type))
         (elsa-state-add-message state
-          (elsa-make-warning "Condition always evaluates to nil." condition))))))
+          (elsa-make-warning condition "Condition always evaluates to nil."))))))
 
 (defclass elsa-check-if-useless-then-progn (elsa-check-if) ())
 
@@ -29,7 +29,7 @@
     (when (and (eq (elsa-get-name then-body) 'progn)
                (= 2 (length (oref then-body sequence))))
       (elsa-state-add-message state
-        (elsa-make-notice "Useless `progn' around body of then branch." (elsa-car then-body))))))
+        (elsa-make-notice (elsa-car then-body) "Useless `progn' around body of then branch.")))))
 
 (defclass elsa-check-if-useless-else-progn (elsa-check-if) ())
 
@@ -37,7 +37,7 @@
   (let ((else-body (nth 3 (oref form sequence))))
     (when (eq (elsa-get-name else-body) 'progn)
       (elsa-state-add-message state
-        (elsa-make-notice "Useless `progn' around body of else branch." (elsa-car else-body))))))
+        (elsa-make-notice (elsa-car else-body) "Useless `progn' around body of else branch.")))))
 
 (defclass elsa-check-if-to-when (elsa-check-if) ())
 
@@ -47,7 +47,7 @@
     (unless else-body
       (when (eq (elsa-get-name then-body) 'progn)
         (elsa-state-add-message state
-          (elsa-make-notice "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'" (elsa-car form)))))))
+          (elsa-make-notice (elsa-car form) "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'"))))))
 
 (defclass elsa-check-symbol (elsa-check) ())
 
@@ -60,11 +60,11 @@
   (let ((name (symbol-name (elsa-get-name form))))
     (when (string-match-p ".+_" name)
       (elsa-state-add-message state
-        (elsa-make-notice "Use lisp-case for naming symbol instead of snake_case." form)))
+        (elsa-make-notice form "Use lisp-case for naming symbol instead of snake_case.")))
     (let ((case-fold-search nil))
       (when (string-match-p ".+[a-z][A-Z]" name)
         (elsa-state-add-message state
-          (elsa-make-notice "Use lisp-case for naming symbol instead of camelCase." form))))))
+          (elsa-make-notice form "Use lisp-case for naming symbol instead of camelCase."))))))
 
 (defclass elsa-check-error-message (elsa-check) ())
 
@@ -77,11 +77,11 @@
       (let ((msg (oref error-message sequence)))
         (when (equal (substring msg -1) ".")
           (elsa-state-add-message state
-            (elsa-make-notice "Error messages should not end with a period." (elsa-car form))))
+            (elsa-make-notice (elsa-car form) "Error messages should not end with a period.")))
         (let ((case-fold-search nil))
           (unless (string-match-p "[A-Z]" msg)
             (elsa-state-add-message state
-              (elsa-make-notice "Error messages should start with a capital letter." (elsa-car form)))))))))
+              (elsa-make-notice (elsa-car form) "Error messages should start with a capital letter."))))))))
 
 (defclass elsa-check-unbound-variable (elsa-check) ())
 
@@ -102,9 +102,8 @@
                 (get name 'elsa-type-var)
                 (boundp name))
       (elsa-state-add-message state
-        (elsa-make-error
-         (format "Reference to free variable `%s'." (symbol-name name))
-         form)))))
+        (elsa-make-error form
+          "Reference to free variable `%s'." (symbol-name name))))))
 
 (defclass elsa-check-cond-useless-condition (elsa-check) ())
 
@@ -121,10 +120,10 @@
           (if (and (not (elsa-type-accept (oref first-item type) (elsa-type-nil)))
                    (< index (1- total)))
               (elsa-state-add-message state
-                (elsa-make-warning "Condition always evaluates to non-nil." first-item))
+                (elsa-make-warning first-item "Condition always evaluates to non-nil."))
             (when (elsa-type-accept (elsa-type-nil) (oref first-item type))
               (elsa-state-add-message state
-                (elsa-make-warning "Condition always evaluates to nil." first-item)))))))))
+                (elsa-make-warning first-item "Condition always evaluates to nil.")))))))))
 
 (defclass elsa-check-lambda-eta-conversion (elsa-check) ())
 
@@ -147,9 +146,9 @@
                                    (elsa-get-name fn-arg))))
                         (-zip arg-list fn-args)))
               (elsa-state-add-message state
-                (elsa-make-notice (format "You can eta convert the lambda form and use the function `%s' directly"
-                                          (symbol-name (elsa-get-name fn-form)))
-                                  (elsa-car form))))))))))
+                (elsa-make-notice (elsa-car form)
+                  "You can eta convert the lambda form and use the function `%s' directly"
+                  (symbol-name (elsa-get-name fn-form)))))))))))
 
 (defclass elsa-check-or-unreachable-code (elsa-check) ())
 
@@ -163,13 +162,13 @@
       (lambda (condition)
         (if (not can-be-nil-p)
             (elsa-state-add-message state
-              (elsa-make-warning "Unreachable expression" condition))
+              (elsa-make-warning condition "Unreachable expression"))
           (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
               (when can-be-nil-p (setq can-be-nil-p nil))
             (when (and (elsa-type-accept (elsa-type-nil) (oref condition type))
                        can-be-nil-p)
               (elsa-state-add-message state
-                (elsa-make-warning "Condition always evaluates to nil." condition)))))))))
+                (elsa-make-warning condition "Condition always evaluates to nil.")))))))))
 
 (defclass elsa-check-public-functions-have-docstring (elsa-check) ())
 
@@ -184,7 +183,6 @@
   (let ((docstring-maybe (elsa-nth 3 form)))
     (unless (elsa-form-string-p docstring-maybe)
       (elsa-state-add-message state
-        (elsa-make-notice "Public functions should have a docstring."
-                          (elsa-car form))))))
+        (elsa-make-notice (elsa-car form) "Public functions should have a docstring.")))))
 
 (provide 'elsa-rules-list)
