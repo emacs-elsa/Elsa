@@ -238,6 +238,9 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-foreach ((this elsa-form-vector) fn)
   (mapc fn (oref this sequence)))
 
+(cl-defmethod elsa-form-sequence ((this elsa-form-vector))
+  (oref this sequence))
+
 (defsubst elsa--read-vector (form state)
   (elsa--skip-whitespace-forward)
   (elsa-form-vector
@@ -310,6 +313,9 @@ This only makes sense for the sequence forms:
 
 (cl-defmethod elsa-form-sequence ((this elsa-form-list))
   (oref this sequence))
+
+(cl-defmethod elsa-form-sequence ((this list))
+  this)
 
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-list)) t)
 
