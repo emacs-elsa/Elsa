@@ -180,7 +180,8 @@
 ;; (put 'fillarray 'elsa-type (elsa-make-type ))
 ;; (put 'clear-string 'elsa-type (elsa-make-type ))
 ;; (put 'nconc 'elsa-type (elsa-make-type ))
-;; (put 'mapconcat 'elsa-type (elsa-make-type ))
+;; TODO: generic
+(put 'mapconcat 'elsa-type (elsa-make-type (Mixed -> String) -> [Mixed] -> String -> String))
 ;; (put 'mapcar 'elsa-type (elsa-make-type ))
 ;; (put 'mapc 'elsa-type (elsa-make-type ))
 ;; (put 'yes-or-no-p 'elsa-type (elsa-make-type ))
