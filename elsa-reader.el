@@ -230,7 +230,7 @@ This only makes sense for the sequence forms:
    :sequence form))
 
 (defclass elsa-form-vector (elsa-form-seq)
-  ((sequence :type vector :initarg :sequence)))
+  ((sequence :type list :initarg :sequence)))
 
 (cl-defmethod elsa-form-print ((this elsa-form-vector))
   (format "[%s]" (mapconcat 'elsa-form-print (oref this sequence) " ")))
@@ -246,7 +246,7 @@ This only makes sense for the sequence forms:
   (elsa-form-vector
    :type (elsa-make-type Vector)
    :start (prog1 (point) (down-list))
-   :sequence (apply 'vector (-map (lambda (f) (elsa--read-form f state)) form))
+   :sequence (-map (lambda (f) (elsa--read-form f state)) form)
    :end (progn (up-list) (point))))
 
 ;;; Conses
