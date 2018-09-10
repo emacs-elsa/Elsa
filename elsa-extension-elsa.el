@@ -105,7 +105,9 @@
     (when (eq prop 'name)
       (elsa-state-add-message state
         (elsa-make-notice (elsa-car form)
-          "Prefer (elsa-get-name x) to (oref x name).")))))
+          "Prefer (elsa-get-name %s) to (oref %s name)."
+          (elsa-form-print (elsa-cadr form))
+          (elsa-form-print (elsa-cadr form)))))))
 
 (defun elsa--analyse:elsa-make-type (form scope state)
   (elsa--analyse-macro form nil scope state))
