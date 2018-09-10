@@ -228,12 +228,46 @@
     (when var (elsa-scope-remove-var scope var))
     (oset form type (elsa-get-type (-last-item body)))))
 
+;; TODO: reachability
 ;; This is not always correct but at least we try to bind variables in
 ;; case the place is a simple symbol.  The logic is handled in
 ;; `elsa--analyse-variable-from-binding'
 (defun elsa--analyse:-when-let* (form scope state)
   (let ((bindings (elsa-form-sequence (elsa-nth 1 form)))
         (body (cddr (oref form sequence)))
+        (vars))
+    (--each bindings
+      (-when-let (var (elsa--analyse-variable-from-binding it scope state))
+        (elsa-scope-add-var scope var)
+        (push var vars)))
+    (elsa--analyse-body body scope state)
+    (--each vars (elsa-scope-remove-var scope it))
+    (oset form type (elsa-get-type (-last-item body)))))
+
+;; TODO: for now, only make sure to analyze this as `let', if the
+;; bindings break they break... figure out how to do destruct later.
+(defun elsa--analyse:-let (form scope state)
+  (let ((bindings (let ((binding-form (elsa-cadr form)))
+                    (cond
+                     ((elsa-form-list-p binding-form)
+                      (elsa-form-sequence binding-form))
+                     ((elsa-form-vector-p binding-form)
+                      (list (elsa-form-sequence binding-form))))))
+        (body (elsa-nthcdr 2 form))
+        (vars))
+    (--each bindings
+      (-when-let (var (elsa--analyse-variable-from-binding it scope state))
+        (push var vars)))
+    (--each vars (elsa-scope-add-var scope it))
+    (elsa--analyse-body body scope state)
+    (--each vars (elsa-scope-remove-var scope it))
+    (oset form type (elsa-get-type (-last-item body)))))
+
+;; TODO: for now, only make sure to analyze this as `let*', if the
+;; bindings break they break... figure out how to do destruct later.
+(defun elsa--analyse:-let* (form scope state)
+  (let ((bindings (elsa-form-sequence (elsa-cadr form)))
+        (body (elsa-nthcdr 2 form))
         (vars))
     (--each bindings
       (-when-let (var (elsa--analyse-variable-from-binding it scope state))
