@@ -196,7 +196,6 @@ do that."
          (var-stack (gethash name vars))
          (scope-var (or (elsa-scope-get-var scope name)
                         (elsa-make-variable name (elsa-make-type Mixed)))))
-    (message "updater %s" updater)
     (let ((narrowed-var (funcall (or updater
                                      (lambda (a b)
                                        (elsa-variable
