@@ -59,8 +59,9 @@ it is passed to another constructor."
   "Describe THIS type."
   (symbol-name (eieio-object-class this)))
 
-(cl-defmethod elsa-type-get-args (this)
-  "Get argument types of THIS type."
+;; (elsa-type-get-args :: Mixed -> [Mixed])
+(cl-defgeneric elsa-type-get-args (thing)
+  "Get argument types of THING."
   nil)
 
 (cl-defmethod elsa-type-get-return (this)
@@ -423,7 +424,7 @@ other, then this is a supertype of other."
      (t type))))
 
 (cl-defmethod elsa-type-get-args ((this elsa-function-type))
-  "Get argument types of THIS type."
+  "Get argument types of THIS function type."
   (oref this args))
 
 (cl-defmethod elsa-type-get-return ((this elsa-function-type))
