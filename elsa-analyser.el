@@ -400,11 +400,10 @@ nullables and the &rest argument into a variadic."
         (put name 'elsa-type (elsa-function-type
                               :args arg-types
                               :return body-return-type))))
-
     (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:defun (form scope state)
-  (let* ((sequence (oref form sequence))
+  (let* ((sequence (elsa-form-sequence form))
          (name (elsa-get-name (nth 1 sequence)))
          (args (elsa-form-sequence (nth 2 sequence)))
          (body (nthcdr 3 sequence)))
