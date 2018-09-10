@@ -77,6 +77,7 @@
               (-each (nreverse (oref state defuns))
                 (lambda (dfn)
                   (insert (format "%s\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
+              (f-mkdir (f-parent elsa-cache-file))
               (f-write-text
                (buffer-string) 'utf-8
                elsa-cache-file)

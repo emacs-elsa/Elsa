@@ -7,7 +7,7 @@
 
 (defun elsa--get-cache-file-name (library &optional compiled)
   "Return the cache file name for LIBRARY."
-  (f-expand (format "%s-elsa-cache.el%s"
+  (f-expand (format ".elsa/%s-elsa-cache.el%s"
                     (f-base library)
                     (if compiled "c" ""))
             (f-parent library)))
