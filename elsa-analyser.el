@@ -365,6 +365,9 @@ nullables and the &rest argument into a variadic."
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
   (let* ((sequence (oref form sequence))
+         ;; TODO: there should be an api for `(get name
+         ;; 'elsa-type)'... probably on `scope', but for now scope is
+         ;; separate for each processed file which is not great.
          (function-type (get name 'elsa-type))
          (arg-types (or (elsa-type-get-args function-type)
                         (elsa--get-default-function-types
@@ -384,16 +387,20 @@ nullables and the &rest argument into a variadic."
     ;; check if return type of defun corresponds with the last form of
     ;; the body
     (let* ((body-return-type (oref (-last-item body) type))
-           (function-return-type
-            (or (elsa-type-get-return function-type)
-                (elsa-make-type Mixed))))
-      (unless (elsa-type-accept function-return-type body-return-type)
-        (elsa-state-add-message state
-          (elsa-make-error
-           (format "Function is expected to return %s but returns %s."
-                   (elsa-type-describe function-return-type)
-                   (elsa-type-describe body-return-type))
-           (elsa-car form)))))
+           (function-return-type (elsa-type-get-return function-type)))
+      (if function-return-type
+          (unless (elsa-type-accept function-return-type body-return-type)
+            (elsa-state-add-message state
+              (elsa-make-error
+               (format "Function is expected to return %s but returns %s."
+                       (elsa-type-describe function-return-type)
+                       (elsa-type-describe body-return-type))
+               (elsa-car form))))
+        ;; infer the type of the function
+        (put name 'elsa-type (elsa-function-type
+                              :args arg-types
+                              :return body-return-type))))
+
     (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:defun (form scope state)
@@ -434,6 +441,7 @@ See `elsa--analyse:defvar'."
   (let* ((sequence (oref form sequence))
          (args (nth 1 sequence))
          (body (nthcdr 2 sequence))
+         ;; TODO: this should use `elsa--get-default-function-types'
          (arg-types (-repeat (length (elsa-form-sequence args))
                              (elsa-make-type Mixed)))
          (vars))
