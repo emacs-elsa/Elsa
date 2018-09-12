@@ -202,4 +202,16 @@
     (it "should read a list containing quoted nil"
       (elsa-test-with-read-form "|(foo 'nil)" form
         (expect (elsa-form-list-p form) :to-be-truthy)
-        (expect (elsa-form-list-p (cadr (oref form sequence))) :to-be-truthy)))))
+        (expect (elsa-form-list-p (cadr (oref form sequence))) :to-be-truthy)))
+
+    (it "should read a symbol prefixed with a quote followed by unquote"
+      (elsa-test-with-read-form "',foo" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-list-p (elsa-cadr form)) :to-be-truthy)
+        (expect (oref (elsa-cadr form) quote-type) :to-be '\,)))
+
+    (it "should read a symbol prefixed with a quote followed by splice"
+      (elsa-test-with-read-form "',@foo" form
+        (expect (elsa-form-list-p form) :to-be-truthy)
+        (expect (elsa-form-list-p (elsa-cadr form)) :to-be-truthy)
+        (expect (oref (elsa-cadr form) quote-type) :to-be '\,@)))))

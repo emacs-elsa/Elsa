@@ -412,9 +412,9 @@ This only makes sense for the sequence forms:
      :sequence (cons
                 (elsa-form-symbol
                  :start (cond
-                         ((looking-at-p "#?'")
+                         ((looking-at (rx (or (and (? "#") "'") "," "`" ",@")))
                           (prog1 (point)
-                            (skip-syntax-forward "'")))
+                            (forward-char (length (match-string 0)))))
                          ((looking-at-p "(")
                           (setq expanded-form t)
                           (down-list)
