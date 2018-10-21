@@ -8,11 +8,107 @@ Elsa is a tool that analyses your code without loading or running it.
 It can track types and provide helpful hints when things don't match
 up before you even try to run the code.
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
+**Table of Contents**
+
+- [State of the project](#state-of-the-project)
+- [Non-exhaustive list of features](#non-exhaustive-list-of-features)
+    - [Detect dead code](#detect-dead-code)
+    - [Enforce style rules](#enforce-style-rules)
+    - [Look for suspicious code](#look-for-suspicious-code)
+    - [Track types of expressions](#track-types-of-expressions)
+- [How do I run it](#how-do-i-run-it)
+    - [Flycheck integration](#flycheck-integration)
+- [Configuration](#configuration)
+    - [Analysis extension](#analysis-extension)
+    - [Rulesets](#rulesets)
+- [Type annotations](#type-annotations)
+- [How can I contribute to this project](#how-can-i-contribute-to-this-project)
+- [F.A.Q.](#faq)
+    - [What's up with the logo?](#whats-up-with-the-logo)
+- [For developers](#for-developers)
+    - [How to write an extension for your-favourite-package](#how-to-write-an-extension-for-your-favourite-package)
+    - [How to write a ruleset](#how-to-write-a-ruleset)
+
+<!-- markdown-toc end -->
+
 # State of the project
 
 We are currently in a very early *ALPHA* phase.  API is somewhat
 stable but the type system and annotations are under constant
 development.  Things might break at any point.
+
+# Non-exhaustive list of features
+
+Here comes a non-exhaustive list of some more interesting features.
+You can find the examples in [examples.el](./examples.el).
+
+The error highlightings in the screenshots are provided by [Elsa
+Flycheck extension](https://github.com/emacs-elsa/flycheck-elsa).
+
+Everything you see here actually works, this is not just for show!
+
+## Detect dead code
+
+### Detect suspicious branching logic
+
+![](./images/dead-code-1.png)
+
+![](./images/dead-code-2.png)
+
+### Find unreachable code in short-circuiting forms
+
+![](./images/unreachable-code-1.png)
+
+## Enforce style rules
+
+### Provide helpful tips for making code cleaner
+
+![](./images/useless-code-1.png)
+
+![](./images/useless-code-2.png)
+
+### Add custom rules for your own project with rulesets
+
+![](./images/custom-ruleset-1.png)
+
+### Make formatting consistent
+
+![](./images/formatting-1.png)
+
+## Look for suspicious code
+
+### Find references to free/unbound variables
+
+![](./images/unbound-variable-1.png)
+
+### Don't assign to free variables
+
+![](./images/unbound-variable-2.png)
+
+### Detect conditions which are always true or false
+
+![](./images/always-nil-1.png)
+
+![](./images/always-non-nil-1.png)
+
+### Make sure functions are passed enough arguments
+
+![](./images/number-of-args-1.png)
+
+### Make sure functions are not passed too many arguments
+
+![](./images/number-of-args-2.png)
+
+## Track types of expressions
+
+### Check types of arguments passed to functions for compatibility
+
+![](./images/type-inference-1.png)
+
+![](./images/type-inference-2.png)
+
+![](./images/type-inference-3.png)
 
 # How do I run it
 
