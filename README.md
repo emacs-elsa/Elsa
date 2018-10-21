@@ -18,7 +18,7 @@ development.  Things might break at any point.
 
 Currently we only support running Elsa with Cask.
 
-1. `git clone https://github.com/Fuco1/Elsa.git` somewhere to your computer.
+1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
 2. Add `(depends-on "elsa")` to `Cask` file of your project
 3. Run `cask link elsa <path-to-elsa-repo>`
 4. `cask exec elsa <file-to-analyse>` to analyse the file.  Currently
