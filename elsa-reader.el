@@ -218,6 +218,9 @@ This only makes sense for the sequence forms:
 (defclass elsa-form-string (elsa-form-seq)
   ((sequence :type string :initarg :sequence)))
 
+(cl-defmethod elsa-form-sequence ((this elsa-form-string))
+  (oref this sequence))
+
 (cl-defmethod elsa-form-print ((this elsa-form-string))
   (oref this sequence))
 

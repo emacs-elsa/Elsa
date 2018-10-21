@@ -472,6 +472,35 @@ See `elsa--analyse:defvar'."
      ((elsa-form-int-p arg)
       (oset form type (elsa-type-int))))))
 
+(defun elsa--analyse--validate-interactive-string (state arg)
+  (let ((str (elsa-form-sequence arg))
+        (allowed-codes "[abBcCdDefFGikKmMnNpPrsSUvxXzZ]")
+        (case-fold-search nil))
+    (with-temp-buffer
+      (save-excursion (insert str))
+      (skip-chars-forward "@^*")
+      (insert "\n")
+      (backward-char 1)
+      (while (search-forward "\n" nil t)
+        (unless (looking-at-p allowed-codes)
+          (elsa-state-add-message state
+            (elsa-make-error
+             arg
+             "Unknown interactive code letter: %c"
+             (char-after (point)))))))))
+
+(defun elsa--analyse:interactive (form scope state)
+  (let ((arg (elsa-cadr form)))
+    (cond
+     ((null arg))
+     ((elsa-form-string-p arg)
+      (elsa--analyse--validate-interactive-string state arg))
+     ((elsa-form-list-p arg) (elsa--analyse-list arg scope state))
+     (t (elsa-state-add-message state
+          (elsa-make-error
+           arg
+           "Invalid interactive spec, expecting string or list form"))))))
+
 (defun elsa--analyse-backquote (form scope state)
   nil)
 
