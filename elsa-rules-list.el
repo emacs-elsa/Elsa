@@ -47,7 +47,7 @@
     (unless else-body
       (when (eq (elsa-get-name then-body) 'progn)
         (elsa-state-add-message state
-          (elsa-make-notice (elsa-car form) "Rewrite `if' as `when' and unwrap the `progn' which is implicit.'"))))))
+          (elsa-make-notice (elsa-car form) "Rewrite `if' as `when' and unwrap the `progn' which is implicit."))))))
 
 (defclass elsa-check-symbol (elsa-check) ())
 
