@@ -8,12 +8,16 @@
   ((defuns :initform nil)
    (defvars :initform (make-hash-table))
    (errors :initform nil)
+   (ignored-lines :initform nil)
    (reachable :initform (list (trinary-true)))
    (scope :initform (elsa-scope))))
 
 (defun elsa-state-add-defun (state name type)
   (put name 'elsa-type type)
   (push `(defun ,name ,type) (oref state defuns)))
+
+(defun elsa-state-ignore-line (state line)
+  (push line (oref state ignored-lines)))
 
 ;; TODO: take defvar directly? For consistency
 (cl-defmethod elsa-state-add-defvar ((this elsa-state) name type)
@@ -25,7 +29,9 @@
 
 STATE is `elsa-state', ERROR is `elsa-message'."
   (declare (indent 1))
-  (push error (oref state errors)))
+  (unless (memq (oref error line) (oref state ignored-lines))
+    (push error (oref state errors))))
+
 
 (defun elsa-state-get-reachability (state)
   (car (oref state reachable)))

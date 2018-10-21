@@ -63,7 +63,16 @@
           (cl-incf line)
           (put-text-property (point) (min
                                       (buffer-size)
-                                      (1+ (point))) 'elsa-line line)))
+                                      (1+ (point))) 'elsa-line line)
+          (save-excursion
+            (end-of-line)
+            ;; 12 is comment ender, newline in elisp
+            (when (and (eq (syntax-class (syntax-after (point))) 12)
+                       (search-backward "elsa-disable-line"
+                                        (line-beginning-position)
+                                        t)
+                       (nth 4 (syntax-ppss)))
+              (elsa-state-ignore-line state line)))))
       (goto-char (point-min))
       (condition-case _err
           (while (setq form (elsa-read-form state))
