@@ -13,6 +13,11 @@
 
 (defclass elsa-check-if-useless-condition (elsa-check-if) ())
 
+(cl-defmethod elsa-check-should-run ((_ elsa-check-if-useless-condition) form scope state)
+  (or (elsa-form-function-call-p form 'if)
+      (elsa-form-function-call-p form 'when)
+      (elsa-form-function-call-p form 'unless)))
+
 (cl-defmethod elsa-check-check ((_ elsa-check-if-useless-condition) form scope state)
   (let ((condition (cadr (oref form sequence))))
     (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
