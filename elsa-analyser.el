@@ -261,11 +261,13 @@ The BINDING should have one of the following forms:
     (oset form type return-type)))
 
 (defun elsa--analyse:progn (form scope state)
-  (let* ((body (cdr (oref form sequence)))
-         (last (-last-item (oref form sequence))))
+  (let* ((body (elsa-cdr form))
+         (last (-last-item (elsa-form-sequence form))))
     (elsa--analyse-body body scope state)
     (if body
-        (oset form type (oref last type))
+        (progn
+          (oset form type (elsa-get-type last))
+          (oset form narrow-types (oref last narrow-types)))
       (oset form type (elsa-type-nil)))))
 
 (defun elsa--analyse:save-excursion (form scope state)
@@ -281,19 +283,23 @@ The BINDING should have one of the following forms:
   (elsa--analyse:progn form scope state))
 
 (defun elsa--analyse:prog1 (form scope state)
-  (let* ((body (cdr (oref form sequence)))
+  (let* ((body (elsa-cdr form))
          (first (car body)))
     (elsa--analyse-body body scope state)
     (if first
-        (oset form type (oref first type))
+        (progn
+          (oset form type (elsa-get-type first))
+          (oset form narrow-types (oref first narrow-types)))
       (oset form type (elsa-type-unbound)))))
 
 (defun elsa--analyse:prog2 (form scope state)
-  (let* ((body (cdr (oref form sequence)))
+  (let* ((body (elsa-cdr form))
          (second (cadr body)))
     (elsa--analyse-body body scope state)
     (if second
-        (oset form type (oref second type))
+        (progn
+          (oset form type (elsa-get-type second))
+          (oset form narrow-types (oref second narrow-types)))
       (oset form type (elsa-type-unbound)))))
 
 ;; TODO: add reachability analysis
