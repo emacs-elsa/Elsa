@@ -204,6 +204,9 @@ do that."
                                  scope-var var)))
       (puthash name (cons (cons 'narrow-by-return narrowed-var) var-stack) vars))))
 
+(cl-defmethod elsa-scope-narrow-var ((scope elsa-scope) (form elsa-form) &optional updater)
+  (elsa-scope-narrow-var scope (oref form narrow-types) updater))
+
 (cl-defmethod elsa-scope-narrow-var ((scope elsa-scope) (var list) &optional updater)
   (--each var (elsa-scope-narrow-var scope it updater)))
 
