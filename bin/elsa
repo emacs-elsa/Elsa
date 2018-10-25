@@ -9,47 +9,22 @@ fi
 
 usage () {
     cat <<EOF
-$0 [OPTIONS] [DIRS]
-
-Buttercup will search recursively in each of DIRS for test files (any
-elisp file starting with "test-" or ending with "-test.el" or
-"-tests.el"). It will load all of those files and then run the tests
-defined in those files. If no directories are specified, buttercup
-will search in the current directory.
+$0 [OPTIONS] FILE
 
 Options can include the options described below, as well as the
 standard Emacs options "--directory", "--funcall", "--load", "--eval",
 and "--execute". These Emacs options should be used to ensure that any
-Elisp files required for the tests can be found in Emacs' load path.
-For package testing, "-L ." is commonly used. See "emacs --help" for
-more information on Emacs options.
+Elisp files required for the analysis can be found in Emacs' load
+path.  For package analysis, "-L ." is commonly used. See "emacs
+--help" for more information on Emacs options.
 
-Buttercup options:
+Elsa options:
 
---pattern, -p PATTERN   Only run tests with names matching PATTERN.
-                          This option can be used multiple times, in
-                          which case tests will be run if they match
-                          any of the given patterns.
-
---no-color, -c          Do not colorize test output.
-
---traceback STYLE       When printing backtraces for errors that occur
-                          during tests, print them in the chosen
-                          STYLE. Available styles are "full", which
-                          shows the full function call for each stack
-                          frame on a single line, "crop", which
-                          truncates each stack frame to 80 characters
-                          (the default), and "pretty", which uses
-                          Emacs' pretty-printing facilities to print
-                          each stack frame, and also annotates each
-                          frame with a lambda or M to indicate whether
-                          it is a normal function call or a
-                          macro/special form.
 EOF
 }
 
 EMACS_ARGS=()
-BUTTERCUP_ARGS=()
+ELSA_ARGS=()
 
 while [[ "$#" -gt 0 ]]
 do
@@ -64,27 +39,11 @@ do
             shift
             shift
             ;;
-        "-p"|"--pattern")
-            BUTTERCUP_ARGS+=("$1")
-            BUTTERCUP_ARGS+=("$2")
-            shift
-            shift
-            ;;
-        "-c"|"--no-color")
-            BUTTERCUP_ARGS+=("$1")
-            shift
-            ;;
-        "--traceback")
-            BUTTERCUP_ARGS+=("$1")
-            BUTTERCUP_ARGS+=("$2")
-            shift
-            shift
-            ;;
         *)
-            BUTTERCUP_ARGS+=("$1")
+            ELSA_ARGS+=("$1")
             shift
             ;;
     esac
 done
 
-exec "$EMACS_BIN" -batch "${EMACS_ARGS[@]}" -l elsa -f elsa-run "${BUTTERCUP_ARGS[@]}"
+exec "$EMACS_BIN" -batch "${EMACS_ARGS[@]}" -l elsa -f elsa-run "${ELSA_ARGS[@]}"
