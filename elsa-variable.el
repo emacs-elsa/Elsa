@@ -113,12 +113,12 @@ will assume during analysis.")
     (list (nreverse first-group) (nreverse second-group) (nreverse both-group))))
 
 (defun elsa-variables-group-and-sum (vars)
-  "Take a list of variables VARS, group them by name and sum the types."
+  "Take list of VARS, group by name and sum the types."
   (let ((groups (--group-by (oref it name) vars)))
     (-map (lambda (group) (-reduce 'elsa-variable-sum (cdr group))) groups)))
 
 (defun elsa-variables-group-and-intersect (vars)
-  "Take a list of variables VARS, group them by name and intersect the types."
+  "Take list of VARS, group by name and intersect the types."
   (let ((groups (--group-by (oref it name) vars)))
     (-map (lambda (group) (-reduce 'elsa-variable-intersect (cdr group))) groups)))
 
