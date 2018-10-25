@@ -258,7 +258,13 @@ The BINDING should have one of the following forms:
     (setq return-type (oref body type))
     (elsa--analyse-body unwind-forms scope state)
     (let ((last (-last-item unwind-forms)))
-      (setq return-type (elsa-type-sum return-type last)))
+      (setq return-type (elsa-type-sum return-type last))
+      (-when-let (grouped (elsa-variables-group-and-sum
+                           (-non-nil
+                            (-concat
+                             (oref body narrow-types)
+                             (oref last narrow-types)))))
+        (oset form narrow-types grouped)))
     (oset form type return-type)))
 
 (defun elsa--analyse:progn (form scope state)
