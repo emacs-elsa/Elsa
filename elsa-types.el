@@ -327,6 +327,15 @@ type and none of the negative types.")
    (cdr-type :type elsa-type :initarg :cdr-type
              :initform (elsa-type-mixed))))
 
+(cl-defmethod clone ((this elsa-type-cons))
+  "Make a deep copy of a cons type."
+  (let ((car-type (clone (oref this car-type)))
+        (cdr-type (clone (oref this cdr-type)))
+        (new (cl-call-next-method this)))
+    (oset new car-type car-type)
+    (oset new cdr-type cdr-type)
+    new))
+
 (cl-defmethod elsa-type-accept ((this elsa-type-cons) (other elsa-type-cons))
   "A cons type accepts another cons type covariantly.
 
@@ -347,6 +356,13 @@ other, then this is a supertype of other."
               :initarg :item-type
               :initform (elsa-type-mixed))))
 
+(cl-defmethod clone ((this elsa-type-list))
+  "Make a deep copy of a list type."
+  (let ((item-type (clone (oref this item-type)))
+        (new (cl-call-next-method this)))
+    (oset new item-type item-type)
+    new))
+
 (cl-defmethod elsa-type-describe ((this elsa-type-list))
   (format "[%s]" (elsa-type-describe (oref this item-type))))
 
@@ -360,6 +376,13 @@ other, then this is a supertype of other."
   ((item-type :type elsa-type
               :initarg :item-type
               :initform (elsa-type-mixed))))
+
+(cl-defmethod clone ((this elsa-type-vector))
+  "Make a deep copy of a vector type."
+  (let ((item-type (clone (oref this item-type)))
+        (new (cl-call-next-method this)))
+    (oset new item-type item-type)
+    new))
 
 (cl-defmethod elsa-type-composite-p ((this elsa-type-vector)) t)
 
@@ -378,6 +401,15 @@ other, then this is a supertype of other."
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
    (return :type elsa-type :initarg :return)))
+
+(cl-defmethod clone ((this elsa-function-type))
+  "Make a deep copy of a function type."
+  (let ((args (-map 'clone (oref this args)))
+        (return (clone (oref this return)))
+        (new (cl-call-next-method this)))
+    (oset new args args)
+    (oset new return return)
+    new))
 
 (cl-defmethod elsa-type-describe ((this elsa-function-type))
   (mapconcat (lambda (type)
@@ -434,11 +466,15 @@ other, then this is a supertype of other."
 (defclass elsa-generic-type (elsa-type)
   ((label :type symbol :initarg :label)))
 
+(cl-defmethod clone ((this elsa-generic-type))
+  "Make a deep copy of a generic type."
+  (let ((label (oref this label))
+        (new (cl-call-next-method this)))
+    (oset new label label)
+    new))
+
 (cl-defmethod elsa-type-describe ((this elsa-generic-type))
   (symbol-name (oref this label)))
-
-;; TODO: add a function type, then use it in defuns and variables
-;; which are lambdas
 
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
