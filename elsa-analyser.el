@@ -197,7 +197,8 @@ The BINDING should have one of the following forms:
               (elsa-make-warning place
                 "Assigning to free variable %s"
                 (symbol-name (elsa-get-name place))))))))
-    (oset form type (oref (-last-item args) type))))
+    (oset form type (oref (-last-item args) type))
+    (oset form narrow-types (oref (-last-item args) narrow-types))))
 
 (defun elsa--analyse:cond (form scope state)
   (let ((branches (cdr (oref form sequence)))
