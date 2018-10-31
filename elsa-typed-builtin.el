@@ -409,6 +409,78 @@
 ;; File: fileio.c
 (put 'file-name-directory 'elsa-type (elsa-make-type String -> String?))
 
+;; File: process.c
+(put 'processp 'elsa-type (elsa-make-type Mixed -> Bool))
+(put 'get-process 'elsa-type (elsa-make-type String -> Process?))
+(put 'delete-process 'elsa-type (elsa-make-type (Process | Buffer | String | Nil) -> Mixed))
+(put 'process-status 'elsa-type (elsa-make-type (Process | Buffer | String | Nil) -> Symbol?))
+(put 'process-exit-status 'elsa-type (elsa-make-type Process -> Int))
+(put 'process-id 'elsa-type (elsa-make-type Process -> Number?))
+(put 'process-name 'elsa-type (elsa-make-type Process -> String))
+(put 'process-command 'elsa-type (elsa-make-type Process -> List String | Bool))
+(put 'process-tty-name 'elsa-type (elsa-make-type Process -> String?))
+(put 'set-process-buffer 'elsa-type (elsa-make-type Process Buffer -> Buffer))
+(put 'process-buffer 'elsa-type (elsa-make-type Process -> Buffer))
+(put 'process-mark 'elsa-type (elsa-make-type Process -> Marker))
+(put 'set-process-filter 'elsa-type (elsa-make-type Process -> (Process -> String -> Nil) -> Mixed))
+(put 'process-filter 'elsa-type (elsa-make-type Process -> (Process -> String -> Nil)))
+(put 'set-process-sentinel 'elsa-type (elsa-make-type Process -> (Process -> String -> Nil) -> Mixed))
+(put 'process-sentinel 'elsa-type (elsa-make-type Process -> (Process -> String -> Nil)))
+(put 'set-process-window-size 'elsa-type (elsa-make-type Process -> Int -> Int -> Bool))
+(put 'set-process-inherit-coding-system-flag 'elsa-type (elsa-make-type Process -> Bool -> Bool))
+(put 'set-process-query-on-exit-flag 'elsa-type (elsa-make-type Process -> Bool -> Bool))
+(put 'process-query-on-exit-flag 'elsa-type (elsa-make-type Process -> Bool))
+;; TODO process-contact has an &optional parameter:
+(put 'process-contact 'elsa-type (elsa-make-type Process -> (Bool | Symbol | Nil) -> Mixed))
+(put 'process-plist 'elsa-type (elsa-make-type Process -> List Mixed))
+(put 'set-process-plist 'elsa-type (elsa-make-type Process -> List Mixed -> List Mixed))
+;; (put 'process-connection 'elsa-type (elsa-make-type))
+(put 'process-type 'elsa-type (elsa-make-type (Process | Buffer | String | Nil) -> Symbol))
+;; TODO format-network-address has an &optional parameter:
+(put 'format-network-address 'elsa-type (elsa-make-type (Vector Int | String | Cons) -> Bool? -> (String | Nil)))
+(put 'process-list 'elsa-type (elsa-make-type () -> List Process))
+(put 'make-process 'elsa-type (elsa-make-type List Mixed -> Process))
+(put 'make-pipe-process 'elsa-type (elsa-make-type List Mixed -> Process))
+(put 'process-datagram-address 'elsa-type (elsa-make-type Process -> Mixed))
+(put 'set-process-datagram-address 'elsa-type (elsa-make-type Process -> Mixed -> Mixed | Nil))
+;; TODO set-network-process-option has an &optional parameter:
+(put 'set-network-process-option 'elsa-type (elsa-make-type Process -> Symbol -> Mixed -> Bool? -> Bool))
+(put 'serial-process-configure 'elsa-type (elsa-make-type List Mixed -> Mixed))
+(put 'make-serial-process 'elsa-type (elsa-make-type List Mixed -> Process))
+(put 'make-network-process 'elsa-type (elsa-make-type List Mixed -> Process))
+(put 'network-interface-list 'elsa-type (elsa-make-type () -> List (Cons String Mixed)))
+(put 'network-interface-info 'elsa-type (elsa-make-type String -> (List | Nil)))
+;; TODO accept-process-output has an &optional parameter:
+(put 'accept-process-output 'elsa-type (elsa-make-type Process? -> Number -> Nil -> (Bool | Int) -> Bool))
+(put 'internal-default-process-filter 'elsa-type (elsa-make-type Process -> String -> Mixed))
+(put 'process-send-region 'elsa-type (elsa-make-type Process -> Int -> Int -> Mixed))
+(put 'process-send-string 'elsa-type (elsa-make-type Process -> String -> Mixed))
+;; TODO process-running-child-p has an &optional parameter:
+(put 'process-running-child-p 'elsa-type (elsa-make-type Process -> (Int | Bool)))
+;; TODO interrupt-process has an &optional parameter:
+(put 'interrupt-process 'elsa-type (elsa-make-type (Process | Buffer | String | Nil) -> Symbol? -> Mixed))
+;; TODO kill-process has an &optional parameter:
+(put 'kill-process 'elsa-type (elsa-make-type (Process | String | Nil) -> Symbol? -> Mixed))
+;; TODO quit-process has an &optional parameter:
+(put 'quit-process 'elsa-type (elsa-make-type (Process | String | Nil) -> Symbol? -> Mixed))
+;; TODO stop-process has an &optional parameter:
+(put 'stop-process 'elsa-type (elsa-make-type (Process | String | Nil) -> Symbol? -> Mixed))
+;; TODO continue-process has an &optional parameter:
+(put 'continue-process 'elsa-type (elsa-make-type (Process | String | Nil) -> Symbol? -> Mixed))
+(put 'signal-process 'elsa-type (elsa-make-type (Process | Int) -> (Symbol | Int) -> Mixed))
+;; TODO process-send-eof has an &optional parameter:
+(put 'process-send-eof 'elsa-type (elsa-make-type (Process | Buffer | String | Nil) -> Mixed))
+(put 'internal-default-process-sentinel 'elsa-type (elsa-make-type Process -> String -> Mixed))
+(put 'set-process-coding-system 'elsa-type (elsa-make-type Process -> Symbol -> Symbol -> Mixed))
+(put 'process-coding-system 'elsa-type (elsa-make-type Process -> Cons Symbol Symbol))
+(put 'set-process-filter-multibyte 'elsa-type (elsa-make-type Process -> Bool -> Mixed))
+(put 'process-filter-multibyte-p 'elsa-type (elsa-make-type Process -> Bool))
+(put 'get-buffer-process 'elsa-type (elsa-make-type (Buffer | String) -> Process?))
+(put 'process-inherit-coding-system-flag 'elsa-type (elsa-make-type Process -> Bool))
+(put 'waiting-for-user-input-p 'elsa-type (elsa-make-type () -> Bool))
+(put 'list-system-processes 'elsa-type (elsa-make-type () -> (List Int | Nil)))
+(put 'process-attributes 'elsa-type (elsa-make-type Int -> List (Cons Symbol Mixed)))
+
 ;; File: syntax.c
 ;; (put 'syntax-table-p 'elsa-type (elsa-make-type))
 ;; (put 'syntax-table 'elsa-type (elsa-make-type))
