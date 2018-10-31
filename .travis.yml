@@ -12,5 +12,6 @@ before_install:
   - cask install || true
   - cask link elsa $(pwd)
   - cask install
+  - cask build
 script:
   - cask exec buttercup -L . -L tests
