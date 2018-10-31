@@ -133,7 +133,7 @@
 (put 'safe-length 'elsa-type (elsa-make-type Mixed -> Int))
 ;; (put 'string-bytes 'elsa-type (elsa-make-type ))
 ;; (put 'string-equal 'elsa-type (elsa-make-type ))
-;; (put 'compare-strings 'elsa-type (elsa-make-type ))
+(put 'compare-strings 'elsa-type (elsa-make-type String -> (Int | Nil) -> (Int | Nil) -> String -> (Int | Nil) -> (Int | Nil) -> Bool? -> (Int | T)))
 ;; (put 'string-lessp 'elsa-type (elsa-make-type ))
 ;; (put 'string-collate-lessp 'elsa-type (elsa-make-type ))
 ;; (put 'string-collate-equalp 'elsa-type (elsa-make-type ))
