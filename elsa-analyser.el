@@ -523,6 +523,12 @@ See `elsa--analyse:defvar'."
 (defun elsa--analyse-splice (form scope state)
   nil)
 
+(defun elsa--analyse-arg-variable-p (arg)
+  "Check if ARG is a variable and return its name."
+  (and (elsa-form-symbol-p arg)
+       (not (oref arg quote-type))
+       (elsa-get-name arg)))
+
 ;; (elsa--analyse-normalize-spec :: Bool | List Bool -> Mixed -> List Bool)
 (defun elsa--analyse-normalize-spec (spec form)
   "Normalize evaluation SPEC for FORM."
@@ -606,11 +612,9 @@ See `elsa--analyse:defvar'."
         (-each-indexed narrow-types
           (lambda (index narrow-type)
             (let ((arg (nth index args)))
-              (when (and (elsa-form-symbol-p arg)
-                         (not (oref arg quote-type)))
-                (let ((varname (elsa-get-name arg)))
-                  (push (elsa-variable :name varname :type narrow-type)
-                        form-narrow-types))))))
+              (-when-let (varname (elsa--analyse-arg-variable-p arg))
+                (push (elsa-variable :name varname :type narrow-type)
+                      form-narrow-types)))))
         (oset form narrow-types form-narrow-types)))))
 
 (defun elsa--analyse-function-call (form scope state)
