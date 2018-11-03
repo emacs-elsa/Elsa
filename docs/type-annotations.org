@@ -90,6 +90,20 @@ Composite types usually correspond to data constructors such as =cons=,
   If the hash table can hold anything, write =(hash-table mixed mixed)=
   or simply =hash-table= for short.
 
+** Constant types
+
+A constant type always holds a specific value.  Functions often take
+flags which can be symbols such as ='append= or ='prepend= or constant
+strings.
+
+To specify a constant type wrap the value in a =(const)= constructor, so
+that:
+
+- =(const a)= is the symbol =a= (when used in a lisp program you would
+  pass it around as ='a=),
+- =(const 1)= is the integer =1=,
+- =(const "foo")= is the string ="foo"=.
+
 ** Function types
 
 Function types are types of functions.  They have input argument types
