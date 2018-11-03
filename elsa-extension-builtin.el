@@ -57,7 +57,19 @@
             (elsa-make-type Nil))
            ((elsa-form-integer-p constant-form) (elsa-make-type Int))
            ((elsa-form-float-p constant-form) (elsa-make-type Float))))
-    (when type (oset eq-form narrow-types (list (elsa-variable :name name :type type))))))
+    (when type
+      (let ((const-type
+             (elsa-const-type :type type
+                              :value (cond
+                                      ((and (elsa-form-symbol-p constant-form)
+                                            (eq (elsa-get-name constant-form) nil))
+                                       nil)
+                                      ((elsa-get-name constant-form))
+                                      ((elsa--quoted-symbol-name constant-form))
+                                      ((oref constant-form value))))))
+        (oset eq-form narrow-types
+              (list
+               (elsa-variable :name name :type const-type)))))))
 
 (defun elsa--analyse:eq (form scope state)
   (elsa--analyse-function-call form scope state)
@@ -71,10 +83,15 @@
      ((and (elsa-form-symbol-p second)
            (elsa-scope-get-var scope second))
       (elsa--analyse--eq form second first)))
-    (when (elsa-type-equivalent-p
-           (elsa-type-empty)
-           (elsa-type-intersect first second))
-      (oset form type (elsa-type-nil)))))
+    (cond
+     ((elsa-type-equivalent-p
+       (elsa-type-empty)
+       (elsa-type-intersect first second))
+      (oset form type (elsa-type-nil)))
+     ((and (elsa-const-type-p (elsa-get-type first))
+           (elsa-const-type-p (elsa-get-type second))
+           (elsa-type-equivalent-p first second))
+      (oset form type (elsa-type-t))))))
 
 ;; * list functions
 (defun elsa--analyse:car (form scope state)
