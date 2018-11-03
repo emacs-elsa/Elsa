@@ -56,6 +56,21 @@ Return trinary logic value.")
         (trinary-maybe))
     (trinary-true)))
 
+(defun elsa--make-const-type (value)
+  "Construct const type based on VALUE."
+  (cond
+   ((keywordp value)
+    (elsa-const-type :type (elsa-make-type Keyword) :value value))
+   ((stringp value)
+    (elsa-const-type :type (elsa-make-type String) :value value))
+   ((integerp value)
+    (elsa-const-type :type (elsa-make-type Int) :value value))
+   ((floatp value)
+    (elsa-const-type :type (elsa-make-type Float) :value value))
+   ((symbolp value)
+    (elsa-const-type :type (elsa-make-type Symbol) :value value))
+   (t (error "Trying to make a const type out of %S" value))))
+
 (defun elsa--make-union-type (definition)
   (->> (-split-on '| definition)
        (-map 'elsa--make-type)
@@ -63,6 +78,8 @@ Return trinary logic value.")
 
 (defun elsa--make-type (definition)
   (pcase definition
+    (`(Const ,value)
+     (elsa--make-const-type value))
     (`(Cons) ;; mixed cons by default
      (elsa-type-cons :car-type (elsa-type-mixed)
                      :cdr-type (elsa-type-mixed)))
