@@ -60,6 +60,16 @@ A type for everything is called =mixed=.  It accepts anything and is
 always nullable (that means it accepts =nil=).  This is the default type
 for when we lack type information.
 
+Because a =mixed= type can be anything it itself is only accepted by
+=mixed=, so that the following would not type-check:
+
+#+BEGIN_SRC elisp
+(defun a-goes-in (a) ;; a is mixed
+  (declare (elsa (mixed) int))
+  ;; a *might* be an int, but we don't know for sure
+  (1+ a))
+#+END_SRC
+
 ** Composite (higher order) types
 
 Composite or higher-order types are types which take other types as
