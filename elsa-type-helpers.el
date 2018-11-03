@@ -278,7 +278,11 @@ not accepted by OTHER.")
   "Any base type without another is the same type, there is no intersection."
   (if (elsa-type-accept other this)
       (elsa-type-empty)
-    (clone this)))
+    (if (and (elsa-const-type-p other)
+             (elsa-type-accept this (oref other type)))
+        (elsa-diff-type :positive (clone this)
+                        :negative (clone other))
+      (clone this))))
 
 (cl-defmethod elsa-type-diff ((this elsa-type-mixed) other)
   "Mixed is one with everything, so we need to subtract OTHER from the world."

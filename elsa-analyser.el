@@ -477,7 +477,10 @@ See `elsa--analyse:defvar'."
      ((elsa-form-list-p arg)
       (oset form type (elsa-type-list)))
      ((elsa-form-symbol-p arg)
-      (oset form type (elsa-type-symbol)))
+      (oset form type
+            (elsa-const-type
+             :type (elsa-type-symbol)
+             :value (elsa--quoted-symbol-name form))))
      ((elsa-form-keyword-p arg)
       (oset form type (elsa-type-keyword)))
      ((elsa-form-string-p arg)

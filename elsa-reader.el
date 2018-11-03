@@ -173,7 +173,9 @@ This only makes sense for the sequence forms:
 (defsubst elsa--read-keyword (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-keyword
-   :type (elsa-make-type Keyword)
+   :type (elsa-const-type
+          :type (elsa-make-type Keyword)
+          :value form)
    :start (point)
    :name form
    :end (elsa--forward-sexp)))
@@ -190,7 +192,9 @@ This only makes sense for the sequence forms:
 (defsubst elsa--read-integer (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-integer
-   :type (elsa-make-type Int)
+   :type (elsa-const-type
+          :type (elsa-make-type Int)
+          :value form)
    :start (point)
    :value form
    :end (progn
@@ -205,7 +209,9 @@ This only makes sense for the sequence forms:
 (defsubst elsa--read-float (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-float
-   :type (elsa-make-type Float)
+   :type (elsa-const-type
+          :type (elsa-make-type Float)
+          :value form)
    :start (point)
    :value form
    :end (elsa--forward-sexp)))
@@ -227,7 +233,9 @@ This only makes sense for the sequence forms:
 (defsubst elsa--read-string (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-string
-   :type (elsa-make-type String)
+   :type (elsa-const-type
+          :type (elsa-make-type String)
+          :value form)
    :start (point)
    :end (elsa--forward-sexp)
    :sequence form))

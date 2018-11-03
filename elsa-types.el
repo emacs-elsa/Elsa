@@ -79,6 +79,8 @@ Accepting in this context means that OTHER can be assigned to
 THIS."
   (cond
    ((elsa-instance-of other this))
+   ((and (elsa-const-type-p other)
+         (elsa-type-accept this (oref other type))))
    ((and (elsa-type-list-p this)
          (elsa-type-nil-p other)))
    ((and (elsa-sum-type-p other)
@@ -571,6 +573,20 @@ other, then this is a supertype of other."
 
 (cl-defmethod elsa-type-describe ((this elsa-type-font))
   "Font")
+
+(defclass elsa-const-type (elsa-type)
+  ((type :type elsa-type :initarg :type)
+   (value :initarg :value)))
+
+(cl-defmethod elsa-type-describe ((this elsa-const-type))
+  (format "Const %s" (oref this value)))
+
+(cl-defmethod elsa-type-composite-p ((this elsa-const-type)) t)
+
+(cl-defmethod elsa-type-accept ((this elsa-const-type) other)
+  (and (elsa-const-type-p other)
+       (elsa-type-equivalent-p (oref this type) (oref other type))
+       (equal (oref this value) (oref other value))))
 
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
