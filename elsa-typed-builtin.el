@@ -372,6 +372,9 @@
 ;; (put 'backward-prefix-chars 'elsa-type (elsa-make-type))
 ;; (put 'parse-partial-sexp 'elsa-type (elsa-make-type))
 
+;; File: keymap.c
+(put 'single-key-description 'elsa-type (elsa-make-type Int -> Mixed -> String))
+
 ;; boolean functions
 (put 'not 'elsa-type (elsa-make-type Mixed -> Bool))
 
@@ -385,6 +388,7 @@
 (put 'command-line-args-left 'elsa-type-var (elsa-make-type List String | Nil))
 (put 'major-mode 'elsa-type-var (elsa-make-type Symbol))
 (put 'system-type 'elsa-type-var (elsa-make-type Symbol))
+(put 'last-command-event 'elsa-type-var (elsa-make-type Int))
 
 ;; help.el
 (put 'help-function-arglist 'elsa-type (elsa-make-type Symbol -> List Symbol))
