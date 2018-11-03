@@ -476,5 +476,101 @@ other, then this is a supertype of other."
 (cl-defmethod elsa-type-describe ((this elsa-generic-type))
   (symbol-name (oref this label)))
 
+;; One-dimensional sparse arrays indexed by characters
+(defclass elsa-type-chartable (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-chartable))
+  "Char-table")
+
+;; One-dimensional arrays of t or nil.
+(defclass elsa-type-boolvector (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-boolvector))
+  "Bool-vector")
+
+;; Super-fast lookup tables
+(defclass elsa-type-hashtable (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-hashtable))
+  "Hash table")
+
+;; Compound objects with programmer-defined types
+(defclass elsa-type-record (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-record))
+  "Record")
+
+;; Buffers are displayed in windows
+(defclass elsa-type-window (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-window))
+  "Window")
+
+;; A terminal device displays frames
+(defclass elsa-type-terminal (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-terminal))
+  "Terminal")
+
+;; Recording the way a frame is subdivided
+(defclass elsa-type-windowconfiguration (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-windowconfiguration))
+  "Window configuration")
+
+;; Recording the status of all frames
+(defclass elsa-type-frameconfiguration (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-frameconfiguration))
+  "Frame configuration")
+
+;; A subprocess of Emacs running on the underlying OS
+(defclass elsa-type-process (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-process))
+  "Process")
+
+;; A thread of Emacs Lisp execution
+(defclass elsa-type-thread (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-thread))
+  "Thread")
+
+;; An exclusive lock for thread synchronization
+(defclass elsa-type-mutex (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-mutex))
+  "Mutex")
+
+;; Condition variable for thread synchronization
+(defclass elsa-type-conditionvariable (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-conditionvariable))
+  "Condition variable")
+
+;; Receive or send characters
+(defclass elsa-type-stream (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-stream))
+  "Stream")
+
+;; What function a keystroke invokes
+(defclass elsa-type-keymap (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-keymap))
+  "Keymap")
+
+;; How an overlay is represented
+(defclass elsa-type-overlay (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-overlay))
+  "Overlay")
+
+;; Fonts for displaying text
+(defclass elsa-type-font (elsa-type) ())
+
+(cl-defmethod elsa-type-describe ((this elsa-type-font))
+  "Font")
+
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
