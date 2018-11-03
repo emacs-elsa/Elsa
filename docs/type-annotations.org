@@ -48,6 +48,12 @@ mark a type nullable you can combine it with =nil= type using the [[id:5a21a68a-
 combinator: =(or string nil)= is a type which takes any string but also
 =nil=.
 
+Because this is a very common occurance in Elisp we also provide a
+short syntax to make a simple type nullable by attaching a =?= marker to
+the end of it.  Therefore =string?= is equivalent to =(or string nil)=.
+This syntax only works with basic types.  For composite types or
+unions of multiple types the =or= syntax is required.
+
 ** Most general type
 
 A type for everything is called =mixed=.  It accepts anything and is
