@@ -579,7 +579,7 @@ other, then this is a supertype of other."
    (value :initarg :value)))
 
 (cl-defmethod elsa-type-describe ((this elsa-const-type))
-  (format "Const %s" (oref this value)))
+  (format "Const %S" (oref this value)))
 
 (cl-defmethod elsa-type-composite-p ((this elsa-const-type)) t)
 
