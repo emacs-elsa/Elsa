@@ -125,6 +125,55 @@
 ;; (put 'bool-vector-count-population 'elsa-type (elsa-make-type ))
 ;; (put 'bool-vector-count-consecutive 'elsa-type (elsa-make-type ))
 
+;; File: bytecode.c
+(put 'eq 'elsa-type (elsa-make-type String -> Vector Mixed -> Int -> Mixed))
+
+;; File: callproc.c
+(put 'call-process 'elsa-type
+     (elsa-make-type
+      String ->
+      String? ->
+      T | Nil | Const 0 | Cons (Const :file) (Cons String Nil) | Cons (T | Nil | Const 0 | Cons (Const :file) (Cons String Nil)) (Cons (T | Nil | String) Nil) ->
+      Mixed ->
+      String... ->
+      Nil | Int | String))
+(put 'call-process-region 'elsa-type
+     (elsa-make-type
+      (Int | Marker) ->
+      (Int | Marker) ->
+      String ->
+      Mixed ->
+      T | Nil | Const 0 | Cons (Const :file) (Cons String Nil) | Cons (T | Nil | Const 0 | Cons (Const :file) (Cons String Nil)) (Cons (T | Nil | String) Nil) ->
+      Mixed ->
+      String... ->
+      Nil | Int | String))
+(put 'getenv-internal 'elsa-type (elsa-make-type String -> [String] -> String?))
+
+;; File: kqueue.c
+;; (put 'kqueue-add-watch 'elsa-type (elsa-make-type))
+;; (put 'kqueue-rm-watch 'elsa-type (elsa-make-type))
+;; (put 'kqueue-valid-p 'elsa-type (elsa-make-type))
+
+;; File: print.c
+(put 'write-char 'elsa-type (elsa-make-type Int -> T | Marker | Buffer | (Mixed -> Mixed) -> Int))
+(put 'terpri 'elsa-type (elsa-make-type T | Marker | Buffer | (Mixed -> Mixed) -> Mixed -> Mixed))
+(put 'prin1 'elsa-type (elsa-make-type Mixed -> T | Marker | Buffer | (Mixed -> Mixed) | Symbol -> Mixed))
+(put 'prin1-to-string 'elsa-type (elsa-make-type Mixed -> Mixed -> String))
+(put 'princ 'elsa-type (elsa-make-type Mixed -> T | Marker | Buffer | (Mixed -> Mixed) | Symbol -> Mixed))
+(put 'print 'elsa-type (elsa-make-type Mixed -> T | Marker | Buffer | (Mixed -> Mixed) | Symbol -> Mixed))
+(put 'external-debugging-output 'elsa-type (elsa-make-type Int -> Int))
+(put 'redirect-debugging-output 'elsa-type (elsa-make-type String? -> Mixed -> Nil))
+(put 'error-message-string 'elsa-type (elsa-make-type Cons Symbol Mixed -> String))
+
+;; File: xmenu.c
+;; (put 'x-menu-bar-open-internal 'elsa-type (elsa-make-type))
+;; (put 'x-menu-bar-open-internal 'elsa-type (elsa-make-type))
+;; (put 'menu-or-popup-active-p 'elsa-type (elsa-make-type))
+
+;; File: inotify.c
+;; (put 'inotify-add-watch 'elsa-type (elsa-make-type))
+;; (put 'inotify-rm-watch 'elsa-type (elsa-make-type))
+;; (put 'inotify-valid-p 'elsa-type (elsa-make-type))
 
 ;; File: fns.c
 ;; (put 'identity 'elsa-type (elsa-make-type ))

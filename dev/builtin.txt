@@ -168,7 +168,6 @@ w32-unregister-hot-key
 w32-registered-hot-keys
 w32-reconstruct-hot-key
 w32-toggle-lock-key
-
 w32-frame-geometry
 w32-frame-edges
 w32-mouse-absolute-pixel-position
