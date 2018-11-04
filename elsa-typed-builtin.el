@@ -319,26 +319,33 @@
 
 ;; File: alloc.c
 (put 'make-string 'elsa-type (elsa-make-type Int -> Int -> String))
-;; (put 'make-bool-vector 'elsa-type (elsa-make-type))
-;; (put 'bool-vector 'elsa-type (elsa-make-type))
+(put 'make-bool-vector 'elsa-type (elsa-make-type Int -> Bool -> Boolvector))
+(put 'bool-vector 'elsa-type (elsa-make-type Mixed... -> Boolvector))
 ;; TODO: generic type a -> b -> Cons a b...  This fails deriving the
 ;; type of something like (cons 1 "foo")... it still thinks the return
 ;; type is Cons Mixed Mixed
 (put 'cons 'elsa-type (elsa-make-type Mixed -> Mixed -> Cons))
 (put 'list 'elsa-type (elsa-make-type Mixed... -> List))
-;; (put 'make-list 'elsa-type (elsa-make-type))
-;; (put 'make-vector 'elsa-type (elsa-make-type))
+;; TODO: generic type
+(put 'make-list 'elsa-type (elsa-make-type Int -> Mixed -> [Mixed]))
+(put 'make-vector 'elsa-type (elsa-make-type Int -> Mixed -> Vector Mixed))
 (put 'vector 'elsa-type (elsa-make-type Mixed... -> Vector))
-;; (put 'make-byte-code 'elsa-type (elsa-make-type))
-;; (put 'make-symbol 'elsa-type (elsa-make-type))
-;; (put 'make-marker 'elsa-type (elsa-make-type))
-;; (put 'make-finalizer 'elsa-type (elsa-make-type))
-;; (put 'purecopy 'elsa-type (elsa-make-type))
-;; (put 'garbage-collect 'elsa-type (elsa-make-type))
-;; (put 'memory-info 'elsa-type (elsa-make-type))
-;; (put 'memory-limit 'elsa-type (elsa-make-type))
-;; (put 'memory-use-counts 'elsa-type (elsa-make-type))
-;; (put 'suspicious-object 'elsa-type (elsa-make-type))
+;; TODO: how to detect the return type?
+(put 'make-byte-code 'elsa-type (elsa-make-type [Symbol] | Int -> String -> Vector Mixed -> Int -> String? -> Mixed -> Mixed))
+(put 'make-symbol 'elsa-type (elsa-make-type String -> Symbol))
+(put 'make-marker 'elsa-type (elsa-make-type Marker))
+;; TODO: add Callable
+(put 'make-finalizer 'elsa-type (elsa-make-type Mixed -> Mixed))
+;; TODO: generic type
+(put 'purecopy 'elsa-type (elsa-make-type Mixed -> Mixed))
+(put 'garbage-collect 'elsa-type (elsa-make-type [[Mixed]] | Nil))
+;; TODO: make this a constant length list
+(put 'memory-info 'elsa-type (elsa-make-type [Int]))
+(put 'memory-limit 'elsa-type (elsa-make-type Int))
+;; TODO: make this a constant length list
+(put 'memory-use-counts 'elsa-type (elsa-make-type [Int]))
+;; TODO: generic type
+(put 'suspicious-object 'elsa-type (elsa-make-type Mixed -> Mixed))
 
 ;; File: cmds.c
 (put 'forward-point 'elsa-type (elsa-make-type Int -> Int))
