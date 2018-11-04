@@ -15,13 +15,13 @@
 
       (it "should analyze the default form of the defvar and assign that type"
         (elsa-test-with-analysed-form "(progn (defvar foo :keyword) foo)" form
-          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-type-keyword)))))
+          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const :keyword)))))
 
     (describe "defconst"
 
       (it "should analyze the default form of the defconst and assign that type"
         (elsa-test-with-analysed-form "(progn (defconst foo 'bar) foo)" form
-          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-type-symbol)))))
+          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const bar)))))
 
     (describe "quote"
 
@@ -51,7 +51,7 @@
         (it "should have nullable return type if the last condition might be reached and is possibly nil"
           (elsa-test-with-analysed-form "|(defun a (x) (let ((y 1)) (and x y)))" form
             (let ((and-form (elsa-nth 3 form)))
-              (expect and-form :to-be-type-equivalent (elsa-make-type Int?)))))
+              (expect and-form :to-be-type-equivalent (elsa-make-type Nil | Const 1)))))
 
         (it "should set return type to t for empty (and) form"
           (elsa-test-with-analysed-form "|(and)" form
@@ -103,19 +103,19 @@
         (it "should respect setq overriding the narrowed type inside the form"
           (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) (setq x :key) x) x)" form
             (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword))))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :key))))))
 
       (xdescribe "setq propagation"
 
         (it "should use setq type outside of the and form if the expression was surely executed"
           (elsa-test-with-analysed-form "|(defun a (x) (and (setq x :key)) x)" form
             (let ((test-form (elsa-nth 4 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
         (it "should use setq type outside of the and form if the expression was surely executed even if the and condition failed"
           (elsa-test-with-analysed-form "|(defun a (x) (and (setq x :key) nil) x)" form
             (let ((test-form (elsa-nth 4 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
         (it "should not use setq type outside of the and form if the expression was never executed"
           (elsa-test-with-analysed-form "|(defun a (x) (and nil (setq x :key)) x)" form
@@ -155,7 +155,7 @@
           (elsa-test-with-analysed-form "|(defun a (x) (or (stringp x) 2 nil))" form
             (let ((or-form (elsa-nth 3 form)))
               (expect or-form :to-be-type-equivalent
-                      (elsa-make-type T | Int)))))
+                      (elsa-make-type T | Const 2)))))
 
         (it "should set return type to nil for empty (or) form"
           (elsa-test-with-analysed-form "|(or)" form
@@ -188,14 +188,14 @@
         (it "should respect setq overriding the narrowed type inside the form"
           (elsa-test-with-analysed-form "|(defun a (x) (or (stringp x) (setq x :key) x) x)" form
             (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword))))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :key))))))
 
       (xdescribe "setq propagation"
 
         (it "should use setq type outside of the or form if the expression was surely executed"
           (elsa-test-with-analysed-form "|(defun a (x) (or (setq x :key)) x)" form
             (let ((test-form (elsa-nth 4 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
         (it "should not use setq type outside of the or form if the expression was never executed"
           (elsa-test-with-analysed-form "|(defun a (x) (or t (setq x :key)) x)" form
@@ -205,7 +205,7 @@
         (it "should sum setq type and scope type outside of the or form if the expression was maybe executed"
           (elsa-test-with-analysed-form "|(let ((x 'foo)) (or (foo x) (setq x :key)) x)" form
             (let ((test-form (elsa-nth 4 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Symbol | Keyword)))))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Symbol | Const :key)))))))
 
     (describe "if"
 
@@ -213,7 +213,7 @@
 
         (it "should return true-body type if condition is always true and false body is missing"
           (elsa-test-with-analysed-form "|(if t 1)" form
-            (expect form :to-be-type-equivalent (elsa-type-int))))
+            (expect form :to-be-type-equivalent (elsa-make-type Const 1))))
 
         (it "should return nil if condition is always false and false body is missing"
           (elsa-test-with-analysed-form "|(if nil 1)" form
@@ -222,15 +222,15 @@
         (it "should return sum of true-body and false-body if condition is neither always true nor false."
           (elsa-test-with-analysed-form "|(defun a (x) (if x 1 :key))" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Int | Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const 1 | Const :key)))))
 
         (it "should return true-body type if condition is always true and false body is defined"
           (elsa-test-with-analysed-form "|(if t 1 :key)" form
-            (expect form :to-be-type-equivalent (elsa-type-int))))
+            (expect form :to-be-type-equivalent (elsa-make-type Const 1))))
 
         (it "should return false-body type if condition is always false and false body is defined"
           (elsa-test-with-analysed-form "|(if nil 1 :key)" form
-            (expect form :to-be-type-equivalent (elsa-type-keyword)))))
+            (expect form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
       (describe "narrowing types"
 
@@ -257,7 +257,7 @@
         (it "should use setq type outside of the if form if used in the conditional"
           (elsa-test-with-analysed-form "|(let (x) (if (setq x :key) 1 2) x)" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
         (it "should not pollute scope outside of the narrowed body"
           (elsa-test-with-analysed-form "|(if x (setq x :key) x)" form
@@ -270,22 +270,22 @@
         (it "should sum the type from possibly executed true-branch to the parent scope"
           (elsa-test-with-analysed-form "|(let ((a 1)) (if x (setq a :key) x) a)" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Int | Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const 1 | Const :key)))))
 
         (it "should sum the type from possibly executed false-branch to the parent scope"
           (elsa-test-with-analysed-form "|(let ((a 1)) (if x x (setq a :key)) a)" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Int | Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const 1 | Const :key)))))
 
         (it "should replace the parent scope type if assignment is present in both branches and sure to execute"
           (elsa-test-with-analysed-form "|(let ((a 1)) (if x (setq a :key) (setq a 1.0)) a)" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Float | Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const 1.0 | Const :key)))))
 
         (it "should introduce new variables to scope"
           (elsa-test-with-analysed-form "|(progn (if x (setq a :key) (setq a 1)) a)" form
             (let ((test-form (elsa-nth 2 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Int | Keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const 1 | Const :key)))))
 
         (xit "should not introduce possibly unbound new variables to scope"
           (elsa-test-with-analysed-form "|(progn (if x (setq a :key) 1) a)" form
@@ -311,22 +311,22 @@
         (it "should short-circuit if some form's condition is always true"
           (elsa-test-with-analysed-form "|(defun a (x) (cond (t :foo) (x 'bar)))" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-type-keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :foo)))))
 
         (it "should return non-nullable if last condition is catch-all and returns non-nullable"
           (elsa-test-with-analysed-form "|(defun a (x) (cond (x 1) (t :foo)))" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :foo | Const 1)))))
 
         (it "should return nullable if none of the conditions is surely true"
           (elsa-test-with-analysed-form "|(defun a (x) (cond (x 1) (x :foo)))" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int | Nil)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :foo | Const 1 | Nil)))))
 
         (it "should return nullable if last condition is catch-all but returns nullable"
           (elsa-test-with-analysed-form "|(defun a (x y) (cond (x 1) (t (if y :foo nil))))" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type Keyword | Int | Nil))))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :foo | Const 1 | Nil))))))
 
       (describe "narrowing types"
 
@@ -360,22 +360,22 @@
         (it "should narrow type of place to the type of assignment in true-branch"
           (elsa-test-with-analysed-form "|(if (setq a :key) a a)" form
             (let ((test-form (elsa-nth 2 form)))
-              (expect test-form :to-be-type-equivalent (elsa-type-keyword)))))
+              (expect test-form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
         (xit "should narrow type of place to the complement type of assignment in the false-branch"
           (elsa-test-with-analysed-form "|(if (setq a :key) a a)" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-type-diff (elsa-type-mixed) (elsa-type-keyword)))))))
+              (expect test-form :to-be-type-equivalent (elsa-type-diff (elsa-type-mixed) (elsa-make-type Const :key)))))))
 
       (it "should update current scope"
         (elsa-test-with-analysed-form "|(let ((a 1)) (setq a :key) a)" form
           (let ((test-form (elsa-nth 3 form)))
-            (expect test-form :to-be-type-equivalent (elsa-type-keyword)))))
+            (expect test-form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
       (it "should introduce new variables to scope"
         (elsa-test-with-analysed-form "|(progn (setq a :key) a)" form
           (let ((test-form (elsa-nth 2 form)))
-            (expect test-form :to-be-type-equivalent (elsa-type-keyword)))))
+            (expect test-form :to-be-type-equivalent (elsa-make-type Const :key)))))
 
       (it "should not pollute scope outside of the binding form"
         (elsa-test-with-analysed-form "|(progn (let ((a 1)) (setq a :key)) a)" form
@@ -416,7 +416,7 @@
 
     (it "should recognize lexically bound let-variables"
       (elsa-test-with-analysed-form "|(let ((x 1)) x)" form
-        (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-type-int))))
+        (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const 1))))
 
     (it "should not recognize nil as unbound variable"
       (elsa-test-with-analysed-form "|nil" form
@@ -428,4 +428,4 @@
 
     (it "should not recognize keywords as unbound variable"
       (elsa-test-with-analysed-form "|:foo" form
-        (expect form :to-be-type-equivalent (elsa-type-keyword))))))
+        (expect form :to-be-type-equivalent (elsa-make-type Const :foo))))))

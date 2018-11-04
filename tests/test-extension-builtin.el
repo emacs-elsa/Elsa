@@ -33,34 +33,39 @@
         (elsa-test-with-analysed-form "|(defun fn (x) (eq x :keyword))" form
           (let ((eq-form (elsa-nth 3 form)))
             (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
-                    (elsa-make-type Keyword)))))
+                    (elsa-make-type Const :keyword)))))
 
       (it "should narrow a variable to the type of symbol in second argument"
         (elsa-test-with-analysed-form "|(defun fn (x) (eq x 'symbol))" form
           (let ((eq-form (elsa-nth 3 form)))
             (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
-                    (elsa-make-type Symbol)))))
+                    (elsa-make-type Const symbol)))))
 
       (it "should narrow a variable to the type of int in second argument"
         (elsa-test-with-analysed-form "|(defun fn (x) (eq x 1))" form
           (let ((eq-form (elsa-nth 3 form)))
             (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
-                    (elsa-make-type Int)))))
+                    (elsa-make-type Const 1)))))
 
       (it "should narrow a variable to the type of float in second argument"
         (elsa-test-with-analysed-form "|(defun fn (x) (eq x 1.1))" form
           (let ((eq-form (elsa-nth 3 form)))
             (expect (car (oref eq-form narrow-types)) :to-be-type-equivalent
-                    (elsa-make-type Float)))))))
+                    (elsa-make-type Const 1.1)))))))
 
   (describe "cons"
 
     (describe "return type analysis"
 
-      (it "should set car and cdr types to actual types of the args"
+      (it "should set car and cdr types to constant types of the args"
         (elsa-test-with-analysed-form "(cons 1 :keyword)" form
           (expect form :to-be-type-equivalent
-                  (elsa-make-type Cons Int Keyword))))))
+                  (elsa-make-type Cons (Const 1) (Const :keyword)))))
+
+      (it "should set car and cdr types to return types of the args"
+        (elsa-test-with-analysed-form "(cons (point) (bobp))" form
+          (expect form :to-be-type-equivalent
+                  (elsa-make-type Cons Int Bool))))))
 
   (describe "when"
 
@@ -68,7 +73,7 @@
 
       (it "should return true-body type if condition is always true"
         (elsa-test-with-analysed-form "|(when t 1)" form
-          (expect form :to-be-type-equivalent (elsa-type-int))))
+          (expect form :to-be-type-equivalent (elsa-make-type Const 1))))
 
       (it "should return nil if condition is always false"
         (elsa-test-with-analysed-form "|(when nil 1)" form
@@ -77,7 +82,7 @@
       (it "should return nullable return type of true-body if condition is neither always true nor false."
         (elsa-test-with-analysed-form "|(defun a (x) (when x 1))" form
           (let ((test-form (elsa-nth 3 form)))
-            (expect test-form :to-be-type-equivalent (elsa-make-type Int?))))))
+            (expect test-form :to-be-type-equivalent (elsa-make-type Nil | Const 1))))))
 
     (describe "narrowing types"
 
@@ -99,7 +104,7 @@
 
       (it "should return true-body type if condition is always false"
         (elsa-test-with-analysed-form "|(unless nil 1)" form
-          (expect form :to-be-type-equivalent (elsa-type-int))))
+          (expect form :to-be-type-equivalent (elsa-make-type Const 1))))
 
       (it "should return nil if condition is always true"
         (elsa-test-with-analysed-form "|(unless t 1)" form
@@ -108,7 +113,7 @@
       (it "should return nullable return type of true-body if condition is neither always true nor false."
         (elsa-test-with-analysed-form "|(defun a (x) (unless x 1))" form
           (let ((test-form (elsa-nth 3 form)))
-            (expect test-form :to-be-type-equivalent (elsa-make-type Int?))))))
+            (expect test-form :to-be-type-equivalent (elsa-make-type Nil | Const 1))))))
 
     (describe "narrowing types"
 
