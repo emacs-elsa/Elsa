@@ -58,18 +58,18 @@
            ((elsa-form-integer-p constant-form) (elsa-make-type Int))
            ((elsa-form-float-p constant-form) (elsa-make-type Float))))
     (when type
-      (let ((const-type
-             (elsa-const-type :type type
-                              :value (cond
-                                      ((and (elsa-form-symbol-p constant-form)
-                                            (eq (elsa-get-name constant-form) nil))
-                                       nil)
-                                      ((elsa-get-name constant-form))
-                                      ((elsa--quoted-symbol-name constant-form))
-                                      ((oref constant-form value))))))
+      (let ((narrow-type
+             (if (or (elsa-type-t-p type)
+                     (elsa-type-nil-p type))
+                 type
+               (elsa-const-type :type type
+                                :value (cond
+                                        ((elsa--quoted-symbol-name constant-form))
+                                        ((elsa-get-name constant-form))
+                                        ((oref constant-form value)))))))
         (oset eq-form narrow-types
               (list
-               (elsa-variable :name name :type const-type)))))))
+               (elsa-variable :name name :type narrow-type)))))))
 
 (defun elsa--analyse:eq (form scope state)
   (elsa--analyse-function-call form scope state)
