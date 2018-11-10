@@ -46,4 +46,9 @@ do
     esac
 done
 
-exec "$EMACS_BIN" -batch "${EMACS_ARGS[@]}" -l elsa -f elsa-run "${ELSA_ARGS[@]}"
+# This starts Emacs in an environment free from any user-specific
+# configuration:
+exec "$EMACS_BIN" --batch --no-init-file --no-site-file --no-splash \
+     "${EMACS_ARGS[@]}" \
+     --eval "(setq enable-dir-local-variables nil)" \
+     --load=elsa --funcall=elsa-run "${ELSA_ARGS[@]}"
