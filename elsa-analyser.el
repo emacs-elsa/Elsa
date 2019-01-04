@@ -378,8 +378,7 @@ nullables and the &rest argument into a variadic."
       (-repeat max (elsa-make-type Mixed)))))
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
-  (let* ((sequence (oref form sequence))
-         ;; TODO: there should be an api for `(get name
+  (let* (;; TODO: there should be an api for `(get name
          ;; 'elsa-type)'... probably on `scope', but for now scope is
          ;; separate for each processed file which is not great.
          (function-type (get name 'elsa-type))
