@@ -66,7 +66,7 @@ Nil if FORM is not a quoted symbol."
   :abstract t)
 
 ;; (elsa-get-name :: Mixed -> Symbol?)
-(cl-defgeneric elsa-get-name (this) nil)
+(cl-defgeneric elsa-get-name (_this) nil)
 
 ;; (elsa-form-sequence :: Mixed -> [Mixed])
 (cl-defgeneric elsa-form-sequence (form)
@@ -114,7 +114,7 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-type-is-non-nil ((condition elsa-form))
   (elsa-type-is-non-nil (oref condition type)))
 
-(cl-defmethod elsa-form-print ((this elsa-form)) "")
+(cl-defmethod elsa-form-print ((_this elsa-form)) "")
 
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
@@ -122,7 +122,7 @@ Nil if FORM is not a quoted symbol."
 (defun elsa-form-reachable (form)
   (oref form reachable))
 
-(cl-defgeneric elsa-form-foreach (elsa-form fn)
+(cl-defgeneric elsa-form-foreach (_elsa-form _fn)
   "For each item of ELSA-FORM execute FN with the item as first argument.
 
 This only makes sense for the sequence forms:
@@ -165,7 +165,7 @@ This only makes sense for the sequence forms:
   (symbol-name (oref this name)))
 
 ;; (elsa-form-function-call-p :: Mixed -> Symbol? -> Bool)
-(cl-defgeneric elsa-form-function-call-p (this &optional name) nil)
+(cl-defgeneric elsa-form-function-call-p (_this &optional _name) nil)
 
 (cl-defmethod elsa-get-name ((this elsa-form-symbol))
   (oref this name))
@@ -316,7 +316,7 @@ This only makes sense for the sequence forms:
 (cl-defgeneric elsa-nthcdr (n thing)
   "Return nth `cdr' of THING")
 
-(cl-defmethod elsa-nthcdr (n (this list))
+(cl-defmethod elsa-nthcdr (_n (this list))
   (nthcdr this))
 
 (cl-defmethod elsa-nthcdr (n (this elsa-form))
@@ -328,7 +328,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-sequence ((this list))
   this)
 
-(cl-defmethod elsa-form-sequence-p ((this elsa-form-list)) t)
+(cl-defmethod elsa-form-sequence-p ((_this elsa-form-list)) t)
 
 (cl-defmethod elsa-get-name ((this elsa-form-list))
   (-when-let (head (elsa-car this))

@@ -96,7 +96,7 @@ do that."
        (puthash k (cons barrier v) vars))
      vars)))
 
-(defun elsa-scope-unassign (scope barrier)
+(defun elsa-scope-unassign (scope _barrier)
   (maphash
    (lambda (k _v)
      (elsa-scope-unassign-var scope k))
@@ -197,7 +197,7 @@ do that."
          (scope-var (or (elsa-scope-get-var scope name)
                         (elsa-make-variable name (elsa-make-type Mixed)))))
     (let ((narrowed-var (funcall (or updater
-                                     (lambda (a b)
+                                     (lambda (_a b)
                                        (elsa-variable
                                         :name name
                                         :type (elsa-get-type b))))
