@@ -130,7 +130,7 @@
          (errors (reverse (oref state errors))))
     (--each errors (princ (elsa-message-format it)))))
 
-(defun elsa-analyse-form (state form &optional type)
+(defun elsa-analyse-form (state form &optional _type)
   "Analyse FORM in STATE.
 
 If TYPE is non-nil, force this type on FORM."

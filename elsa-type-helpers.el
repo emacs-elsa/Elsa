@@ -244,10 +244,10 @@ An intersection only accepts what both THIS and OTHER accept.")
 
 A sum accept anything that either THIS or OTHER accepts.")
 
-(cl-defmethod elsa-type-sum ((this elsa-type-empty) (other elsa-type))
+(cl-defmethod elsa-type-sum ((_this elsa-type-empty) (other elsa-type))
   other)
 
-(cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type-empty))
+(cl-defmethod elsa-type-sum ((this elsa-type) (_other elsa-type-empty))
   this)
 
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
@@ -301,7 +301,7 @@ not accepted by OTHER.")
                         :negative (clone other))
       (clone this))))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-mixed) other)
+(cl-defmethod elsa-type-diff ((_this elsa-type-mixed) other)
   "Mixed is one with everything, so we need to subtract OTHER from the world."
   (elsa-type-normalize (elsa-diff-type :negative (clone other))))
 
@@ -316,7 +316,7 @@ everything (Mixed)."
         (clone neg)
       (elsa-diff-type :negative (clone other)))))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-int))
+(cl-defmethod elsa-type-diff ((this elsa-type-number) (_other elsa-type-int))
   "Number without int must be float."
   (cond
    ((elsa-type-int-p this)
@@ -326,7 +326,7 @@ everything (Mixed)."
    (t
     (elsa-type-float))))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-float))
+(cl-defmethod elsa-type-diff ((this elsa-type-number) (_other elsa-type-float))
   "Number without float must by int."
   (cond
    ((elsa-type-int-p this)
@@ -336,11 +336,11 @@ everything (Mixed)."
    (t
     (elsa-type-int))))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-t))
+(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-t))
   "Bool without T is Nil."
   (elsa-type-nil))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-nil))
+(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-nil))
   "Bool without NIL is T."
   (elsa-type-t))
 
