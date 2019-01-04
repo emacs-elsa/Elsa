@@ -316,8 +316,8 @@ This only makes sense for the sequence forms:
 (cl-defgeneric elsa-nthcdr (n thing)
   "Return nth `cdr' of THING")
 
-(cl-defmethod elsa-nthcdr (_n (this list))
-  (nthcdr this))
+(cl-defmethod elsa-nthcdr (n (this list))
+  (nthcdr n this))
 
 (cl-defmethod elsa-nthcdr (n (this elsa-form))
   (nthcdr n (elsa-form-sequence this)))
