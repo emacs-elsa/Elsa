@@ -484,7 +484,7 @@ See `elsa--analyse:defvar'."
       (oset form type (elsa-type-keyword)))
      ((elsa-form-string-p arg)
       (oset form type (elsa-type-string)))
-     ((elsa-form-int-p arg)
+     ((elsa-form-integer-p arg)
       (oset form type (elsa-type-int))))))
 
 (defun elsa--analyse--validate-interactive-string (state arg)
