@@ -127,7 +127,7 @@
   (elsa-load-config)
   (let ((file (car command-line-args-left)))
     (--each (reverse (oref (elsa-process-file file) errors))
-      (princ (elsa-message-format it)))))
+      (princ (concat file ":" (elsa-message-format it))))))
 
 (defun elsa-analyse-form (state form &optional type)
   "Analyse FORM in STATE.
