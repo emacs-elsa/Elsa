@@ -125,10 +125,9 @@
 (defun elsa-run ()
   "Run `elsa-process-file' and output errors to stdout for flycheck."
   (elsa-load-config)
-  (let* ((file (car command-line-args-left))
-         (state (elsa-process-file file))
-         (errors (reverse (oref state errors))))
-    (--each errors (princ (elsa-message-format it)))))
+  (let ((file (car command-line-args-left)))
+    (--each (reverse (oref (elsa-process-file file) errors))
+      (princ (elsa-message-format it)))))
 
 (defun elsa-analyse-form (state form &optional type)
   "Analyse FORM in STATE.
