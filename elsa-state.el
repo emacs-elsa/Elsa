@@ -23,6 +23,7 @@
 (cl-defmethod elsa-state-add-defvar ((this elsa-state) name type)
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar :name name :type type) defvars)))
+(declare-function elsa-defvar "elsa" (&rest slots))
 
 (defun elsa-state-add-message (state error)
   "In STATE, record an ERROR.
