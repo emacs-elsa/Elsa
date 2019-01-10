@@ -125,7 +125,7 @@
 (defun elsa-run ()
   "Run `elsa-process-file' and output errors to stdout for flycheck."
   (elsa-load-config)
-  (let ((file (car command-line-args-left)))
+  (dolist (file command-line-args-left)
     (--each (reverse (oref (elsa-process-file file) errors))
       (princ (concat file ":" (elsa-message-format it))))))
 
