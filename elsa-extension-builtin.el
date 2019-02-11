@@ -177,5 +177,21 @@
 ;; TODO: verify that the "rest" :args of the defgroup are valid
 (defun elsa--analyse:defgroup (form scope state))
 
+;; TODO: reachability
+;; This is not always correct but at least we try to bind variables in
+;; case the place is a simple symbol.  The logic is handled in
+;; `elsa--analyse-variable-from-binding'
+(defun elsa--analyse:when-let (form scope state)
+  (let ((bindings (elsa-form-sequence (elsa-nth 1 form)))
+        (body (cddr (oref form sequence)))
+        (vars))
+    (--each bindings
+      (-when-let (var (elsa--analyse-variable-from-binding it scope state))
+        (elsa-scope-add-var scope var)
+        (push var vars)))
+    (elsa--analyse-body body scope state)
+    (--each vars (elsa-scope-remove-var scope it))
+    (oset form type (elsa-get-type (-last-item body)))))
+
 
 (provide 'elsa-extension-builtin)
