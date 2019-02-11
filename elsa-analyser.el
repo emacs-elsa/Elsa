@@ -440,6 +440,22 @@ make it explicit and precise."
           (put (elsa-get-name name) 'elsa-type-var (oref value type)))
       (put (elsa-get-name name) 'elsa-type-var (elsa-make-type Unbound)))))
 
+(defun elsa--analyse:defcustom (form scope state)
+  "Analyze `defcustom'.
+
+The analysis works the same way as `elsa--analyse:defvar' except
+we take the :type property of the defcustom into account when
+automatically deriving the type."
+  (let* ((name (elsa-nth 1 form))
+         (value (elsa-nth 2 form)))
+    (if value
+        (progn
+          (elsa--analyse-form value scope state)
+          ;; TODO: check the `:type' form here and also compare if we
+          ;; are doing a valid assignment.
+          (put (elsa-get-name name) 'elsa-type-var (oref value type)))
+      (put (elsa-get-name name) 'elsa-type-var (elsa-make-type Unbound)))))
+
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
 
