@@ -174,5 +174,8 @@
         (setq return-type (elsa-type-make-nullable return-type))))
     (oset form type return-type)))
 
+;; TODO: verify that the "rest" :args of the defgroup are valid
+(defun elsa--analyse:defgroup (form scope state))
+
 
 (provide 'elsa-extension-builtin)
