@@ -27,6 +27,7 @@
 (require 'eieio)
 
 (require 'dash)
+(require 'cl-extra)
 
 (require 'elsa-types)
 (require 'elsa-scope)
