@@ -431,6 +431,58 @@
 ;; File: keymap.c
 (put 'single-key-description 'elsa-type (elsa-make-type Int -> Mixed -> String))
 
+;; File: buffer.c
+;; buffer-live-p
+;; buffer-list
+;; get-buffer
+;; get-file-buffer
+;; get-buffer-create
+;; make-indirect-buffer
+;; generate-new-buffer-name
+;; buffer-name
+;; buffer-file-name
+;; buffer-base-buffer
+;; buffer-local-value
+;; buffer-local-variables
+;; buffer-modified-p
+;; force-mode-line-update
+;; set-buffer-modified-p
+;; restore-buffer-modified-p
+;; buffer-modified-tick
+;; buffer-chars-modified-tick
+;; rename-buffer
+;; other-buffer
+;; buffer-enable-undo
+;; kill-buffer
+;; bury-buffer-internal
+;; set-buffer-major-mode
+;; current-buffer
+;; set-buffer
+;; barf-if-buffer-read-only
+;; erase-buffer
+;; buffer-swap-text
+;; set-buffer-multibyte
+;; kill-all-local-variables
+;; overlayp
+;; make-overlay
+;; move-overlay
+;; delete-overlay
+;; delete-all-overlays
+;; TODO: overlay type
+(put 'overlay-start 'elsa-type (elsa-make-type Mixed -> Int))
+;; TODO: overlay type
+(put 'overlay-end 'elsa-type (elsa-make-type Mixed -> Int))
+;; overlay-buffer
+;; overlay-properties
+;; overlays-at
+;; overlays-in
+;; next-overlay-change
+;; previous-overlay-change
+;; overlay-lists
+;; overlay-recenter
+;; overlay-get
+;; overlay-put
+
 ;; boolean functions
 (put 'not 'elsa-type (elsa-make-type Mixed -> Bool))
 
