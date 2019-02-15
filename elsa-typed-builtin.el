@@ -126,7 +126,7 @@
 ;; (put 'bool-vector-count-consecutive 'elsa-type (elsa-make-type ))
 
 ;; File: bytecode.c
-(put 'eq 'elsa-type (elsa-make-type String -> Vector Mixed -> Int -> Mixed))
+(put 'byte-code 'elsa-type (elsa-make-type String -> Vector Mixed -> Int -> Mixed))
 
 ;; File: callproc.c
 (put 'call-process 'elsa-type
