@@ -503,6 +503,18 @@
 (put 'load-file-name 'elsa-type-var (elsa-make-type String?))
 (put 'buffer-file-name 'elsa-type-var (elsa-make-type String?))
 
+;; File: callproc.c
+(put 'shell-file-name 'elsa-type-var (elsa-make-type String))
+(put 'exec-path 'elsa-type-var (elsa-make-type [String]))
+(put 'exec-suffixes 'elsa-type-var (elsa-make-type [String]))
+(put 'exec-directory 'elsa-type-var (elsa-make-type String))
+(put 'data-directory 'elsa-type-var (elsa-make-type String))
+(put 'doc-directory 'elsa-type-var (elsa-make-type String))
+(put 'configure-info-directory 'elsa-type-var (elsa-make-type String))
+(put 'shared-game-score-directory 'elsa-type-var (elsa-make-type String?))
+(put 'initial-environment 'elsa-type-var (elsa-make-type [String]))
+(put 'process-environment 'elsa-type-var (elsa-make-type [String]))
+
 ;; help.el
 (put 'help-function-arglist 'elsa-type (elsa-make-type Symbol -> List Symbol))
 
