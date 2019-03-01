@@ -397,10 +397,10 @@ nullables and the &rest argument into a variadic."
                       :type (nth index arg-types))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
-    (elsa--analyse-body body scope state)
+    (when body (elsa--analyse-body body scope state))
     ;; check if return type of defun corresponds with the last form of
     ;; the body
-    (let* ((body-return-type (oref (-last-item body) type))
+    (let* ((body-return-type (if body (oref (-last-item body) type) (elsa-type-nil)))
            (function-return-type (elsa-type-get-return function-type)))
       (if function-return-type
           (unless (elsa-type-accept function-return-type body-return-type)
