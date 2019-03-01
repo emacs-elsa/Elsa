@@ -406,6 +406,9 @@
 (put 'delete-char 'elsa-type (elsa-make-type Int -> Mixed -> Nil))
 (put 'self-insert-command 'elsa-type (elsa-make-type Int -> Nil))
 
+;; File: fileio.c
+(put 'file-name-directory 'elsa-type (elsa-make-type String -> String?))
+
 ;; File: syntax.c
 ;; (put 'syntax-table-p 'elsa-type (elsa-make-type))
 ;; (put 'syntax-table 'elsa-type (elsa-make-type))
@@ -497,6 +500,8 @@
 (put 'major-mode 'elsa-type-var (elsa-make-type Symbol))
 (put 'system-type 'elsa-type-var (elsa-make-type Symbol))
 (put 'last-command-event 'elsa-type-var (elsa-make-type Int))
+(put 'load-file-name 'elsa-type-var (elsa-make-type String?))
+(put 'buffer-file-name 'elsa-type-var (elsa-make-type String?))
 
 ;; help.el
 (put 'help-function-arglist 'elsa-type (elsa-make-type Symbol -> List Symbol))
