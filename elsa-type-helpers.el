@@ -163,7 +163,7 @@ The grammar is as follows (in eBNF):
 
 <BASE> ::= 'String' | 'Int' | 'Float' | 'Marker' | 'Buffer'
 "
-  (elsa--make-type definition))
+  `(elsa--make-type ',definition))
 
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
