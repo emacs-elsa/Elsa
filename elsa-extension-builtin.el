@@ -22,7 +22,9 @@
         (when (and library
                    (not (member library elsa-analyzed)))
           (let* ((elsa-cache-file (elsa--get-cache-file-name library 'compiled)))
-            (if (file-newer-than-file-p library elsa-cache-file)
+            (if (or t ;; FIXME: temporarily disable caching since
+                      ;; new-style structs can't be read.
+                    (file-newer-than-file-p library elsa-cache-file))
                 (progn
                   (require (intern (concat "elsa-typed-" library-name)) nil t)
                   (require (intern (concat "elsa-extension-" library-name)) nil t)

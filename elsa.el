@@ -81,19 +81,20 @@
             (elsa-analyse-form state form))
         (end-of-file t)))
     ;; dump defun cache
-    (with-temp-buffer
-      (let ((elsa-cache-file (elsa--get-cache-file-name file)))
-        (unwind-protect
-            (progn
-              (-each (nreverse (oref state defuns))
-                (lambda (dfn)
-                  (insert (format "%s\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
-              (f-mkdir (f-parent elsa-cache-file))
-              (f-write-text
-               (buffer-string) 'utf-8
-               elsa-cache-file)
-              (byte-compile-file elsa-cache-file))
-          (f-delete elsa-cache-file))))
+    ;; FIXME: temporarily disable caching since new-style structs can't be read.
+    ;; (with-temp-buffer
+    ;;   (let ((elsa-cache-file (elsa--get-cache-file-name file)))
+    ;;     (unwind-protect
+    ;;         (progn
+    ;;           (-each (nreverse (oref state defuns))
+    ;;             (lambda (dfn)
+    ;;               (insert (format "%s\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
+    ;;           (f-mkdir (f-parent elsa-cache-file))
+    ;;           (f-write-text
+    ;;            (buffer-string) 'utf-8
+    ;;            elsa-cache-file)
+    ;;           (byte-compile-file elsa-cache-file))
+    ;;       (f-delete elsa-cache-file))))
     state))
 
 (defun elsa-process-form ()
