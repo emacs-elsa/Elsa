@@ -28,6 +28,7 @@
 
 (require 'dash)
 (require 'cl-extra)
+(require 'warnings)
 
 (require 'elsa-types)
 (require 'elsa-scope)
