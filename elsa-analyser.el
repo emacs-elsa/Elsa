@@ -432,12 +432,16 @@ a list or something else.
 The user can provide a type annotation over the `defvar' form to
 make it explicit and precise."
   (let* ((name (elsa-nth 1 form))
-         (value (elsa-nth 2 form)))
-    (if value
-        (progn
-          (elsa--analyse-form value scope state)
-          (put (elsa-get-name name) 'elsa-type-var (oref value type)))
-      (put (elsa-get-name name) 'elsa-type-var (elsa-make-type Unbound)))))
+         (value (elsa-nth 2 form))
+         (var-name (elsa-get-name name))
+         (var-type (get var-name 'elsa-type-var)))
+    (unless var-type
+      (if value
+          (progn
+            (message "analyzer: updating variable %s, old type %s" var-name (elsa-type-describe var-type))
+            (elsa--analyse-form value scope state)
+            (put var-name 'elsa-type-var (oref value type)))
+        (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
 
 (defun elsa--analyse:defcustom (form scope state)
   "Analyze `defcustom'.
@@ -446,14 +450,17 @@ The analysis works the same way as `elsa--analyse:defvar' except
 we take the :type property of the defcustom into account when
 automatically deriving the type."
   (let* ((name (elsa-nth 1 form))
-         (value (elsa-nth 2 form)))
-    (if value
-        (progn
-          (elsa--analyse-form value scope state)
-          ;; TODO: check the `:type' form here and also compare if we
-          ;; are doing a valid assignment.
-          (put (elsa-get-name name) 'elsa-type-var (oref value type)))
-      (put (elsa-get-name name) 'elsa-type-var (elsa-make-type Unbound)))))
+         (value (elsa-nth 2 form))
+         (var-name (elsa-get-name name))
+         (var-type (get var-name 'elsa-type-var)))
+    (unless var-type
+      (if value
+          (progn
+            (elsa--analyse-form value scope state)
+            ;; TODO: check the `:type' form here and also compare if we
+            ;; are doing a valid assignment.
+            (put var-name 'elsa-type-var (oref value type)))
+        (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
 
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
