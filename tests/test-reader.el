@@ -24,6 +24,11 @@
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
         (expect form :to-print-as "(a . b)")))
 
+   (it "should read a simple cons pair with integers"
+      (elsa-test-with-read-form "|(0 . 1)" form
+        (expect (elsa-form-improper-list-p form) :to-be-truthy)
+        (expect form :to-print-as "(0 . 1)")))
+
     (it "should read an improper list containgin a quote."
       (elsa-test-with-read-form "|(a . (quote . c))" form
         (expect (elsa-form-improper-list-p form) :to-be-truthy)

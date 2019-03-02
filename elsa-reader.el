@@ -380,6 +380,7 @@ This only makes sense for the sequence forms:
                      (!cdr form)
                      (elsa--skip-whitespace-forward)
                      (when (looking-at-p "\\.")
+                       (forward-char 1)
                        (if (consp form)
                            (progn
                              (cl-incf depth)
