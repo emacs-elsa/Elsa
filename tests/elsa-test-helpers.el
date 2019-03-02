@@ -1,4 +1,5 @@
 (require 'elsa-type-helpers)
+(require 'buttercup)
 
 (defmacro elsa-test-with-buffer (initial &rest body)
   (declare (indent 1))
