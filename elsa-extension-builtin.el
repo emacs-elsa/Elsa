@@ -31,6 +31,7 @@
                   (push library elsa-analyzed)
                   (elsa-process-file library))
               (load elsa-cache-file t t))))))))
+(declare-function elsa-process-file "elsa" (file))
 
 ;; * boolean functions
 (defun elsa--analyse:not (form scope state)

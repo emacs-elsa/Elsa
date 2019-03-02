@@ -43,16 +43,16 @@ number by symbol 'many."
 (defun elsa-fn-arity (fn)
   (elsa--arglist-to-arity (help-function-arglist fn)))
 
-(defun elsa--analyse-float (form scope state)
+(defun elsa--analyse-float (_form _scope _state)
   nil)
 
-(defun elsa--analyse-integer (form scope state)
+(defun elsa--analyse-integer (_form _scope _state)
   nil)
 
-(defun elsa--analyse-keyword (form scope state)
+(defun elsa--analyse-keyword (_form _scope _state)
   nil)
 
-(defun elsa--analyse-symbol (form scope state)
+(defun elsa--analyse-symbol (form scope _state)
   (let* ((name (oref form name))
          (type (cond
                 ((eq name t) (elsa-make-type T))
@@ -67,10 +67,10 @@ number by symbol 'many."
             (list (elsa-variable :name name
                                  :type (elsa-type-make-non-nullable type)))))))
 
-(defun elsa--analyse-vector (form scope state)
+(defun elsa--analyse-vector (_form _scope _state)
   nil)
 
-(defun elsa--analyse-string (form scope state)
+(defun elsa--analyse-string (_form _scope _state)
   nil)
 
 (defun elsa--analyse-variable-from-binding (binding scope state)
@@ -378,8 +378,7 @@ nullables and the &rest argument into a variadic."
       (-repeat max (elsa-make-type Mixed)))))
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
-  (let* ((sequence (oref form sequence))
-         ;; TODO: there should be an api for `(get name
+  (let* (;; TODO: there should be an api for `(get name
          ;; 'elsa-type)'... probably on `scope', but for now scope is
          ;; separate for each processed file which is not great.
          (function-type (get name 'elsa-type))
@@ -487,7 +486,7 @@ See `elsa--analyse:defvar'."
                      :args arg-types
                      :return (oref (-last-item body) type)))))
 
-(defun elsa--analyse:quote (form scope state)
+(defun elsa--analyse:quote (form _scope _state)
   (let ((arg (cadr (oref form sequence))))
     (cond
      ((elsa-form-list-p arg)
@@ -501,7 +500,7 @@ See `elsa--analyse:defvar'."
       (oset form type (elsa-type-keyword)))
      ((elsa-form-string-p arg)
       (oset form type (elsa-type-string)))
-     ((elsa-form-int-p arg)
+     ((elsa-form-integer-p arg)
       (oset form type (elsa-type-int))))))
 
 (defun elsa--analyse--validate-interactive-string (state arg)
@@ -533,13 +532,13 @@ See `elsa--analyse:defvar'."
            arg
            "Invalid interactive spec, expecting string or list form"))))))
 
-(defun elsa--analyse-backquote (form scope state)
+(defun elsa--analyse-backquote (_form _scope _state)
   nil)
 
-(defun elsa--analyse-unquote (form scope state)
+(defun elsa--analyse-unquote (_form _scope _state)
   nil)
 
-(defun elsa--analyse-splice (form scope state)
+(defun elsa--analyse-splice (_form _scope _state)
   nil)
 
 (defun elsa--analyse-arg-variable-p (arg)
@@ -654,7 +653,7 @@ See `elsa--analyse:defvar'."
           ;; function call
           (_ (elsa--analyse-function-call form scope state)))))))
 
-(defun elsa--analyse-improper-list (form scope state)
+(defun elsa--analyse-improper-list (_form _scope _state)
   nil)
 
 (defun elsa--analyse-form (form scope state)
