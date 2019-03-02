@@ -112,9 +112,7 @@ Everything you see here actually works, this is not just for show!
 
 # How do I run it
 
-Currently we only support running Elsa with [Cask](https://github.com/cask/cask).
-
-### [RECOMMENDED] Using packaged version
+### [RECOMMENDED] Using [Cask](https://github.com/cask/cask) with a packaged version
 
 The easiest and fastest way to install Elsa is through
 [MELPA](http://melpa.org/#/) and [Cask](https://github.com/cask/cask).
@@ -123,15 +121,29 @@ The easiest and fastest way to install Elsa is through
 2. Run `cask install`.
 3. `cask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
-### Using development version
+### Using Cask with a development version
 
 To use the development version you can clone the repository and use
-`cask link` feature to use the code from the clone.
+`cask link` to use the code from the clone.
 
 1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
 2. Add `(depends-on "elsa")` to `Cask` file of your project.
 3. Run `cask link elsa <path-to-elsa-repo>`.
 4. `cask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
+
+### Using [EMake](https://github.com/vermiculus/emake.el)
+
+If you've already installed EMake, run `make lint-elsa`.  You may need
+to update to a recent version via `EMAKE_SHA1`.
+
+Otherwise, install EMake via the usual means:
+
+```sh
+bash <(curl -fsSL https://raw.githubusercontent.com/vermiculus/emake.el/master/new)
+```
+
+This script will prompt you for the name of your package and then
+bootstrap EMake.  You can now run Elsa's checks with `make lint-elsa`.
 
 ## Flycheck integration
 
