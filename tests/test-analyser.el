@@ -13,15 +13,27 @@
 
     (describe "defvar"
 
+      (after-each (put 'foo 'elsa-type-var nil))
+
       (it "should analyze the default form of the defvar and assign that type"
         (elsa-test-with-analysed-form "(progn (defvar foo :keyword) foo)" form
-          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const :keyword)))))
+          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const :keyword))))
+
+      (it "should respect the type assigned from an annotation"
+        (elsa-test-with-analysed-form ";; (foo :: Bool)\n(progn (defvar foo :keyword) foo)" form
+          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Bool)))))
 
     (describe "defconst"
 
+      (after-each (put 'foo 'elsa-type-var nil))
+
       (it "should analyze the default form of the defconst and assign that type"
         (elsa-test-with-analysed-form "(progn (defconst foo 'bar) foo)" form
-          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const bar)))))
+          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const bar))))
+
+      (xit "should respect the type assigned from an annotation"
+        (elsa-test-with-analysed-form ";; (foo :: Bool)\n(progn (defconst foo :keyword) foo)" form
+          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Bool)))))
 
     (describe "quote"
 
