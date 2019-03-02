@@ -2,7 +2,9 @@ language: emacs-lisp
 sudo: false
 env:
   global:
-  - EMAKE_SHA1=2dec3626e073c3b4aa88fbedd7ad5d27e530f470
+  - EMAKE_SHA1=ef8e31c979ca6d084f20ccc975c5fc6d22dd31b9
+  - EMACS_DIR=$HOME/emacs
+  - EMACS=$HOME/emacs/src/emacs
   matrix:
   - EMACS_VERSION=25.1
   - EMACS_VERSION=25.2
@@ -10,7 +12,6 @@ env:
   - EMACS_VERSION=26.1
   - EMACS_VERSION=snapshot
 before_install:
-  - wget "https://raw.githubusercontent.com/vermiculus/emake.el/${EMAKE_SHA1}/emake.mk"
   - make setup
 install:
   - make install
