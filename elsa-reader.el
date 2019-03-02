@@ -538,8 +538,13 @@ for the analysis."
 
 (defun elsa-read-form (state)
   "Read form at point."
-  (let* ((form (save-excursion
-                 (read (current-buffer)))))
+  (-let* (((form . start)
+           (save-excursion
+             (cons
+              (read (current-buffer))
+              (nth 2 (syntax-ppss))))))
+    (goto-char start)
+    (skip-syntax-backward "'")
     (elsa--read-form form state)))
 
 (provide 'elsa-reader)
