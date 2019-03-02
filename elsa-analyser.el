@@ -197,7 +197,17 @@ The BINDING should have one of the following forms:
             (elsa-state-add-message state
               (elsa-make-warning place
                 "Assigning to free variable %s"
-                (symbol-name (elsa-get-name place))))))))
+                (symbol-name (elsa-get-name place)))))
+          (-when-let (type (or
+                            (and var (elsa-get-type var))
+                            special-var))
+            (unless (elsa-type-accept type val)
+              (elsa-state-add-message state
+                (elsa-make-error place
+                  "Variable %s expects %s, got %s"
+                  (symbol-name (elsa-get-name place))
+                  (elsa-type-describe type)
+                  (elsa-type-describe (elsa-get-type val)))))))))
     (oset form type (oref (-last-item args) type))
     (oset form narrow-types (oref (-last-item args) narrow-types))))
 
