@@ -31,7 +31,7 @@
         (elsa-test-with-analysed-form "(progn (defconst foo 'bar) foo)" form
           (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const bar))))
 
-      (xit "should respect the type assigned from an annotation"
+      (it "should respect the type assigned from an annotation"
         (elsa-test-with-analysed-form ";; (foo :: Bool)\n(progn (defconst foo :keyword) foo)" form
           (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Bool)))))
 
