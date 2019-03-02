@@ -149,6 +149,9 @@ This only makes sense for the sequence forms:
       nil
     (error "Can not get sequence out of symbol form")))
 
+(cl-defgeneric elsa-form-sequence-p (this)
+  nil)
+
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-symbol))
   (eq (elsa-get-name this) 'nil))
 
