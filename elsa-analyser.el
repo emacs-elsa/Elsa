@@ -187,12 +187,13 @@ The BINDING should have one of the following forms:
       (lambda (assignment)
         (let* ((place (car assignment))
                (val (cadr assignment))
-               (var (elsa-scope-get-var scope place)))
+               (var (elsa-scope-get-var scope place))
+               (special-var (get (elsa-get-name place) 'elsa-type-var)))
           (elsa--analyse-form val scope state)
           (elsa-scope-assign-var scope
             (elsa-variable :name (elsa-get-name place)
                            :type (oref val type)))
-          (unless var
+          (unless (or var special-var)
             (elsa-state-add-message state
               (elsa-make-warning place
                 "Assigning to free variable %s"
