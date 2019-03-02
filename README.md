@@ -112,17 +112,32 @@ Everything you see here actually works, this is not just for show!
 
 # How do I run it
 
-Currently we only support running Elsa with Cask.
+Currently we only support running Elsa with [Cask](https://github.com/cask/cask).
+
+### [RECOMMENDED] Using packaged version
+
+The easiest and fastest way to install Elsa is through
+[MELPA](http://melpa.org/#/) and [Cask](https://github.com/cask/cask).
+
+1. Add `(depends-on "elsa")` to `Cask` file of your project.
+2. Run `cask install`.
+3. `cask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
+
+### Using development version
+
+To use the development version you can clone the repository and use
+`cask link` feature to use the code from the clone.
 
 1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
-2. Add `(depends-on "elsa")` to `Cask` file of your project
-3. Run `cask link elsa <path-to-elsa-repo>`
-4. `cask exec elsa <file-to-analyse>` to analyse the file.  Currently
-   only one file at a time can be analysed.
+2. Add `(depends-on "elsa")` to `Cask` file of your project.
+3. Run `cask link elsa <path-to-elsa-repo>`.
+4. `cask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
 ## Flycheck integration
 
-If you use [flycheck](https://github.com/flycheck/flycheck) you can use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa) package which integrates Elsa with Flycheck.
+If you use [flycheck](https://github.com/flycheck/flycheck) you can
+use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa)
+package which integrates Elsa with Flycheck.
 
 # Configuration
 
