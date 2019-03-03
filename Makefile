@@ -1,5 +1,4 @@
-# EMACS_VERSION should be set in your ~/.profile on your development machine
-EMAKE_SHA1            ?= 4026405ca5ba93a739e33c2a3e46f796a7661635
+EMAKE_SHA1            ?= d8ab7790f5823547fd4e7aec2218771a3dda0638
 PACKAGE_BASENAME      := elsa
 PACKAGE_FILE          := elsa-pkg.el
 
