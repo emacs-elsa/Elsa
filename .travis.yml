@@ -1,8 +1,12 @@
-language: emacs-lisp
+language: generic
 sudo: false
 cache:
 - directories:
   - "$HOME/emacs"
+matrix:
+  fast_finish: true
+  allow_failures:
+  - env: EMACS_VERSION=snapshot
 env:
   global:
   - EMAKE_SHA1=4026405ca5ba93a739e33c2a3e46f796a7661635
