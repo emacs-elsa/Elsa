@@ -24,5 +24,5 @@ install:
   - make install
 script:
   - make test         # test uncompiled
-  - make compile
+  - make compile-noerr
   - make test         # test compiled

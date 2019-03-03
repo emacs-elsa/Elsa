@@ -23,7 +23,7 @@ clean-elc:
 clean: clean-elc
 	rm -rf $(EMAKE_WORKDIR)
 
-compile: clean-elc		## override: compile, but do not fail on warnings
+compile-noerr: clean-elc        ## override: compile, but do not fail on warnings
 	$(EMAKE) compile
 
 test: test-buttercup
