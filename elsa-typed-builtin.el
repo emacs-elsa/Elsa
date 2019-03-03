@@ -166,9 +166,8 @@
 (put 'error-message-string 'elsa-type (elsa-make-type Cons Symbol Mixed -> String))
 
 ;; File: xmenu.c
-;; (put 'x-menu-bar-open-internal 'elsa-type (elsa-make-type))
-;; (put 'x-menu-bar-open-internal 'elsa-type (elsa-make-type))
-;; (put 'menu-or-popup-active-p 'elsa-type (elsa-make-type))
+(put 'x-menu-bar-open-internal 'elsa-type (elsa-make-type Frame? -> Nil))
+(put 'menu-or-popup-active-p 'elsa-type (elsa-make-type Bool))
 
 ;; File: inotify.c
 ;; (put 'inotify-add-watch 'elsa-type (elsa-make-type))
