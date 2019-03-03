@@ -41,7 +41,6 @@ development.  Things might break at any point.
 # Non-exhaustive list of features
 
 Here comes a non-exhaustive list of some more interesting features.
-You can find the examples in [examples.el](./examples.el).
 
 The error highlightings in the screenshots are provided by [Elsa
 Flycheck extension](https://github.com/emacs-elsa/flycheck-elsa).
