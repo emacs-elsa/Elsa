@@ -5,7 +5,7 @@ cache:
   - "$HOME/emacs"
 env:
   global:
-  - EMAKE_SHA1=f1a50c20c36a4141ff854c5d62e1a75bb7e9ebe8
+  - EMAKE_SHA1=4026405ca5ba93a739e33c2a3e46f796a7661635
   - EMACS_DIR=$HOME/emacs
   - EMACS=$HOME/emacs/src/emacs
   matrix:
