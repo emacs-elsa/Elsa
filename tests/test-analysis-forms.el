@@ -12,7 +12,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type String)))
+                                 (y . ,(elsa-make-type String)))
               :return-type nil))
       (elsa-analyse-let
        state '((a 1) (b "")) '((fun a b)))
@@ -23,7 +23,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type String)))
+                                 (y . ,(elsa-make-type String)))
               :return-type nil))
       (elsa-analyse-let
        state '((a 1) (b a)) '((fun a b)))
@@ -39,7 +39,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type String)))
+                                 (y . ,(elsa-make-type String)))
               :return-type nil))
       (elsa-analyse-let
        state '(a (b nil)) '((fun a b)))
@@ -57,7 +57,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type String)))
+                                 (y . ,(elsa-make-type String)))
               :return-type nil))
       (elsa-state-add-defun
        state (elsa-defun
@@ -76,7 +76,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type String)))
+                                 (y . ,(elsa-make-type String)))
               :return-type nil))
       (elsa-analyse-let*
        state '((a 1) (b "")) '((fun a b)))
@@ -87,7 +87,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type Int)))
+                                 (y . ,(elsa-make-type Int)))
               :return-type nil))
       (elsa-analyse-let*
        state '((a 1) (b a)) '((fun a b)))
@@ -98,7 +98,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type String)))
+                                 (y . ,(elsa-make-type String)))
               :return-type nil))
       (elsa-analyse-let*
        state '(a (b nil)) '((fun a b)))
@@ -114,7 +114,7 @@
       (elsa-state-add-defun
        state (elsa-defun
               :name 'fun :args `((x . ,(elsa-make-type Int))
-                                    (y . ,(elsa-make-type String)))
+                                 (y . ,(elsa-make-type String)))
               :return-type nil))
       (elsa-state-add-defun
        state (elsa-defun
