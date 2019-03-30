@@ -201,13 +201,18 @@ The BINDING should have one of the following forms:
           (-when-let (type (or
                             (and var (elsa-get-type var))
                             special-var))
-            (unless (elsa-type-accept type val)
-              (elsa-state-add-message state
-                (elsa-make-error place
-                  "Variable %s expects %s, got %s"
-                  (symbol-name (elsa-get-name place))
-                  (elsa-type-describe type)
-                  (elsa-type-describe (elsa-get-type val)))))))))
+            (if (elsa-readonly-type-p type)
+                (elsa-state-add-message state
+                  (elsa-make-error place
+                    "Assignment to read-only variable %s"
+                    (symbol-name (elsa-get-name place))))
+              (unless (elsa-type-accept type val)
+                (elsa-state-add-message state
+                  (elsa-make-error place
+                    "Variable %s expects %s, got %s"
+                    (symbol-name (elsa-get-name place))
+                    (elsa-type-describe type)
+                    (elsa-type-describe (elsa-get-type val))))))))))
     (oset form type (oref (-last-item args) type))
     (oset form narrow-types (oref (-last-item args) narrow-types))))
 
@@ -476,8 +481,13 @@ automatically deriving the type."
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
 
-See `elsa--analyse:defvar'."
-  (elsa--analyse:defvar form scope state))
+If no type annotation is provided, find the value type through
+`elsa--analyse:defvar' and wrap it as read-only."
+  (let* ((name (elsa-nth 1 form))
+         (var-name (elsa-get-name name)))
+    (unless (get var-name 'elsa-type-var)
+      (elsa--analyse:defvar form scope state)
+      (put var-name 'elsa-type-var (elsa-readonly-type :type (get var-name 'elsa-type-var))))))
 
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))

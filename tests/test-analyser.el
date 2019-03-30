@@ -29,7 +29,7 @@
 
       (it "should analyze the default form of the defconst and assign that type"
         (elsa-test-with-analysed-form "(progn (defconst foo 'bar) foo)" form
-          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type Const bar))))
+          (expect (elsa-get-type (elsa-nth 2 form)) :to-equal (elsa-make-type Readonly Const bar))))
 
       (it "should respect the type assigned from an annotation"
         (elsa-test-with-analysed-form ";; (foo :: Bool)\n(progn (defconst foo :keyword) foo)" form
@@ -397,7 +397,14 @@
       (it "should unassign on top of narrowed variable bindings"
         (elsa-test-with-analysed-form "|(defun a (x) (cond ((stringp x) x) ((integerp x) (setq x :key)) (x)) x)" form
           (let ((test-form (elsa-nth 4 form)))
-            (expect test-form :to-be-type-equivalent (elsa-type-mixed)))))))
+            (expect test-form :to-be-type-equivalent (elsa-type-mixed)))))
+
+      (it "should warn on assignment to defconst"
+        (elsa-test-with-analysed-form "|(progn (defconst foo 'bar) (setq foo 'bar))" form
+          :state-var state
+          (expect (oref state errors) :not :to-be nil)
+          (expect (oref (car (oref state errors)) message) :to-equal
+                  "Assignment to read-only variable foo")))))
 
   (describe "Analysis defun"
 

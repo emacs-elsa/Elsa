@@ -36,7 +36,6 @@
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-variables))
   (add-to-list 'elsa-checks (elsa-check-unbound-variable))
-  (add-to-list 'elsa-checks (elsa-check-defconst-assignment))
   )
 
 (provide 'elsa-ruleset)

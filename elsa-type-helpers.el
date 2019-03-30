@@ -78,6 +78,8 @@ Return trinary logic value.")
 
 (defun elsa--make-type (definition)
   (pcase definition
+    (`(Readonly . ,type)
+     (elsa-readonly-type :type (elsa--make-type type)))
     (`(Const ,value)
      (elsa--make-const-type value))
     (`(Cons) ;; mixed cons by default

@@ -588,5 +588,15 @@ other, then this is a supertype of other."
        (elsa-type-equivalent-p (oref this type) (oref other type))
        (equal (oref this value) (oref other value))))
 
+;; Readonly type for defconst
+(defclass elsa-readonly-type (elsa-type)
+  ((type :type elsa-type :initarg :type)))
+
+(cl-defmethod elsa-type-accept ((_this elsa-readonly-type) _other)
+  nil)
+
+(cl-defmethod elsa-type-describe ((this elsa-readonly-type))
+  (format "Readonly %s" (elsa-type-describe (oref this type))))
+
 (provide 'elsa-types)
 ;;; elsa-types.el ends here

@@ -110,22 +110,6 @@
         (elsa-make-error form
           "Reference to free variable `%s'." (symbol-name name))))))
 
-(defclass elsa-check-defconst-assignment (elsa-check) ())
-
-(cl-defmethod elsa-check-should-run ((_ elsa-check-defconst-assignment) form scope state)
-  (elsa-form-function-call-p form 'setq))
-
-(cl-defmethod elsa-check-check ((_ elsa-check-defconst-assignment) form scope state)
-  (let* ((bindings (cdr (oref form sequence))))
-    (-each-indexed bindings
-      (lambda (index binding)
-        (let ((name (elsa-get-name binding)))
-          (when (and (= (mod index 2) 0)
-                     (elsa-const-type-p (get name 'elsa-type-var)))
-            (elsa-state-add-message state
-              (elsa-make-warning binding
-                "Assignment to defconst %s." name))))))))
-
 (defclass elsa-check-cond-useless-condition (elsa-check) ())
 
 (cl-defmethod elsa-check-should-run ((_ elsa-check-cond-useless-condition) form scope state)
