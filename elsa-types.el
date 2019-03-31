@@ -79,6 +79,8 @@ Accepting in this context means that OTHER can be assigned to
 THIS."
   (cond
    ((elsa-instance-of other this))
+   ((and (elsa-readonly-type-p other)
+         (elsa-type-accept this (oref other type))))
    ((and (elsa-const-type-p other)
          (elsa-type-accept this (oref other type))))
    ((and (elsa-type-list-p this)
@@ -587,6 +589,16 @@ other, then this is a supertype of other."
   (and (elsa-const-type-p other)
        (elsa-type-equivalent-p (oref this type) (oref other type))
        (equal (oref this value) (oref other value))))
+
+;; Readonly type for defconst
+(defclass elsa-readonly-type (elsa-type)
+  ((type :type elsa-type :initarg :type)))
+
+(cl-defmethod elsa-type-accept ((_this elsa-readonly-type) _other)
+  nil)
+
+(cl-defmethod elsa-type-describe ((this elsa-readonly-type))
+  (format "Readonly %s" (elsa-type-describe (oref this type))))
 
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
