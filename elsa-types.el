@@ -79,6 +79,8 @@ Accepting in this context means that OTHER can be assigned to
 THIS."
   (cond
    ((elsa-instance-of other this))
+   ((and (elsa-readonly-type-p other)
+         (elsa-type-accept this (oref other type))))
    ((and (elsa-const-type-p other)
          (elsa-type-accept this (oref other type))))
    ((and (elsa-type-list-p this)
