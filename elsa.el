@@ -132,13 +132,19 @@
   (cond
    ((equal (car command-line-args-left) "--lsp")
     (pop command-line-args-left)
-    (let ((method (pop command-line-args-left))
-          (params (json-read-from-string (pop command-line-args-left))))
+    (let* ((method (pop command-line-args-left))
+           (params-raw (pop command-line-args-left)))
       (cond
        ((equal method "hover")
-        (let-alist params
-          (let* ((file (substring .textDocument.uri 7)))
-            (elsa-process-file file method params)))))))
+        (let ((params (json-read-from-string params-raw)))
+          (let-alist params
+            (let* ((file (substring .textDocument.uri 7)))
+              (elsa-process-file file method params)))))
+       ((equal method "diagnostics")
+        (let* ((file params-raw)
+               (state (elsa-process-file file)))
+          (--each (reverse (oref state errors))
+            (princ (concat file ":" (elsa-message-format-lsp it)))))))))
    (t
     (dolist (file command-line-args-left)
       (--each (reverse (oref (elsa-process-file file) errors))
