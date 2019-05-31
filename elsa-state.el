@@ -10,7 +10,9 @@
    (errors :initform nil)
    (ignored-lines :initform nil)
    (reachable :initform (list (trinary-true)))
-   (scope :initform (elsa-scope))))
+   (scope :initform (elsa-scope))
+   (method :initform "" :initarg :method)
+   (params :initform nil :initarg :params)))
 
 (defun elsa-state-add-defun (state name type)
   (put name 'elsa-type type)

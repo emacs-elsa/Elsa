@@ -461,7 +461,7 @@ make it explicit and precise."
     (unless var-type
       (if value
           (progn
-            (message "analyzer: updating variable %s, old type %s" var-name (elsa-type-describe var-type))
+            ;; (message "analyzer: updating variable %s, old type %s" var-name (elsa-type-describe var-type))
             (elsa--analyse-form value scope state)
             (put var-name 'elsa-type-var (oref value type)))
         (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
@@ -708,7 +708,17 @@ FORM is a result of `elsa-read-form'."
    (t (error "Invalid form")))
   (--each elsa-checks
     (when (elsa-check-should-run it form scope state)
-      (elsa-check-check it form scope state))))
+      (elsa-check-check it form scope state)))
+  (let ((method (oref state method))
+        (params (oref state params)))
+    (cond
+     ((equal method "hover")
+      (let-alist params
+        (when (and (= (oref form line) .position.line)
+                   (<= (oref form column) .position.character)
+                   (< .position.character (oref form end-column)))
+          (princ (format "%s: %s\n" (elsa-form-print form) (elsa-type-describe (elsa-get-type form))))
+          (signal 'end-of-file nil)))))))
 
 (defun elsa--analyse-body (body scope state)
   (--each body (elsa--analyse-form it scope state)))

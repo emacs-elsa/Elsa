@@ -29,6 +29,7 @@
 (require 'dash)
 (require 'cl-extra)
 (require 'warnings)
+(require 'json)
 
 (require 'elsa-types)
 (require 'elsa-scope)
@@ -51,9 +52,9 @@
   ((name :initarg :name)
    (type :initarg :type)))
 
-(defun elsa-process-file (file)
+(defun elsa-process-file (file &optional method params)
   "Process FILE."
-  (let ((state (elsa-state))
+  (let ((state (elsa-state :method method :params params))
         (form))
     (with-temp-buffer
       (insert-file-contents file)
@@ -128,9 +129,20 @@
 (defun elsa-run ()
   "Run `elsa-process-file' and output errors to stdout for flycheck."
   (elsa-load-config)
-  (dolist (file command-line-args-left)
-    (--each (reverse (oref (elsa-process-file file) errors))
-      (princ (concat file ":" (elsa-message-format it))))))
+  (cond
+   ((equal (car command-line-args-left) "--lsp")
+    (pop command-line-args-left)
+    (let ((method (pop command-line-args-left))
+          (params (json-read-from-string (pop command-line-args-left))))
+      (cond
+       ((equal method "hover")
+        (let-alist params
+          (let* ((file (substring .textDocument.uri 7)))
+            (elsa-process-file file method params)))))))
+   (t
+    (dolist (file command-line-args-left)
+      (--each (reverse (oref (elsa-process-file file) errors))
+        (princ (concat file ":" (elsa-message-format it))))))))
 
 (defun elsa-analyse-form (state form &optional _type)
   "Analyse FORM in STATE.
