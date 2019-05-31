@@ -31,6 +31,8 @@
    (line :initarg :line :initform nil)
    (column :initarg :column
            :initform nil)
+   (end-column :initarg :end-column
+               :initform nil)
    (expression :initarg :expression))
   :abstract t
   :documentation "Base class representing a message: result of the analysis.
@@ -68,12 +70,22 @@ In general, we recognize three states: error, warning, notice
           (elsa-message-type this)
           (oref this message)))
 
+(cl-defmethod elsa-message-format-lsp ((this elsa-message))
+  "Format an `elsa-message'."
+  (format "%s:%s:%s:%s:%s\n"
+          (oref this line)
+          (or (oref this column) "?")
+          (or (oref this end-column) "?")
+          (elsa-message-type this)
+          (oref this message)))
+
 (defun elsa--make-message (constructor expression format args)
   (funcall constructor
            :expression expression
            :message (apply 'format format args)
            :line (oref expression line)
-           :column (oref expression column)))
+           :column (oref expression column)
+           :end-column (oref expression end-column)))
 
 (defun elsa-make-error (expression format &rest args)
   (declare (indent 1))
