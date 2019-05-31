@@ -714,7 +714,7 @@ FORM is a result of `elsa-read-form'."
     (cond
      ((equal method "hover")
       (let-alist params
-        (when (and (= (oref form line) .position.line)
+        (when (and (= (oref form line) (1+ .position.line))
                    (<= (oref form column) .position.character)
                    (< .position.character (oref form end-column)))
           (princ (format "%s: %s\n" (elsa-form-print form) (elsa-type-describe (elsa-get-type form))))
