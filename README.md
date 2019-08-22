@@ -164,7 +164,7 @@ an analysis rule.
 
 All the rules are added in form of extensions.  Elsa has few core
 extensions for most common built-in functions such as list
-manupulation (`car`, `nth`...), predicates (`stringp`, `atomp`...),
+manipulation (`car`, `nth`...), predicates (`stringp`, `atomp`...),
 logical functions (`not`, ...) and so on.  These are automatically
 loaded because the functions are so common virtually every project is
 going to use them.
