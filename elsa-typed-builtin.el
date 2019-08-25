@@ -504,6 +504,25 @@
 ;; File: keymap.c
 (put 'single-key-description 'elsa-type (elsa-make-type Int -> Mixed -> String))
 
+;; File: search.c
+;; looking-at
+;; posix-looking-at
+;; string-match
+;; posix-string-match
+;; search-backward
+;; search-forward
+;; re-search-backward
+;; re-search-forward
+;; posix-search-backward
+;; posix-search-forward
+;; replace-match
+(put 'match-beginning 'elsa-type (elsa-make-type Int -> Nil | Int ))
+(put 'match-end 'elsa-type (elsa-make-type Int -> Nil | Int ))
+;; match-data
+;; set-match-data
+;; regexp-quote
+;; newline-cache-check
+
 ;; File: buffer.c
 ;; buffer-live-p
 ;; buffer-list
@@ -555,6 +574,10 @@
 ;; overlay-recenter
 ;; overlay-get
 ;; overlay-put
+
+;; File: casefiddle.c
+(put 'upcase 'elsa-type (elsa-make-type (String -> String) | (Int -> Int)))
+(put 'downcase 'elsa-type (elsa-make-type (String -> String) | (Int -> Int)))
 
 ;; boolean functions
 (put 'not 'elsa-type (elsa-make-type Mixed -> Bool))
