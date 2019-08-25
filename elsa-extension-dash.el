@@ -222,8 +222,8 @@
         (body (cddr (oref form sequence)))
         (var))
     (when binding
-      (setq var (elsa--analyse-variable-from-binding binding scope state))
-      (elsa-scope-add-var scope var))
+      (-when-let (var (elsa-dash--analyse-variable-from-binding binding scope state))
+        (elsa-scope-add-var scope var)))
     (elsa--analyse-body body scope state)
     (when var (elsa-scope-remove-var scope var))
     (oset form type (elsa-get-type (-last-item body)))))
@@ -237,12 +237,37 @@
         (body (cddr (oref form sequence)))
         (vars))
     (--each bindings
-      (-when-let (var (elsa--analyse-variable-from-binding it scope state))
+      (-when-let (var (elsa-dash--analyse-variable-from-binding it scope state))
         (elsa-scope-add-var scope var)
         (push var vars)))
     (elsa--analyse-body body scope state)
     (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-get-type (-last-item body)))))
+
+(defun elsa-dash--analyse-variable-from-binding (binding scope state)
+  (-if-let (var (elsa--analyse-variable-from-binding binding scope state))
+      var
+    ;; TODO: in case the standard analyser returned nil we might
+    ;; be dealing with a dash matcher.  We will use a simple
+    ;; heuristic to pick all the symbols from the matcher and
+    ;; asssign a mixed type for now.  (message "%s"
+    ;; (eieio-object-class it))
+    (when (or (listp binding) (elsa-form-list-p binding))
+      (-let [(var source) (elsa-form-sequence binding)]
+        (when (or (elsa-form-seq-child-p var)
+                  (elsa-form-cons-child-p var))
+          (elsa-form-visit var
+            (lambda (form)
+              "Find all the symbol nodes in the variable declaration section."
+              (when (elsa-form-symbol-p form)
+                (let ((name (elsa-get-name form)))
+                  (when (not (string-match-p "^[&:]" (symbol-name name)))
+                    (elsa-variable
+                     :name name
+                     ;; because we don't know how the
+                     ;; bindings relate to the source we
+                     ;; will default to mixed for now.
+                     :type (elsa-type-mixed))))))))))))
 
 (defun elsa--analyse:-let (form scope state)
   (let ((bindings (let ((binding-form (elsa-cadr form)))
@@ -254,30 +279,8 @@
         (body (elsa-nthcdr 2 form))
         (vars))
     (--each bindings
-      (-if-let (var (elsa--analyse-variable-from-binding it scope state))
-          (push var vars)
-        ;; TODO: in case the standard analyser returned nil we might
-        ;; be dealing with a dash matcher.  We will use a simple
-        ;; heuristic to pick all the symbols from the matcher and
-        ;; asssign a mixed type for now.  (message "%s"
-        ;; (eieio-object-class it))
-        (when (or (listp it) (elsa-form-list-p it))
-          (-let [(var source) (elsa-form-sequence it)]
-            (when (or (elsa-form-seq-child-p var)
-                      (elsa-form-cons-child-p var))
-              (elsa-form-visit var
-                (lambda (form)
-                  "Find all the symbol nodes in the variable declaration section."
-                  (when (elsa-form-symbol-p form)
-                    (let ((name (elsa-get-name form)))
-                      (when (not (string-match-p "^[&:]" (symbol-name name)))
-                        (push (elsa-variable
-                               :name name
-                                ;; because we don't know how the
-                                ;; bindings relate to the source we
-                                ;; will default to mixed for now.
-                               :type (elsa-type-mixed))
-                              vars)))))))))))
+      (-when-let (var (elsa-dash--analyse-variable-from-binding it scope state))
+        (push var vars)))
     (--each vars (elsa-scope-add-var scope it))
     (if (not body)
         (oset form type (elsa-type-nil))
@@ -290,33 +293,9 @@
         (body (elsa-nthcdr 2 form))
         (vars))
     (--each bindings
-      (-if-let (var (elsa--analyse-variable-from-binding it scope state))
-          (progn
-            (elsa-scope-add-var scope var)
-            (push var vars))
-        ;; TODO: in case the standard analyser returned nil we might
-        ;; be dealing with a dash matcher.  We will use a simple
-        ;; heuristic to pick all the symbols from the matcher and
-        ;; asssign a mixed type for now.  (message "%s"
-        ;; (eieio-object-class it))
-        (when (or (listp it) (elsa-form-list-p it))
-          (-let [(var source) (elsa-form-sequence it)]
-            (when (or (elsa-form-seq-child-p var)
-                      (elsa-form-cons-child-p var))
-              (elsa-form-visit var
-                (lambda (form)
-                  "Find all the symbol nodes in the variable declaration section."
-                  (when (elsa-form-symbol-p form)
-                    (let ((name (elsa-get-name form)))
-                      (when (not (string-match-p "^[&:]" (symbol-name name)))
-                        (let ((var (elsa-variable
-                                    :name name
-                                    ;; because we don't know how the
-                                    ;; bindings relate to the source we
-                                    ;; will default to mixed for now.
-                                    :type (elsa-type-mixed))))
-                          (elsa-scope-add-var scope var)
-                          (push var vars))))))))))))
+      (-when-let (var (elsa-dash--analyse-variable-from-binding it scope state))
+        (elsa-scope-add-var scope var)
+        (push var vars)))
     (if (not body)
         (oset form type (elsa-type-nil))
       (elsa--analyse-body body scope state)
