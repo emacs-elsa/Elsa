@@ -122,6 +122,14 @@ Nil if FORM is not a quoted symbol."
 (defun elsa-form-reachable (form)
   (oref form reachable))
 
+(cl-defgeneric elsa-form-visit ((this elsa-form) fn)
+  "Visit each node of THIS elsa-form and call FN.
+
+If the form is a cons, list or vector, recurse into the child
+nodes."
+  (declare (indent 1))
+  (funcall fn this))
+
 (cl-defgeneric elsa-form-foreach (_elsa-form _fn)
   "For each item of ELSA-FORM execute FN with the item as first argument.
 
@@ -252,6 +260,9 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-foreach ((this elsa-form-vector) fn)
   (mapc fn (oref this sequence)))
 
+(cl-defmethod elsa-form-visit ((this elsa-form-vector) fn)
+  (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
+
 (cl-defmethod elsa-form-sequence ((this elsa-form-vector))
   (oref this sequence))
 
@@ -274,6 +285,9 @@ This only makes sense for the sequence forms:
 
 (cl-defmethod elsa-form-foreach ((this elsa-form-list) fn)
   (mapc fn (oref this sequence)))
+
+(cl-defmethod elsa-form-visit ((this elsa-form-list) fn)
+  (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
 
 ;; (elsa-car :: Mixed -> Mixed)
 (cl-defgeneric elsa-car (thing)
@@ -361,6 +375,9 @@ This only makes sense for the sequence forms:
          (prefix (-take len seq))
          (last (cdr (last seq))))
     (mapc fn (-snoc prefix last))))
+
+(cl-defmethod elsa-form-visit ((this elsa-form-improper-list) fn)
+  (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
 
 (cl-defmethod elsa-car ((this elsa-form-improper-list))
   (car (oref this conses)))
