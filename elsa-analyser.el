@@ -206,9 +206,12 @@ The BINDING should have one of the following forms:
                   (elsa-make-error place
                     "Assignment to read-only variable %s"
                     (symbol-name (elsa-get-name place))))
-              (let ((var-type (if (elsa-const-type-p type)
-                                  (oref type type)
-                                type)))
+              (let ((var-type (cond
+                               ((elsa-const-type-p type)
+                                (oref type type))
+                               ((elsa-type-nil-p type)
+                                (elsa-type-mixed))
+                               (t type))))
                 (unless (elsa-type-accept var-type val)
                   (elsa-state-add-message state
                     (elsa-make-error place
