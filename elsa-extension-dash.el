@@ -244,8 +244,6 @@
     (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-get-type (-last-item body)))))
 
-;; TODO: for now, only make sure to analyze this as `let', if the
-;; bindings break they break... figure out how to do destruct later.
 (defun elsa--analyse:-let (form scope state)
   (let ((bindings (let ((binding-form (elsa-cadr form)))
                     (cond
@@ -256,26 +254,74 @@
         (body (elsa-nthcdr 2 form))
         (vars))
     (--each bindings
-      (-when-let (var (elsa--analyse-variable-from-binding it scope state))
-        (push var vars)))
+      (-if-let (var (elsa--analyse-variable-from-binding it scope state))
+          (push var vars)
+        ;; TODO: in case the standard analyser returned nil we might
+        ;; be dealing with a dash matcher.  We will use a simple
+        ;; heuristic to pick all the symbols from the matcher and
+        ;; asssign a mixed type for now.  (message "%s"
+        ;; (eieio-object-class it))
+        (when (or (listp it) (elsa-form-list-p it))
+          (-let [(var source) (elsa-form-sequence it)]
+            (when (or (elsa-form-seq-child-p var)
+                      (elsa-form-cons-child-p var))
+              (elsa-form-visit var
+                (lambda (form)
+                  "Find all the symbol nodes in the variable declaration section."
+                  (when (elsa-form-symbol-p form)
+                    (let ((name (elsa-get-name form)))
+                      (when (not (string-match-p "^[&:]" (symbol-name name)))
+                        (push (elsa-variable
+                               :name name
+                                ;; because we don't know how the
+                                ;; bindings relate to the source we
+                                ;; will default to mixed for now.
+                               :type (elsa-type-mixed))
+                              vars)))))))))))
     (--each vars (elsa-scope-add-var scope it))
-    (elsa--analyse-body body scope state)
-    (--each vars (elsa-scope-remove-var scope it))
-    (oset form type (elsa-get-type (-last-item body)))))
+    (if (not body)
+        (oset form type (elsa-type-nil))
+      (elsa--analyse-body body scope state)
+      (oset form type (elsa-get-type (-last-item body))))
+    (--each vars (elsa-scope-remove-var scope it))))
 
-;; TODO: for now, only make sure to analyze this as `let*', if the
-;; bindings break they break... figure out how to do destruct later.
 (defun elsa--analyse:-let* (form scope state)
   (let ((bindings (elsa-form-sequence (elsa-cadr form)))
         (body (elsa-nthcdr 2 form))
         (vars))
     (--each bindings
-      (-when-let (var (elsa--analyse-variable-from-binding it scope state))
-        (elsa-scope-add-var scope var)
-        (push var vars)))
-    (elsa--analyse-body body scope state)
-    (--each vars (elsa-scope-remove-var scope it))
-    (oset form type (elsa-get-type (-last-item body)))))
+      (-if-let (var (elsa--analyse-variable-from-binding it scope state))
+          (progn
+            (elsa-scope-add-var scope var)
+            (push var vars))
+        ;; TODO: in case the standard analyser returned nil we might
+        ;; be dealing with a dash matcher.  We will use a simple
+        ;; heuristic to pick all the symbols from the matcher and
+        ;; asssign a mixed type for now.  (message "%s"
+        ;; (eieio-object-class it))
+        (when (or (listp it) (elsa-form-list-p it))
+          (-let [(var source) (elsa-form-sequence it)]
+            (when (or (elsa-form-seq-child-p var)
+                      (elsa-form-cons-child-p var))
+              (elsa-form-visit var
+                (lambda (form)
+                  "Find all the symbol nodes in the variable declaration section."
+                  (when (elsa-form-symbol-p form)
+                    (let ((name (elsa-get-name form)))
+                      (when (not (string-match-p "^[&:]" (symbol-name name)))
+                        (let ((var (elsa-variable
+                                    :name name
+                                    ;; because we don't know how the
+                                    ;; bindings relate to the source we
+                                    ;; will default to mixed for now.
+                                    :type (elsa-type-mixed))))
+                          (elsa-scope-add-var scope var)
+                          (push var vars))))))))))))
+    (if (not body)
+        (oset form type (elsa-type-nil))
+      (elsa--analyse-body body scope state)
+      (oset form type (elsa-get-type (-last-item body))))
+    (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:-lambda (form scope state)
   (let ((body (elsa-nthcdr 2 form)))
