@@ -267,7 +267,14 @@ type and none of the negative types.")
   "Mixed")
 
 (cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other)
-  (unless (elsa-type-child-p other) (error "Other must be `elsa-type-child-p'"))
+  ;; Since the specialization on the first argument runs first, the
+  ;; (type form) signature from elsa-reader.el is never invoked.  We
+  ;; will therefore "manually" dispatch, or rather resolve, the second
+  ;; argument from a form to a type here.
+  (when (elsa-form-child-p other)
+    (setq other (elsa-get-type other)))
+  (unless (elsa-type-child-p other)
+    (error "Other must be `elsa-type-child-p'"))
   (not (eq (eieio-object-class other) 'elsa-type-unbound)))
 
 (defclass elsa-type-sequence (elsa-type) ())
