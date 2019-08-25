@@ -92,14 +92,7 @@ The BINDING should have one of the following forms:
             (elsa-variable
              :name (oref var name) :type (elsa-type-nil))
           (elsa-variable
-           :name (oref var name)
-           ;; If the resolved type is a constant, we will promote the
-           ;; inner type to the whole expression because elisp allows
-           ;; const init and later reassignment.
-           :type (let ((source-type (elsa-get-type source)))
-                   (if (elsa-const-type-p source-type)
-                       (oref source-type type)
-                     source-type)))))))
+           :name (oref var name) :type (oref source type))))))
    ((elsa-form-symbol-p binding)
     (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))
    (t nil)))
@@ -213,13 +206,16 @@ The BINDING should have one of the following forms:
                   (elsa-make-error place
                     "Assignment to read-only variable %s"
                     (symbol-name (elsa-get-name place))))
-              (unless (elsa-type-accept type val)
-                (elsa-state-add-message state
-                  (elsa-make-error place
-                    "Variable %s expects %s, got %s"
-                    (symbol-name (elsa-get-name place))
-                    (elsa-type-describe type)
-                    (elsa-type-describe (elsa-get-type val))))))))))
+              (let ((var-type (if (elsa-const-type-p type)
+                                  (oref type type)
+                                type)))
+                (unless (elsa-type-accept var-type val)
+                  (elsa-state-add-message state
+                    (elsa-make-error place
+                      "Variable %s expects %s, got %s"
+                      (symbol-name (elsa-get-name place))
+                      (elsa-type-describe var-type)
+                      (elsa-type-describe (elsa-get-type val)))))))))))
     (oset form type (oref (-last-item args) type))
     (oset form narrow-types (oref (-last-item args) narrow-types))))
 
