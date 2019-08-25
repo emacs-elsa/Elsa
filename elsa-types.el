@@ -593,6 +593,9 @@ other, then this is a supertype of other."
 (cl-defmethod elsa-type-composite-p ((_this elsa-const-type)) t)
 
 (cl-defmethod elsa-type-accept ((this elsa-const-type) other)
+  "The const type is different from readonly in that a readonly
+type can never be assigned to but a const type is only a
+narrowing of a type to a concrete value from the type's domain."
   (and (elsa-const-type-p other)
        (elsa-type-equivalent-p (oref this type) (oref other type))
        (equal (oref this value) (oref other value))))
