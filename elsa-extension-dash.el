@@ -212,6 +212,25 @@
     (elsa--analyse-function-call form scope state)
     (elsa-dash--restore-anaphora-scope it-var scope)))
 
+(defun elsa--analyse:-if-let (form scope state)
+  (let* ((binding (elsa-cadr form))
+         (condition (elsa-cadr binding))
+         (true-body (elsa-nth 2 form))
+         (false-body (elsa-nthcdr 3 form))
+         (vars))
+    (when binding
+      (-when-let (vars-from-binding (elsa-dash--analyse-variable-from-binding binding scope state))
+        (setq vars vars-from-binding)
+        (--each vars-from-binding (elsa-scope-add-var scope it))))
+    (elsa--analyse-form true-body scope state)
+    (--each vars (elsa-scope-remove-var scope it))
+    (elsa--analyse-body false-body scope state)
+    (let ((true-result-type (elsa-get-type true-body))
+          (false-result-type (if false-body
+                                 (elsa-get-type (-last-item false-body))
+                               (elsa-type-nil))))
+      (oset form type (elsa-type-sum true-result-type false-result-type)))))
+
 ;; TODO: this does not follow the rules of `when' for reachability
 ;; propagation.  We really need to find some better way to unify these
 ;; kinds of macros because it will get unwieldy to copy the code
