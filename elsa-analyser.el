@@ -601,7 +601,7 @@ If no type annotation is provided, find the value type through
 (defun elsa--analyse-macro (form spec scope state)
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-car form))
-         (name (oref head name))
+         (name (elsa-get-name head))
          (args (elsa-cdr form))
          (type (get name 'elsa-type))
          (narrow-types (get name 'elsa-narrow-types)))
