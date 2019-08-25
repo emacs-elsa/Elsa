@@ -220,12 +220,13 @@
 (defun elsa--analyse:-when-let (form scope state)
   (let ((binding (cadr (oref form sequence)))
         (body (cddr (oref form sequence)))
-        (var))
+        (vars))
     (when binding
-      (-when-let (var (elsa-dash--analyse-variable-from-binding binding scope state))
-        (elsa-scope-add-var scope var)))
+      (-when-let (vars-from-binding (elsa-dash--analyse-variable-from-binding binding scope state))
+        (setq vars vars-from-binding)
+        (--each vars-from-binding (elsa-scope-add-var scope it))))
     (elsa--analyse-body body scope state)
-    (when var (elsa-scope-remove-var scope var))
+    (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-get-type (-last-item body)))))
 
 ;; TODO: reachability
@@ -237,16 +238,16 @@
         (body (cddr (oref form sequence)))
         (vars))
     (--each bindings
-      (-when-let (var (elsa-dash--analyse-variable-from-binding it scope state))
-        (elsa-scope-add-var scope var)
-        (push var vars)))
+      (-when-let (vars-from-binding (elsa-dash--analyse-variable-from-binding it scope state))
+        (--each vars-from-binding (elsa-scope-add-var scope it))
+        (setq vars (-concat vars-from-binding vars))))
     (elsa--analyse-body body scope state)
     (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-get-type (-last-item body)))))
 
 (defun elsa-dash--analyse-variable-from-binding (binding scope state)
   (-if-let (var (elsa--analyse-variable-from-binding binding scope state))
-      var
+      (list var)
     ;; TODO: in case the standard analyser returned nil we might
     ;; be dealing with a dash matcher.  We will use a simple
     ;; heuristic to pick all the symbols from the matcher and
@@ -256,18 +257,21 @@
       (-let [(var source) (elsa-form-sequence binding)]
         (when (or (elsa-form-seq-child-p var)
                   (elsa-form-cons-child-p var))
-          (elsa-form-visit var
-            (lambda (form)
-              "Find all the symbol nodes in the variable declaration section."
-              (when (elsa-form-symbol-p form)
-                (let ((name (elsa-get-name form)))
-                  (when (not (string-match-p "^[&:]" (symbol-name name)))
-                    (elsa-variable
-                     :name name
-                     ;; because we don't know how the
-                     ;; bindings relate to the source we
-                     ;; will default to mixed for now.
-                     :type (elsa-type-mixed))))))))))))
+          (let (vars)
+            (elsa-form-visit var
+              (lambda (form)
+                "Find all the symbol nodes in the variable declaration section."
+                (when (elsa-form-symbol-p form)
+                  (let ((name (elsa-get-name form)))
+                    (when (not (string-match-p "^[&:]" (symbol-name name)))
+                      (push (elsa-variable
+                             :name name
+                             ;; because we don't know how the
+                             ;; bindings relate to the source we
+                             ;; will default to mixed for now.
+                             :type (elsa-type-mixed))
+                            vars))))))
+            vars))))))
 
 (defun elsa--analyse:-let (form scope state)
   (let ((bindings (let ((binding-form (elsa-cadr form)))
@@ -279,8 +283,8 @@
         (body (elsa-nthcdr 2 form))
         (vars))
     (--each bindings
-      (-when-let (var (elsa-dash--analyse-variable-from-binding it scope state))
-        (push var vars)))
+      (-when-let (vars-from-binding (elsa-dash--analyse-variable-from-binding it scope state))
+        (setq vars (-concat vars-from-binding vars))))
     (--each vars (elsa-scope-add-var scope it))
     (if (not body)
         (oset form type (elsa-type-nil))
@@ -293,9 +297,9 @@
         (body (elsa-nthcdr 2 form))
         (vars))
     (--each bindings
-      (-when-let (var (elsa-dash--analyse-variable-from-binding it scope state))
-        (elsa-scope-add-var scope var)
-        (push var vars)))
+      (-when-let (vars-from-binding (elsa-dash--analyse-variable-from-binding it scope state))
+        (--each vars-from-binding (elsa-scope-add-var scope it))
+        (setq vars (-concat vars-from-binding vars))))
     (if (not body)
         (oset form type (elsa-type-nil))
       (elsa--analyse-body body scope state)
