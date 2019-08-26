@@ -189,7 +189,8 @@
 ;; (put 'string-as-multibyte 'elsa-type (elsa-make-type ))
 ;; (put 'string-to-multibyte 'elsa-type (elsa-make-type ))
 ;; (put 'string-to-unibyte 'elsa-type (elsa-make-type ))
-(put 'copy-alist 'elsa-type (elsa-make-type List[Cons Mixed Mixed] -> List[Cons Mixed Mixed]))
+;; Should be `[Cons a b] -> [Cons a b]'
+(put 'copy-alist 'elsa-type (elsa-make-type [Cons] -> [Cons]))
 (put 'substring 'elsa-type (elsa-make-type String -> Int? -> Int? -> String))
 (put 'substring-no-properties 'elsa-type (elsa-make-type String -> Int? -> Int? -> String))
 (put 'nthcdr 'elsa-type (elsa-make-type Int -> List -> Mixed))
