@@ -49,8 +49,8 @@
 (put 'setcdr 'elsa-type (elsa-make-type Cons -> Mixed -> Mixed))
 (put 'boundp 'elsa-type (elsa-make-type Symbol -> Bool))
 (put 'fboundp 'elsa-type (elsa-make-type Symbol -> Bool))
-;; (put 'makunbound 'elsa-type (elsa-make-type ))
-;; (put 'fmakunbound 'elsa-type (elsa-make-type ))
+(put 'makunbound 'elsa-type (elsa-make-type Symbol -> Symbol))
+(put 'fmakunbound 'elsa-type (elsa-make-type Symbol -> Symbol))
 ;; (put 'symbol-function 'elsa-type (elsa-make-type ))
 (put 'symbol-plist 'elsa-type (elsa-make-type Symbol? -> List))
 (put 'symbol-name 'elsa-type (elsa-make-type Symbol? -> String))
@@ -59,7 +59,7 @@
 (put 'setplist 'elsa-type (elsa-make-type Symbol -> List -> List))
 (put 'subr-arity 'elsa-type (elsa-make-type Mixed -> Cons Int (Int | Const many)))
 ;; (put 'subr-name 'elsa-type (elsa-make-type ))
-;; (put 'interactive-form 'elsa-type (elsa-make-type ))
+(put 'interactive-form 'elsa-type (elsa-make-type Symbol -> Maybe Cons Const interactive String?))
 (put 'indirect-variable 'elsa-type (elsa-make-type Symbol -> Symbol))
 (put 'symbol-value 'elsa-type (elsa-make-type Symbol -> Mixed))
 (put 'set 'elsa-type (elsa-make-type Symbol -> Mixed -> Mixed))
@@ -100,20 +100,15 @@
 (put 'mod 'elsa-type (elsa-make-type Number | Marker -> Number | Marker -> Number))
 (put 'max 'elsa-type (elsa-make-type Number | Marker -> Variadic (Number | Marker) -> Bool))
 (put 'min 'elsa-type (elsa-make-type Number | Marker -> Variadic (Number | Marker) -> Bool))
-;; TODO: should also accept markers
-(put 'logand 'elsa-type (elsa-make-type Int... -> Int))
-(put 'logior 'elsa-type (elsa-make-type Int... -> Int))
-(put 'logxor 'elsa-type (elsa-make-type Int... -> Int))
+(put 'logand 'elsa-type (elsa-make-type Variadic (Number | Marker) -> Int))
+(put 'logior 'elsa-type (elsa-make-type Variadic (Number | Marker) -> Int))
+(put 'logxor 'elsa-type (elsa-make-type Variadic (Number | Marker) -> Int))
 (put 'ash 'elsa-type (elsa-make-type Int -> Int -> Int))
 (put 'lsh 'elsa-type (elsa-make-type Int -> Int -> Int))
 (put '1+ 'elsa-type (elsa-make-type Number | Marker -> Int))
 (put '1- 'elsa-type (elsa-make-type Number | Marker -> Int))
 (put 'lognot 'elsa-type (elsa-make-type Int -> Int))
-;; TODO: we can not have a function with just a return type right now
-;; as this would break the code fetching args/return.  We need to add
-;; methods for this so that all other types simply return itself as
-;; return type. See #12
-;; (put 'byteorder 'elsa-type (elsa-make-type Int))
+(put 'byteorder 'elsa-type (elsa-make-type Int))
 ;; TODO: Implement bool vectors
 ;; (put 'bool-vector-exclusive-or 'elsa-type (elsa-make-type ))
 ;; (put 'bool-vector-union 'elsa-type (elsa-make-type ))
@@ -175,18 +170,18 @@
 
 ;; File: fns.c
 ;; (put 'identity 'elsa-type (elsa-make-type ))
-;; (put 'random 'elsa-type (elsa-make-type ))
+(put 'random 'elsa-type (elsa-make-type Int | T | String -> Int))
 (put 'length 'elsa-type (elsa-make-type Sequence? -> Int))
 (put 'safe-length 'elsa-type (elsa-make-type Mixed -> Int))
-;; (put 'string-bytes 'elsa-type (elsa-make-type ))
-;; (put 'string-equal 'elsa-type (elsa-make-type ))
+(put 'string-bytes 'elsa-type (elsa-make-type String -> Int))
+(put 'string-equal 'elsa-type (elsa-make-type String | Symbol -> String | Symbol -> Bool))
 (put 'compare-strings 'elsa-type (elsa-make-type String -> (Int | Nil) -> (Int | Nil) -> String -> (Int | Nil) -> (Int | Nil) -> Bool? -> (Int | T)))
-;; (put 'string-lessp 'elsa-type (elsa-make-type ))
-;; (put 'string-collate-lessp 'elsa-type (elsa-make-type ))
-;; (put 'string-collate-equalp 'elsa-type (elsa-make-type ))
-;; (put 'append 'elsa-type (elsa-make-type ))
-;; (put 'concat 'elsa-type (elsa-make-type ))
-;; (put 'vconcat 'elsa-type (elsa-make-type ))
+(put 'string-lessp 'elsa-type (elsa-make-type String | Symbol -> String | Symbol -> Bool))
+(put 'string-collate-lessp 'elsa-type (elsa-make-type String | Symbol -> String | Symbol -> String? -> Bool? -> Bool))
+(put 'string-collate-equalp 'elsa-type (elsa-make-type String | Symbol -> String | Symbol -> String? -> Bool? -> Bool))
+(put 'append 'elsa-type (elsa-make-type Sequence... -> List))
+(put 'concat 'elsa-type (elsa-make-type Variadic (String | List Int | Vector Int) -> String))
+(put 'vconcat 'elsa-type (elsa-make-type Sequence... -> Vector))
 ;; (put 'copy-sequence 'elsa-type (elsa-make-type ))
 ;; (put 'string-make-multibyte 'elsa-type (elsa-make-type ))
 ;; (put 'string-make-unibyte 'elsa-type (elsa-make-type ))
@@ -194,17 +189,19 @@
 ;; (put 'string-as-multibyte 'elsa-type (elsa-make-type ))
 ;; (put 'string-to-multibyte 'elsa-type (elsa-make-type ))
 ;; (put 'string-to-unibyte 'elsa-type (elsa-make-type ))
-;; (put 'copy-alist 'elsa-type (elsa-make-type ))
-;; (put 'substring 'elsa-type (elsa-make-type ))
-;; (put 'substring-no-properties 'elsa-type (elsa-make-type ))
+;; Should be `[Cons a b] -> [Cons a b]'
+(put 'copy-alist 'elsa-type (elsa-make-type [Cons] -> [Cons]))
+(put 'substring 'elsa-type (elsa-make-type String -> Int? -> Int? -> String))
+(put 'substring-no-properties 'elsa-type (elsa-make-type String -> Int? -> Int? -> String))
 (put 'nthcdr 'elsa-type (elsa-make-type Int -> List -> Mixed))
 ;; TODO: once generics are introduced this can turn into
 ;; "Int -> List a -> a" and similarly for elt
 (put 'nth 'elsa-type (elsa-make-type Int -> List -> Mixed))
 (put 'elt 'elsa-type (elsa-make-type Sequence -> Int -> Mixed))
-;; (put 'member 'elsa-type (elsa-make-type ))
-;; (put 'memq 'elsa-type (elsa-make-type ))
-;; (put 'memql 'elsa-type (elsa-make-type ))
+;; TODO: Could use generics as well? a -> List a -> List a?
+(put 'member 'elsa-type (elsa-make-type Mixed List -> List))
+(put 'memq 'elsa-type (elsa-make-type Mixed List -> List))
+(put 'memql 'elsa-type (elsa-make-type Mixed List -> List))
 ;; TODO: this can be a -> [Mixed] -> Cons a Mixed
 (put 'assq 'elsa-type (elsa-make-type Mixed -> [Mixed] -> Cons))
 (put 'assoc 'elsa-type (elsa-make-type Mixed -> [Mixed] -> Cons))
@@ -231,12 +228,12 @@
 (put 'mapconcat 'elsa-type (elsa-make-type (Mixed -> String) -> [Mixed] -> String -> String))
 ;; (put 'mapcar 'elsa-type (elsa-make-type ))
 ;; (put 'mapc 'elsa-type (elsa-make-type ))
-;; (put 'yes-or-no-p 'elsa-type (elsa-make-type ))
-;; (put 'load-average 'elsa-type (elsa-make-type ))
-;; (put 'featurep 'elsa-type (elsa-make-type ))
-;; (put 'provide 'elsa-type (elsa-make-type ))
-;; (put 'require 'elsa-type (elsa-make-type ))
-;; (put 'plist-member 'elsa-type (elsa-make-type ))
+(put 'yes-or-no-p 'elsa-type (elsa-make-type String -> Bool))
+(put 'load-average 'elsa-type (elsa-make-type Bool? -> Cons Number Cons Number Cons Number Nil))
+(put 'featurep 'elsa-type (elsa-make-type Symbol -> Symbol? -> Bool))
+(put 'provide 'elsa-type (elsa-make-type Symbol -> [Symbol] -> Symbol))
+(put 'require 'elsa-type (elsa-make-type Symbol -> String? -> Bool? -> Symbol))
+(put 'plist-member 'elsa-type (elsa-make-type List -> Symbol -> List))
 ;; (put 'widget-put 'elsa-type (elsa-make-type ))
 ;; (put 'widget-get 'elsa-type (elsa-make-type ))
 ;; (put 'widget-apply 'elsa-type (elsa-make-type ))
@@ -261,8 +258,8 @@
 ;; (put 'remhash 'elsa-type (elsa-make-type ))
 ;; (put 'maphash 'elsa-type (elsa-make-type ))
 ;; (put 'define-hash-table-test 'elsa-type (elsa-make-type ))
-;; (put 'md5 'elsa-type (elsa-make-type ))
-;; (put 'secure-hash 'elsa-type (elsa-make-type ))
+(put 'md5 'elsa-type (elsa-make-type Buffer | String -> Int? -> Int? -> Symbol? -> Bool? -> String))
+(put 'secure-hash 'elsa-type (elsa-make-type Symbol -> Buffer | String -> Int? -> Int? -> Bool -> String))
 
 
 ;; File: dired.c
@@ -283,9 +280,9 @@
 (put 'point 'elsa-type (elsa-make-type Int))
 (put 'point-marker 'elsa-type (elsa-make-type Marker))
 (put 'goto-char 'elsa-type (elsa-make-type Int | Marker -> Int))
-;; (put 'region-beginning 'elsa-type (elsa-make-type))
-;; (put 'region-end 'elsa-type (elsa-make-type))
-;; (put 'mark-marker 'elsa-type (elsa-make-type))
+(put 'region-beginning 'elsa-type (elsa-make-type Int))
+(put 'region-end 'elsa-type (elsa-make-type Int))
+(put 'mark-marker 'elsa-type (elsa-make-type Marker))
 ;; (put 'get-pos-property 'elsa-type (elsa-make-type))
 ;; (put 'delete-field 'elsa-type (elsa-make-type))
 ;; (put 'field-string 'elsa-type (elsa-make-type))
@@ -306,23 +303,24 @@
 (put 'gap-size 'elsa-type (elsa-make-type Int))
 ;; (put 'position-bytes 'elsa-type (elsa-make-type))
 ;; (put 'byte-to-position 'elsa-type (elsa-make-type))
-;; (put 'following-char 'elsa-type (elsa-make-type))
-;; (put 'preceding-char 'elsa-type (elsa-make-type))
+(put 'following-char 'elsa-type (elsa-make-type Int))
+(put 'preceding-char 'elsa-type (elsa-make-type Int))
 (put 'bobp 'elsa-type (elsa-make-type Bool))
 (put 'eobp 'elsa-type (elsa-make-type Bool))
 (put 'bolp 'elsa-type (elsa-make-type Bool))
 (put 'eolp 'elsa-type (elsa-make-type Bool))
-;; (put 'char-after 'elsa-type (elsa-make-type))
-;; (put 'char-before 'elsa-type (elsa-make-type))
-;; (put 'user-login-name 'elsa-type (elsa-make-type))
-;; (put 'user-real-login-name 'elsa-type (elsa-make-type))
-;; (put 'user-uid 'elsa-type (elsa-make-type))
-;; (put 'user-real-uid 'elsa-type (elsa-make-type))
-;; (put 'group-gid 'elsa-type (elsa-make-type))
-;; (put 'group-real-gid 'elsa-type (elsa-make-type))
-;; (put 'user-full-name 'elsa-type (elsa-make-type))
-;; (put 'system-name 'elsa-type (elsa-make-type))
-;; (put 'emacs-pid 'elsa-type (elsa-make-type))
+(put 'char-after 'elsa-type (elsa-make-type Maybe (Int | Marker) -> Int))
+(put 'char-before 'elsa-type (elsa-make-type Maybe (Int | Marker) -> Int))
+;; TODO: Can only return nil if arg is non-nil; same for user-full-name
+(put 'user-login-name 'elsa-type (elsa-make-type Number? -> String?))
+(put 'user-real-login-name 'elsa-type (elsa-make-type String))
+(put 'user-uid 'elsa-type (elsa-make-type Number))
+(put 'user-real-uid 'elsa-type (elsa-make-type Number))
+(put 'group-gid 'elsa-type (elsa-make-type Number))
+(put 'group-real-gid 'elsa-type (elsa-make-type Number))
+(put 'user-full-name 'elsa-type (elsa-make-type Number? -> String?))
+(put 'system-name 'elsa-type (elsa-make-type String))
+(put 'emacs-pid 'elsa-type (elsa-make-type Number))
 ;; (put 'current-time 'elsa-type (elsa-make-type))
 ;; (put 'time-add 'elsa-type (elsa-make-type))
 ;; (put 'time-subtract 'elsa-type (elsa-make-type))
@@ -337,16 +335,16 @@
 ;; (put 'set-time-zone-rule 'elsa-type (elsa-make-type))
 ;; TODO: rewrite as (String | Int)... when that syntax is available
 (put 'insert 'elsa-type (elsa-make-type Variadic (String | Int) -> Nil))
-;; (put 'insert-and-inherit 'elsa-type (elsa-make-type))
-;; (put 'insert-before-markers 'elsa-type (elsa-make-type))
-;; (put 'insert-before-markers-and-inherit 'elsa-type (elsa-make-type))
-;; (put 'insert-char 'elsa-type (elsa-make-type))
-;; (put 'insert-byte 'elsa-type (elsa-make-type))
-;; (put 'buffer-substring 'elsa-type (elsa-make-type))
-;; (put 'buffer-substring-no-properties 'elsa-type (elsa-make-type))
-;; (put 'buffer-string 'elsa-type (elsa-make-type))
-;; (put 'insert-buffer-substring 'elsa-type (elsa-make-type))
-;; (put 'compare-buffer-substrings 'elsa-type (elsa-make-type))
+(put 'insert-and-inherit 'elsa-type (elsa-make-type Variadic (String | Int) -> Nil))
+(put 'insert-before-markers 'elsa-type (elsa-make-type Variadic (String | Int) -> Nil))
+(put 'insert-before-markers-and-inherit 'elsa-type (elsa-make-type Variadic (String | Int) -> Nil))
+(put 'insert-char 'elsa-type (elsa-make-type Int -> Int? -> Bool? -> Nil))
+(put 'insert-byte 'elsa-type (elsa-make-type Int -> Int? -> Bool? -> Nil))
+(put 'buffer-substring 'elsa-type (elsa-make-type Int -> Int -> String))
+(put 'buffer-substring-no-properties 'elsa-type (elsa-make-type Int -> Int -> String))
+(put 'buffer-string 'elsa-type (elsa-make-type String))
+(put 'insert-buffer-substring 'elsa-type (elsa-make-type Buffer -> Int? -> Int? -> Nil))
+(put 'compare-buffer-substrings 'elsa-type (elsa-make-type Buffer? -> Int? -> Int? -> Buffer? -> Int? -> Int? -> Int))
 ;; (put 'subst-char-in-region 'elsa-type (elsa-make-type))
 ;; (put 'translate-region-internal 'elsa-type (elsa-make-type))
 ;; (put 'delete-region 'elsa-type (elsa-make-type))
@@ -354,14 +352,14 @@
 ;; (put 'widen 'elsa-type (elsa-make-type))
 ;; (put 'narrow-to-region 'elsa-type (elsa-make-type))
 ;; (put 'save-restriction 'elsa-type (elsa-make-type))
-;; (put 'message 'elsa-type (elsa-make-type))
-;; (put 'message-box 'elsa-type (elsa-make-type))
-;; (put 'message-or-box 'elsa-type (elsa-make-type))
-;; (put 'current-message 'elsa-type (elsa-make-type))
-;; (put 'propertize 'elsa-type (elsa-make-type))
+(put 'message 'elsa-type (elsa-make-type String -> Mixed... -> String))
+(put 'message-box 'elsa-type (elsa-make-type String -> Mixed... -> String))
+(put 'message-or-box 'elsa-type (elsa-make-type String -> Mixed... -> String))
+(put 'current-message 'elsa-type (elsa-make-type String))
+(put 'propertize 'elsa-type (elsa-make-type String -> Mixed -> String))
 (put 'format 'elsa-type (elsa-make-type String -> Mixed... -> String))
-;; (put 'format-message 'elsa-type (elsa-make-type))
-;; (put 'char-equal 'elsa-type (elsa-make-type))
+(put 'format-message 'elsa-type (elsa-make-type String -> Mixed... -> String))
+(put 'char-equal 'elsa-type (elsa-make-type Int -> Int -> Bool))
 ;; (put 'transpose-regions 'elsa-type (elsa-make-type))
 
 ;; File: alloc.c
@@ -486,94 +484,98 @@
 ;; (put 'copy-syntax-table 'elsa-type (elsa-make-type))
 ;; (put 'set-syntax-table 'elsa-type (elsa-make-type))
 (put 'char-syntax 'elsa-type (elsa-make-type Int -> Int))
-;; (put 'matching-paren 'elsa-type (elsa-make-type))
+(put 'matching-paren 'elsa-type (elsa-make-type Int -> Int?))
 ;; (put 'string-to-syntax 'elsa-type (elsa-make-type))
 ;; (put 'modify-syntax-entry 'elsa-type (elsa-make-type))
 ;; (put 'internal-describe-syntax-value 'elsa-type (elsa-make-type))
-;; (put 'forward-word 'elsa-type (elsa-make-type))
-;; (put 'skip-chars-forward 'elsa-type (elsa-make-type))
-;; (put 'skip-chars-backward 'elsa-type (elsa-make-type))
+(put 'forward-word 'elsa-type (elsa-make-type Int? -> Bool))
+(put 'skip-chars-forward 'elsa-type (elsa-make-type String -> Int? -> Int))
+(put 'skip-chars-backward 'elsa-type (elsa-make-type String -> Int? -> Int))
 ;; (put 'skip-syntax-forward 'elsa-type (elsa-make-type))
 ;; (put 'skip-syntax-backward 'elsa-type (elsa-make-type))
-;; (put 'forward-comment 'elsa-type (elsa-make-type))
-;; (put 'scan-lists 'elsa-type (elsa-make-type))
-;; (put 'scan-sexps 'elsa-type (elsa-make-type))
-;; (put 'backward-prefix-chars 'elsa-type (elsa-make-type))
+(put 'forward-comment 'elsa-type (elsa-make-type Int -> Bool))
+(put 'scan-lists 'elsa-type (elsa-make-type Int -> Int -> Int -> Int?))
+(put 'scan-sexps 'elsa-type (elsa-make-type Int -> Int -> Int?))
+(put 'backward-prefix-chars 'elsa-type (elsa-make-type Nil))
 ;; (put 'parse-partial-sexp 'elsa-type (elsa-make-type))
 
 ;; File: keymap.c
 (put 'single-key-description 'elsa-type (elsa-make-type Int -> Mixed -> String))
 
 ;; File: search.c
-;; looking-at
-;; posix-looking-at
-;; string-match
-;; posix-string-match
-;; search-backward
-;; search-forward
-;; re-search-backward
-;; re-search-forward
-;; posix-search-backward
-;; posix-search-forward
-;; replace-match
+(put 'looking-at 'elsa-type (elsa-make-type String -> Bool))
+(put 'posix-looking-at 'elsa-type (elsa-make-type String -> Bool))
+(put 'string-match 'elsa-type (elsa-make-type String -> String -> Int -> Int?))
+(put 'posix-string-match 'elsa-type (elsa-make-type String -> String -> Int -> Int?))
+(put 'search-backward 'elsa-type (elsa-make-type String -> Int? -> Maybe (Bool | Mixed) -> Int?))
+(put 'search-forward 'elsa-type (elsa-make-type String -> Int? -> Maybe (Bool | Mixed) -> Int?))
+(put 're-search-backward 'elsa-type (elsa-make-type String -> Int? -> Maybe (Bool | Mixed) -> Int?))
+(put 're-search-forward 'elsa-type (elsa-make-type String -> Int? -> Maybe (Bool | Mixed) -> Int?))
+(put 'posix-search-backward 'elsa-type (elsa-make-type String -> Int? -> Maybe (Bool | Mixed) -> Int?))
+(put 'posix-search-forward 'elsa-type (elsa-make-type String -> Int? -> Maybe (Bool | Mixed) -> Int?))
+(put 'replace-match 'elsa-type (elsa-make-type String -> Bool? -> Bool? -> String? -> Int -> Nil))
 (put 'match-beginning 'elsa-type (elsa-make-type Int -> Nil | Int ))
 (put 'match-end 'elsa-type (elsa-make-type Int -> Nil | Int ))
-;; match-data
-;; set-match-data
-;; regexp-quote
-;; newline-cache-check
+;; TODO: Return type depends on first arg. Also see docstring for note
+;; on return value.
+(put 'match-data 'elsa-type (elsa-make-type Bool? -> List? -> Bool? -> [Maybe (Marker | Int)]))
+(put 'set-match-data 'elsa-type (elsa-make-type [Maybe (Marker | Int)] -> Bool? -> Nil))
+(put 'regexp-quote 'elsa-type (elsa-make-type String -> String))
+;; (put 'newline-cache-check 'elsa-type (elsa-make-type ))
 
 ;; File: buffer.c
-;; buffer-live-p
-;; buffer-list
-;; get-buffer
-;; get-file-buffer
-;; get-buffer-create
-;; make-indirect-buffer
-;; generate-new-buffer-name
-;; buffer-name
-;; buffer-file-name
-;; buffer-base-buffer
-;; buffer-local-value
-;; buffer-local-variables
-;; buffer-modified-p
-;; force-mode-line-update
-;; set-buffer-modified-p
-;; restore-buffer-modified-p
-;; buffer-modified-tick
-;; buffer-chars-modified-tick
-;; rename-buffer
-;; other-buffer
-;; buffer-enable-undo
-;; kill-buffer
-;; bury-buffer-internal
-;; set-buffer-major-mode
-;; current-buffer
-;; set-buffer
-;; barf-if-buffer-read-only
-;; erase-buffer
-;; buffer-swap-text
-;; set-buffer-multibyte
-;; kill-all-local-variables
-;; overlayp
-;; make-overlay
-;; move-overlay
-;; delete-overlay
-;; delete-all-overlays
+(put 'buffer-live-p 'elsa-type (elsa-make-type Mixed -> Bool))
+(put 'buffer-list 'elsa-type (elsa-make-type Frame? -> [Buffer]))
+;; TODO: Theoretically should only return nil for a string arg
+(put 'get-buffer 'elsa-type (elsa-make-type Buffer | String -> Buffer?))
+(put 'get-file-buffer 'elsa-type (elsa-make-type String -> Buffer?))
+(put 'get-buffer-create 'elsa-type (elsa-make-type) Buffer | String -> Buffer)
+(put 'make-indirect-buffer 'elsa-type (elsa-make-type Buffer -> String -> Bool? -> Buffer))
+(put 'generate-new-buffer-name 'elsa-type (elsa-make-type String -> String? -> String))
+;; TODO: Theoretically can only return nil if BUFFER is non-nil
+(put 'buffer-name 'elsa-type (elsa-make-type Buffer? -> String?))
+(put 'buffer-file-name 'elsa-type (elsa-make-type Buffer? -> String?))
+(put 'buffer-base-buffer 'elsa-type (elsa-make-type Buffer? -> Buffer?))
+(put 'buffer-local-value 'elsa-type (elsa-make-type Symbol -> Buffer -> Mixed))
+(put 'buffer-local-variables 'elsa-type (elsa-make-type Buffer? -> [(Symbol | Cons Symbol Mixed)]))
+(put 'buffer-modified-p 'elsa-type (elsa-make-type Buffer? -> Bool))
+(put 'force-mode-line-update 'elsa-type (elsa-make-type Bool? -> Bool))
+(put 'set-buffer-modified-p 'elsa-type (elsa-make-type Bool -> Bool))
+(put 'restore-buffer-modified-p 'elsa-type (elsa-make-type Bool -> Bool))
+(put 'buffer-modified-tick 'elsa-type (elsa-make-type Buffer? -> Int))
+(put 'buffer-chars-modified-tick 'elsa-type (elsa-make-type Buffer? -> Int))
+(put 'rename-buffer 'elsa-type (elsa-make-type String -> Bool -> String))
+(put 'other-buffer 'elsa-type (elsa-make-type Buffer? -> Bool? -> Frame? -> Buffer))
+(put 'buffer-enable-undo 'elsa-type (elsa-make-type Buffer? -> Nil))
+(put 'kill-buffer 'elsa-type (elsa-make-type Maybe (Buffer | String) -> Bool))
+(put 'bury-buffer-internal 'elsa-type (elsa-make-type Buffer -> Nil))
+(put 'set-buffer-major-mode 'elsa-type (elsa-make-type Buffer -> Nil))
+(put 'current-buffer 'elsa-type (elsa-make-type Buffer))
+(put 'set-buffer 'elsa-type (elsa-make-type Buffer | String -> Buffer))
+(put 'barf-if-buffer-read-only 'elsa-type (elsa-make-type Int? -> Nil))
+(put 'erase-buffer 'elsa-type (elsa-make-type Nil))
+(put 'buffer-swap-text 'elsa-type (elsa-make-type Buffer -> Nil))
+(put 'set-buffer-multibyte 'elsa-type (elsa-make-type Bool | Const to -> Bool | Const to))
+(put 'kill-all-local-variables 'elsa-type (elsa-make-type Nil))
+(put 'overlayp 'elsa-type (elsa-make-type Mixed -> Bool))
+;; (put 'make-overlay 'elsa-type (elsa-make-type ))
+;; (put 'move-overlay 'elsa-type (elsa-make-type ))
+;; (put 'delete-overlay 'elsa-type (elsa-make-type ))
+;; (put 'delete-all-overlays 'elsa-type (elsa-make-type ))
 ;; TODO: overlay type
 (put 'overlay-start 'elsa-type (elsa-make-type Mixed -> Int))
 ;; TODO: overlay type
 (put 'overlay-end 'elsa-type (elsa-make-type Mixed -> Int))
-;; overlay-buffer
-;; overlay-properties
-;; overlays-at
-;; overlays-in
-;; next-overlay-change
-;; previous-overlay-change
-;; overlay-lists
-;; overlay-recenter
-;; overlay-get
-;; overlay-put
+;; (put 'overlay-buffer 'elsa-type (elsa-make-type ))
+;; (put 'overlay-properties 'elsa-type (elsa-make-type ))
+;; (put 'overlays-at 'elsa-type (elsa-make-type ))
+;; (put 'overlays-in 'elsa-type (elsa-make-type ))
+;; (put 'next-overlay-change 'elsa-type (elsa-make-type ))
+;; (put 'previous-overlay-change 'elsa-type (elsa-make-type ))
+;; (put 'overlay-lists 'elsa-type (elsa-make-type ))
+;; (put 'overlay-recenter 'elsa-type (elsa-make-type ))
+;; (put 'overlay-get 'elsa-type (elsa-make-type ))
+;; (put 'overlay-put 'elsa-type (elsa-make-type ))
 
 ;; File: casefiddle.c
 (put 'upcase 'elsa-type (elsa-make-type (String -> String) | (Int -> Int)))
