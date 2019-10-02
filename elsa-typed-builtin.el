@@ -59,7 +59,7 @@
 (put 'setplist 'elsa-type (elsa-make-type Symbol -> List -> List))
 (put 'subr-arity 'elsa-type (elsa-make-type Mixed -> Cons Int (Int | Const many)))
 ;; (put 'subr-name 'elsa-type (elsa-make-type ))
-(put 'interactive-form 'elsa-type (elsa-make-type Symbol -> Maybe Cons Const interactive String?))
+(put 'interactive-form 'elsa-type (elsa-make-type Symbol -> Maybe (Cons (Const interactive) String?)))
 (put 'indirect-variable 'elsa-type (elsa-make-type Symbol -> Symbol))
 (put 'symbol-value 'elsa-type (elsa-make-type Symbol -> Mixed))
 (put 'set 'elsa-type (elsa-make-type Symbol -> Mixed -> Mixed))
@@ -229,7 +229,7 @@
 ;; (put 'mapcar 'elsa-type (elsa-make-type ))
 ;; (put 'mapc 'elsa-type (elsa-make-type ))
 (put 'yes-or-no-p 'elsa-type (elsa-make-type String -> Bool))
-(put 'load-average 'elsa-type (elsa-make-type Bool? -> Cons Number Cons Number Cons Number Nil))
+(put 'load-average 'elsa-type (elsa-make-type Bool? -> (Cons Number (Cons Number (Cons Number Nil)))))
 (put 'featurep 'elsa-type (elsa-make-type Symbol -> Symbol? -> Bool))
 (put 'provide 'elsa-type (elsa-make-type Symbol -> [Symbol] -> Symbol))
 (put 'require 'elsa-type (elsa-make-type Symbol -> String? -> Bool? -> Symbol))
@@ -264,7 +264,7 @@
 
 ;; File: dired.c
 (put 'directory-files 'elsa-type (elsa-make-type String -> Mixed -> Mixed -> Mixed -> [String]))
-(put 'directory-files-and-attributes 'elsa-type (elsa-make-type String -> Mixed -> Mixed -> Mixed -> Mixed -> [[Mixed]] ))
+(put 'directory-files-and-attributes 'elsa-type (elsa-make-type String -> Mixed -> Mixed -> Mixed -> Mixed -> [[Mixed]]))
 (put 'file-name-completion 'elsa-type (elsa-make-type String -> String -> (String -> Bool) | Nil -> String | Nil | T))
 (put 'file-name-all-completions 'elsa-type (elsa-make-type String -> String -> [String]))
 (put 'file-attributes 'elsa-type (elsa-make-type String -> [Mixed]))
@@ -529,7 +529,7 @@
 ;; TODO: Theoretically should only return nil for a string arg
 (put 'get-buffer 'elsa-type (elsa-make-type Buffer | String -> Buffer?))
 (put 'get-file-buffer 'elsa-type (elsa-make-type String -> Buffer?))
-(put 'get-buffer-create 'elsa-type (elsa-make-type) Buffer | String -> Buffer)
+(put 'get-buffer-create 'elsa-type (elsa-make-type Buffer | String -> Buffer))
 (put 'make-indirect-buffer 'elsa-type (elsa-make-type Buffer -> String -> Bool? -> Buffer))
 (put 'generate-new-buffer-name 'elsa-type (elsa-make-type String -> String? -> String))
 ;; TODO: Theoretically can only return nil if BUFFER is non-nil
