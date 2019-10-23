@@ -59,6 +59,7 @@ Nil if FORM is not a quoted symbol."
    (quote-type :type symbol :initarg :quote-type :initform nil)
    (line :type integer :initarg :line)
    (column :type integer :initarg :column)
+   (end-column :type integer :initarg :column)
    (type :type elsa-type :initarg :type :initform (elsa-make-type Mixed))
    (narrow-types :initarg :narrow-type :initform nil)
    (reachable :type trinary :initarg :reachable :initform (trinary-true))
@@ -532,6 +533,9 @@ for the analysis."
     (oset reader-form column (save-excursion
                                (goto-char (oref reader-form start))
                                (current-column)))
+    (oset reader-form end-column (save-excursion
+                                   (goto-char (oref reader-form end))
+                                   (current-column)))
     ;; check if there is a comment atached to this form
     ;; TODO: this is really inefficient because it checks the same
     ;; line multiple times.  We should only do this parsing for the
