@@ -1,5 +1,4 @@
-# EMACS_VERSION should be set in your ~/.profile on your development machine
-EMAKE_SHA1            ?= f1a50c20c36a4141ff854c5d62e1a75bb7e9ebe8
+EMAKE_SHA1            ?= d8ab7790f5823547fd4e7aec2218771a3dda0638
 PACKAGE_BASENAME      := elsa
 PACKAGE_FILE          := elsa-pkg.el
 
@@ -24,10 +23,12 @@ clean-elc:
 clean: clean-elc
 	rm -rf $(EMAKE_WORKDIR)
 
-compile: clean-elc		## override: compile, but do not fail on warnings
+compile-noerr: clean-elc        ## override: compile, but do not fail on warnings
 	$(EMAKE) compile
 
 test: test-buttercup
+
+lint-elsa: PACKAGE_TEST_DEPS += dash trinary buttercup f
 
 emacs: SHELL := /bin/bash
 emacs:

@@ -1,11 +1,15 @@
-language: emacs-lisp
+language: generic
 sudo: false
 cache:
 - directories:
   - "$HOME/emacs"
+matrix:
+  fast_finish: true
+  allow_failures:
+  - env: EMACS_VERSION=snapshot
 env:
   global:
-  - EMAKE_SHA1=f1a50c20c36a4141ff854c5d62e1a75bb7e9ebe8
+  - EMAKE_SHA1=d8ab7790f5823547fd4e7aec2218771a3dda0638
   - EMACS_DIR=$HOME/emacs
   - EMACS=$HOME/emacs/src/emacs
   matrix:
@@ -20,5 +24,5 @@ install:
   - make install
 script:
   - make test         # test uncompiled
-  - make compile
+  - make compile-noerr
   - make test         # test compiled
