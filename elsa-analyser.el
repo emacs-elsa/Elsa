@@ -460,7 +460,6 @@ make it explicit and precise."
     (unless var-type
       (if value
           (progn
-            (message "analyzer: updating variable %s, old type %s" var-name (elsa-type-describe var-type))
             (elsa--analyse-form value scope state)
             (put var-name 'elsa-type-var (oref value type)))
         (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
