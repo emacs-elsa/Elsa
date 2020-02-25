@@ -132,6 +132,19 @@
     (--each (reverse (oref (elsa-process-file file) errors))
       (princ (concat file ":" (elsa-message-format it))))))
 
+(defun elsa-run-files-and-exit ()
+  "Run `elsa-process-file' on files in `command-line-args-left'.
+Output errors to stdout, and exit Emacs when done, non-zero if
+errors are found."
+  (elsa-load-config)
+  (let (exit-code)
+    (dolist (file command-line-args-left)
+      (when-let* ((errors (oref (elsa-process-file file) errors)))
+        (setf exit-code 1)
+        (--each (reverse errors)
+          (princ (concat file ":" (elsa-message-format it))))))
+    (kill-emacs exit-code)))
+
 (defun elsa-analyse-form (state form &optional _type)
   "Analyse FORM in STATE.
 

@@ -111,12 +111,30 @@ Everything you see here actually works, this is not just for show!
 
 # How do I run it
 
-Currently we only support running Elsa with [Cask](https://github.com/cask/cask).
+Elsa can be run with [makem.sh](https://github.com/alphapapa/makem.sh)
+or with [Cask](https://github.com/cask/cask).
+
+## makem.sh
+
+Using `makem.sh`, simply run this command from the project root
+directory, which installs and runs Elsa in a temporary sandbox:
+
+    ./makem.sh --sandbox lint-elsa
+
+To use a non-temporary sandbox directory named `.sandbox` and avoid
+installing Elsa on each run:
+
+1.  Initialize the sandbox: `./makem.sh -s.sandbox --install-deps --install-linters`.
+2.  Run Elsa: `./makem.sh -s.sandbox lint-elsa`.
+
+See `makem.sh`'s documentation for more information.
+
+## Cask
 
 ### [RECOMMENDED] Using packaged version
 
-The easiest and fastest way to install Elsa is through
-[MELPA](http://melpa.org/#/) and [Cask](https://github.com/cask/cask).
+This method uses [Cask](https://github.com/cask/cask) and installs
+Elsa from [MELPA](http://melpa.org/#/).
 
 1. Add `(depends-on "elsa")` to `Cask` file of your project.
 2. Run `cask install`.
@@ -124,8 +142,8 @@ The easiest and fastest way to install Elsa is through
 
 ### Using development version
 
-To use the development version you can clone the repository and use
-`cask link` feature to use the code from the clone.
+To use the development version of Elsa, you can clone the repository
+and use the `cask link` feature to use the code from the clone.
 
 1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
 2. Add `(depends-on "elsa")` to `Cask` file of your project.
