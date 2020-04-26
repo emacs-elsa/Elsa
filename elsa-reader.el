@@ -59,7 +59,7 @@ Nil if FORM is not a quoted symbol."
    (quote-type :type symbol :initarg :quote-type :initform nil)
    (line :type integer :initarg :line)
    (column :type integer :initarg :column)
-   (type :type elsa-type :initarg :type :initform (elsa-make-type Mixed))
+   (type :type elsa-type :initarg :type :initform (elsa-make-type mixed))
    (narrow-types :initarg :narrow-type :initform nil)
    (reachable :type trinary :initarg :reachable :initform (trinary-true))
    (parent :type (or elsa-form nil) :initarg :parent))
@@ -185,7 +185,7 @@ This only makes sense for the sequence forms:
   (elsa--skip-whitespace-forward)
   (elsa-form-keyword
    :type (elsa-const-type
-          :type (elsa-make-type Keyword)
+          :type (elsa-make-type keyword)
           :value form)
    :start (point)
    :name form
@@ -204,7 +204,7 @@ This only makes sense for the sequence forms:
   (elsa--skip-whitespace-forward)
   (elsa-form-integer
    :type (elsa-const-type
-          :type (elsa-make-type Int)
+          :type (elsa-make-type int)
           :value form)
    :start (point)
    :value form
@@ -221,7 +221,7 @@ This only makes sense for the sequence forms:
   (elsa--skip-whitespace-forward)
   (elsa-form-float
    :type (elsa-const-type
-          :type (elsa-make-type Float)
+          :type (elsa-make-type float)
           :value form)
    :start (point)
    :value form
@@ -245,7 +245,7 @@ This only makes sense for the sequence forms:
   (elsa--skip-whitespace-forward)
   (elsa-form-string
    :type (elsa-const-type
-          :type (elsa-make-type String)
+          :type (elsa-make-type string)
           :value form)
    :start (point)
    :end (elsa--forward-sexp)
@@ -269,7 +269,7 @@ This only makes sense for the sequence forms:
 (defsubst elsa--read-vector (form state)
   (elsa--skip-whitespace-forward)
   (elsa-form-vector
-   :type (elsa-make-type Vector)
+   :type (elsa-make-type (vector mixed))
    :start (prog1 (point) (down-list))
    :sequence (-map (lambda (f) (elsa--read-form f state)) form)
    :end (progn (up-list) (point))))
@@ -390,7 +390,7 @@ This only makes sense for the sequence forms:
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
       (elsa-form-improper-list
-       :type (elsa-make-type List)
+       :type (elsa-make-type (list mixed))
        :start (prog1 (point) (down-list))
        :conses (let ((depth 0)
                      (items))

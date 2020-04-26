@@ -21,31 +21,31 @@
 
     (it "should retrieve variable by name"
       (let ((scope (elsa-scope)))
-        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type Int)))
-        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type String)))
+        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type int)))
+        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type string)))
         (expect (elsa-scope-get-var scope 'a) :to-be-type-equivalent
-                (elsa-make-type String))))
+                (elsa-make-type string))))
 
     (it "should retrieve variable by name if the scope was protected"
       (let ((scope (elsa-scope)))
-        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type Int)))
+        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type int)))
         (elsa-save-scope scope
           (expect (elsa-scope-get-var scope 'a) :to-be-type-equivalent
-                  (elsa-make-type Int)))))
+                  (elsa-make-type int)))))
 
     (it "should retrieve variable by name if it was assigned with variable bound before"
       (let ((scope (elsa-scope)))
-        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type Int)))
-        (elsa-scope-assign-var scope (elsa-make-variable 'a (elsa-make-type String)))
+        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type int)))
+        (elsa-scope-assign-var scope (elsa-make-variable 'a (elsa-make-type string)))
         (expect (elsa-scope-get-var scope 'a) :to-be-type-equivalent
-                (elsa-make-type String))))
+                (elsa-make-type string))))
 
     (it "should retrieve variable by name if it was assigned with no variable bound before"
       (let ((scope (elsa-scope)))
-        (elsa-scope-assign-var scope (elsa-make-variable 'a (elsa-make-type Int)))
+        (elsa-scope-assign-var scope (elsa-make-variable 'a (elsa-make-type int)))
         (elsa-save-scope scope
           (expect (elsa-scope-get-var scope 'a) :to-be-type-equivalent
-                  (elsa-make-type Int))))))
+                  (elsa-make-type int))))))
 
   (describe "saving scope"
 
@@ -53,16 +53,16 @@
       (let ((scope (elsa-scope)))
         (elsa-save-scope scope
           (elsa-scope-assign-var scope
-            (elsa-make-variable 'a (elsa-make-type Int))))
+            (elsa-make-variable 'a (elsa-make-type int))))
         (expect (elsa-scope-get-var scope 'a) :not :to-be-truthy)))
 
     (it "should restore binding from before the saving"
       (let ((scope (elsa-scope)))
-        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type Int)))
+        (elsa-scope-add-var scope (elsa-make-variable 'a (elsa-make-type int)))
         (elsa-save-scope scope
           (elsa-scope-assign-var scope
-            (elsa-make-variable 'a (elsa-make-type String)))
+            (elsa-make-variable 'a (elsa-make-type string)))
           (expect (elsa-scope-get-var scope 'a) :to-be-type-equivalent
-                  (elsa-make-type String)))
+                  (elsa-make-type string)))
         (expect (elsa-scope-get-var scope 'a) :to-be-type-equivalent
-                (elsa-make-type Int))))))
+                (elsa-make-type int))))))

@@ -1,11 +1,11 @@
 (require 'elsa-analyser)
 (require 'elsa-type-helpers)
 
-(put '!cons 'elsa-type (elsa-make-type Mixed -> Mixed -> Cons Mixed Mixed))
+(put '!cons 'elsa-type (elsa-make-type (function (mixed mixed) (cons mixed mixed))))
 ;; The type really is Cons a b -> b but pragmatically this is used on lists
-(put '!cdr 'elsa-type (elsa-make-type List -> List))
-(put '-each 'elsa-type (elsa-make-type List -> (Mixed -> Mixed) -> Mixed))
-(put '-each-indexed 'elsa-type (elsa-make-type List -> (Int -> Mixed -> Mixed) -> Mixed))
+(put '!cdr 'elsa-type (elsa-make-type (function ((list mixed)) (list mixed))))
+(put '-each 'elsa-type (elsa-make-type (function ((list mixed) (function (mixed) mixed)) mixed)))
+(put '-each-indexed 'elsa-type (elsa-make-type (function ((list mixed) (function (int mixed) mixed)) mixed)))
 ;; (put '-each-while 'elsa-type (elsa-make-type))
 ;; (put '-doto 'elsa-type (elsa-make-type))
 ;; (put '-dotimes 'elsa-type (elsa-make-type))
@@ -41,11 +41,11 @@
 ;; (put '-replace-last 'elsa-type (elsa-make-type))
 ;; (put '-flatten 'elsa-type (elsa-make-type))
 ;; (put '-flatten-n 'elsa-type (elsa-make-type))
-(put '-concat 'elsa-type (elsa-make-type Variadic [Mixed] -> [Mixed]))
+(put '-concat 'elsa-type (elsa-make-type (function (&rest (list mixed)) (list mixed))))
 ;; (put '-mapcat 'elsa-type (elsa-make-type))
 ;; (put '-copy 'elsa-type (elsa-make-type))
 ;; (put '-cons* 'elsa-type (elsa-make-type))
-(put '-snoc 'elsa-type (elsa-make-type [Mixed] -> Mixed -> Mixed... -> [Mixed]))
+(put '-snoc 'elsa-type (elsa-make-type (function ((list mixed) mixed &rest mixed) (list mixed))))
 ;; (put '-first 'elsa-type (elsa-make-type))
 ;; (put '-find 'elsa-type (elsa-make-type))
 ;; (put '-some 'elsa-type (elsa-make-type))
@@ -59,8 +59,8 @@
 ;; (put '-last-item 'elsa-type (elsa-make-type))
 ;; (put '-butlast 'elsa-type (elsa-make-type))
 ;; (put '-count 'elsa-type (elsa-make-type))
-(put '-any? 'elsa-type (elsa-make-type (Mixed -> Mixed) -> List -> Bool))
-(put '--any? 'elsa-type (elsa-make-type Mixed -> List -> Bool))
+(put '-any? 'elsa-type (elsa-make-type (function ((function (mixed) mixed) (list mixed)) bool)))
+(put '--any? 'elsa-type (elsa-make-type (function (mixed (list mixed)) bool)))
 ;; (put '-some? 'elsa-type (elsa-make-type))
 ;; (put '-any-p 'elsa-type (elsa-make-type))
 ;; (put '-some-p 'elsa-type (elsa-make-type))
@@ -158,7 +158,7 @@
 ;; (put '-is-infix? 'elsa-type (elsa-make-type))
 ;; (put '-sort 'elsa-type (elsa-make-type))
 ;; (put '-list 'elsa-type (elsa-make-type))
-(put '-repeat 'elsa-type (elsa-make-type Number -> Mixed -> [Mixed]))
+(put '-repeat 'elsa-type (elsa-make-type (function (number mixed) (list mixed))))
 ;; (put '-sum 'elsa-type (elsa-make-type))
 ;; (put '-running-sum 'elsa-type (elsa-make-type))
 ;; (put '-product 'elsa-type (elsa-make-type))
@@ -199,7 +199,7 @@
   (let ((it-var (elsa-variable
                  :name 'it
                   ;; TODO: derive type based on the list argument type
-                 :type (elsa-make-type Mixed))))
+                 :type (elsa-make-type mixed))))
     (elsa-scope-add-var scope it-var)
     it-var))
 
@@ -330,7 +330,7 @@
     (elsa--analyse-body body scope state)
     (oset form type
           (elsa-function-type
-           :args (list (elsa-make-type Mixed))
+           :args (list (elsa-make-type mixed))
            :return (clone (oref (-last-item body) type))))))
 
 (defun elsa--analyse:--> (form scope state)

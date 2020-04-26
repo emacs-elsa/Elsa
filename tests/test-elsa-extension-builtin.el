@@ -22,6 +22,6 @@
 
       (it "should resolve to type T? if input argument is mixed"
         (elsa-test-with-analysed-form "|(not x)" form
-          (expect (elsa-type-accept (elsa-make-type T?)
+          (expect (elsa-type-accept (elsa-make-type bool)
                                     (oref form type))
                   :to-be-truthy))))))

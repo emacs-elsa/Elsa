@@ -99,7 +99,7 @@ This is not accepted by any type because we don't know what it is.")
 This is accepted by any type and does not accept any type.")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-empty))
-  "()")
+  "[]")
 
 (cl-defmethod elsa-type-accept ((_this elsa-type-empty) other)
   (elsa-type-empty-p other))
