@@ -11,75 +11,79 @@
   (describe "elsa-make-type"
 
     (it "should make a primitive type"
-      (expect (elsa-test-describe-type Int) :to-equal "Int"))
+      (expect (elsa-test-describe-type Int) :to-equal "int"))
 
     (it "should make a primitive type wrapped in superfluous parens"
-      (expect (elsa-test-describe-type (Int)) :to-equal "Int"))
+      (expect (elsa-test-describe-type (Int)) :to-equal "int"))
 
     (it "should make a primitive type wrapped in superfluous parens multiple times"
-      (expect (elsa-test-describe-type ((Int))) :to-equal "Int"))
+      (expect (elsa-test-describe-type ((Int))) :to-equal "int"))
 
     (it "should make a simple function type"
-      (expect (elsa-test-describe-type Int -> Int) :to-equal "Int -> Int"))
+      (expect (elsa-test-describe-type Int -> Int) :to-equal "(function (int) int)"))
 
     (it "should make a simple function type wrapped in superfluous parens"
-      (expect (elsa-test-describe-type (Int -> Int)) :to-equal "Int -> Int"))
+      (expect (elsa-test-describe-type (Int -> Int)) :to-equal "(function (int) int)"))
+
+    (it "should create a variadic type"
+      (expect (elsa-test-describe-type Int... -> Int) :to-equal
+              "(function (&rest int) int)"))
 
     (it "should"
       (expect (elsa-test-describe-type Int -> Int -> Bool) :to-equal
-              "Int -> Int -> Bool"))
+              "(function (int int) bool)"))
 
     (it "should"
       (expect (elsa-test-describe-type Int -> List Int) :to-equal
-              "Int -> [Int]"))
+              "(function (int) (list int))"))
 
     (it "should"
       (expect (elsa-test-describe-type Int -> (List Int)) :to-equal
-              "Int -> [Int]"))
+              "(function (int) (list int))"))
 
     (it "should"
       (expect (elsa-test-describe-type Int -> Cons String Nil) :to-equal
-              "Int -> Cons String Nil"))
+              "(function (int) (cons string nil))"))
 
     (it "should"
       (expect (elsa-test-describe-type Int | Bool) :to-equal
-              "Int | Bool"))
+              "(or int bool)"))
 
     (it "should"
       (expect (elsa-test-describe-type Int | Bool -> Float) :to-equal
-              "Int | Bool -> Float"))
+              "(function ((or int bool)) float)"))
 
     (it "should"
       (expect (elsa-test-describe-type Int | (Bool -> Float)) :to-equal
-              "Int | (Bool -> Float)"))
+              "(or int (function (bool) float))"))
 
     (it "should"
       (expect (elsa-test-describe-type Int | (Bool -> Float | String)) :to-equal
-              "Int | (Bool -> Float | String)"))
+              "(or int (function (bool) (or float string)))"))
 
     (it "should"
       (expect (elsa-test-describe-type Int -> Bool -> Cons (Int | String) Buffer) :to-equal
-              "Int -> Bool -> Cons (Int | String) Buffer"))
+              "(function (int bool) (cons (or int string) buffer))"))
 
     (it "should"
       (expect (elsa-test-describe-type Int -> (String -> Float) -> Buffer -> Cons (Int | String) Buffer) :to-equal
-              "Int -> (String -> Float) -> Buffer -> Cons (Int | String) Buffer"))
+              "(function (int (function (string) float) buffer) (cons (or int string) buffer))"))
 
     (it "should support construction of lists through vector shorthand"
-      (expect (elsa-test-describe-type [Int]) :to-equal "[Int]"))
+      (expect (elsa-test-describe-type [Int]) :to-equal "(list int)"))
 
     (it "should support construction of lists of lists through vector shorthand"
-      (expect (elsa-test-describe-type [[Int]]) :to-equal "[[Int]]"))
+      (expect (elsa-test-describe-type [[Int]]) :to-equal "(list (list int))"))
 
     (it "should support construction of lists of functions through vector shorthand"
-      (expect (elsa-test-describe-type [Int -> Bool]) :to-equal "[Int -> Bool]"))
+      (expect (elsa-test-describe-type [Int -> Bool]) :to-equal "(list (function (int) bool))"))
 
     (it "should support construction of lists of sums through vector shorthand"
-      (expect (elsa-test-describe-type [Int | Bool]) :to-equal "[Int | Bool]"))
+      (expect (elsa-test-describe-type [Int | Bool]) :to-equal "(list (or int bool))"))
 
     (it "should support construction of lists of higher order types through vector shorthand"
       (expect (elsa-test-describe-type [Cons Int String]) :to-equal
-              "[Cons Int String]")))
+              "(list (cons int string))")))
 
   (describe "elsa-type-sum"
 

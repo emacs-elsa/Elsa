@@ -42,19 +42,6 @@
 (cl-defmethod elsa-get-type ((this elsa-type))
   this)
 
-;; (elsa-type-format-arg :: Mixed -> String)
-(defun elsa-type-format-arg (type)
-  "Format TYPE as an argument for `elsa-make-type'.
-
-First describe TYPE using `elsa-type-describe'.  If TYPE is
-composite also wrap it in parens to preserve the semantics when
-it is passed to another constructor."
-  (let ((printed (elsa-type-describe type)))
-    (if (and (elsa-type-composite-p type)
-             (not (elsa-type-list-p type)))
-        (format "(%s)" printed)
-      printed)))
-
 (cl-defmethod elsa-type-describe ((this elsa-type))
   "Describe THIS type."
   (symbol-name (eieio-object-class this)))
@@ -129,7 +116,7 @@ not bound to any specific value yet."
   t)
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-unbound))
-  "Unbound")
+  "unbound")
 
 (defclass elsa-intersection-type (elsa-type)
   ((types :initform nil :initarg :types))
@@ -173,15 +160,9 @@ because the actual type can be any of them.")
    ;; TODO: this should be really handled by the normalization step, a
    ;; sum type Mixed | <...> => Mixed, possibly without Nil
    ((elsa-type-accept this (elsa-type-mixed))
-    "Mixed")
-   ((and (= 2 (length (oref this types)))
-         (elsa-type-nil-p (car (oref this types))))
-    (concat (elsa-type-format-arg (cadr (oref this types))) "?"))
-   ((and (= 2 (length (oref this types)))
-         (elsa-type-nil-p (cadr (oref this types))))
-    (concat (elsa-type-format-arg (car (oref this types))) "?"))
+    "mixed")
    (t
-    (mapconcat 'elsa-type-format-arg (oref this types) " | "))))
+    (format "(or %s)" (mapconcat 'elsa-type-describe (oref this types) " ")))))
 
 (cl-defmethod elsa-type-composite-p ((_this elsa-sum-type)) t)
 
@@ -223,15 +204,15 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-describe ((this elsa-diff-type))
   (if (oref this negative)
-      (format "%s \\ %s"
-              (elsa-type-format-arg (oref this positive))
-              (elsa-type-format-arg (oref this negative)))
+      (format "(diff %s %s)"
+              (elsa-type-describe (oref this positive))
+              (elsa-type-describe (oref this negative)))
     (elsa-type-describe (oref this positive))))
 
 (defclass elsa-type-t (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-t))
-  "T")
+  "t")
 
 (defclass elsa-type-nil (elsa-type) ())
 
@@ -239,13 +220,13 @@ type and none of the negative types.")
   (elsa-type-nil-p other))
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-nil))
-  "Nil")
+  "nil")
 
 (defclass elsa-type-symbol (elsa-type) ()
   :documentation "Quoted symbol")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-symbol))
-  "Symbol")
+  "symbol")
 
 (defclass elsa-type-bool (elsa-type elsa-type-symbol) ())
 
@@ -257,14 +238,14 @@ type and none of the negative types.")
        other)))
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-bool))
-  "Bool")
+  "bool")
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
 (defclass elsa-type-mixed (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-mixed))
-  "Mixed")
+  "mixed")
 
 (cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other)
   ;; Since the specialization on the first argument runs first, the
@@ -280,7 +261,7 @@ type and none of the negative types.")
 (defclass elsa-type-sequence (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-sequence))
-  "Sequence")
+  "sequence")
 
 (cl-defmethod elsa-type-get-item-type ((_this elsa-type))
   "Get the type of items of a sequence type."
@@ -295,42 +276,42 @@ type and none of the negative types.")
 (defclass elsa-type-short-string (elsa-type-string) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-string))
-  "String")
+  "string")
 
 (defclass elsa-type-buffer (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-buffer))
-  "Buffer")
+  "buffer")
 
 (defclass elsa-type-frame (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-frame))
-  "Frame")
+  "frame")
 
 (defclass elsa-type-number (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-number))
-  "Number")
+  "number")
 
 (defclass elsa-type-int (elsa-type-number) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-int))
-  "Int")
+  "int")
 
 (defclass elsa-type-float (elsa-type-number) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-float))
-  "Float")
+  "float")
 
 (defclass elsa-type-marker (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-marker))
-  "Marker")
+  "marker")
 
 (defclass elsa-type-keyword (elsa-type-symbol) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-keyword))
-  "Keyword")
+  "keyword")
 
 (defclass elsa-type-cons (elsa-type)
   ((car-type :type elsa-type :initarg :car-type
@@ -358,9 +339,9 @@ other, then this is a supertype of other."
 (cl-defmethod elsa-type-composite-p ((_this elsa-type-cons)) t)
 
 (cl-defmethod elsa-type-describe ((this elsa-type-cons))
-  (format "Cons %s %s"
-          (elsa-type-format-arg (oref this car-type))
-          (elsa-type-format-arg (oref this cdr-type))))
+  (format "(cons %s %s)"
+          (elsa-type-describe (oref this car-type))
+          (elsa-type-describe (oref this cdr-type))))
 
 (defclass elsa-type-list (elsa-type-cons elsa-type-sequence)
   ((item-type :type elsa-type
@@ -375,7 +356,7 @@ other, then this is a supertype of other."
     new))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-list))
-  (format "[%s]" (elsa-type-describe (oref this item-type))))
+  (format "(list %s)" (elsa-type-describe (oref this item-type))))
 
 (cl-defmethod elsa-type-composite-p ((_this elsa-type-list)) t)
 
@@ -398,7 +379,7 @@ other, then this is a supertype of other."
 (cl-defmethod elsa-type-composite-p ((_this elsa-type-vector)) t)
 
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
-  (format "Vector %s" (elsa-type-format-arg (oref this item-type))))
+  (format "(vector %s)" (elsa-type-describe (oref this item-type))))
 
 (cl-defmethod elsa-type-get-item-type ((this elsa-type-vector))
   "Get the type of items of a sequence type."
@@ -407,7 +388,7 @@ other, then this is a supertype of other."
 (defclass elsa-variadic-type (elsa-type-list) nil)
 
 (cl-defmethod elsa-type-describe ((this elsa-variadic-type))
-  (format "%s..." (elsa-type-format-arg (oref this item-type))))
+  (format "&rest %s" (elsa-type-describe (oref this item-type))))
 
 (defclass elsa-function-type (elsa-type)
   ((args :type list :initarg :args)
@@ -423,13 +404,9 @@ other, then this is a supertype of other."
     new))
 
 (cl-defmethod elsa-type-describe ((this elsa-function-type))
-  (mapconcat (lambda (type)
-               (let ((printed (elsa-type-describe type)))
-                 (if (elsa-function-type-p type)
-                     (format "(%s)" printed)
-                   printed)))
-             (-snoc (oref this args) (oref this return))
-             " -> "))
+  (format "(function (%s) %s)"
+          (mapconcat 'elsa-type-describe (oref this args) " ")
+          (elsa-type-describe (oref this return))))
 
 (cl-defmethod elsa-type-accept ((this elsa-function-type) other)
   (when (elsa-function-type-p other)
@@ -491,104 +468,104 @@ other, then this is a supertype of other."
 (defclass elsa-type-chartable (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-chartable))
-  "Char-table")
+  "char-table")
 
 ;; One-dimensional arrays of t or nil.
 (defclass elsa-type-boolvector (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-boolvector))
-  "Bool-vector")
+  "bool-vector")
 
 ;; Super-fast lookup tables
 (defclass elsa-type-hashtable (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-hashtable))
-  "Hash table")
+  "hash-table")
 
 ;; Compound objects with programmer-defined types
 (defclass elsa-type-record (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-record))
-  "Record")
+  "record")
 
 ;; Buffers are displayed in windows
 (defclass elsa-type-window (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-window))
-  "Window")
+  "window")
 
 ;; A terminal device displays frames
 (defclass elsa-type-terminal (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-terminal))
-  "Terminal")
+  "terminal")
 
 ;; Recording the way a frame is subdivided
 (defclass elsa-type-windowconfiguration (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-windowconfiguration))
-  "Window configuration")
+  "window-configuration")
 
 ;; Recording the status of all frames
 (defclass elsa-type-frameconfiguration (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-frameconfiguration))
-  "Frame configuration")
+  "frame-configuration")
 
 ;; A subprocess of Emacs running on the underlying OS
 (defclass elsa-type-process (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-process))
-  "Process")
+  "process")
 
 ;; A thread of Emacs Lisp execution
 (defclass elsa-type-thread (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-thread))
-  "Thread")
+  "thread")
 
 ;; An exclusive lock for thread synchronization
 (defclass elsa-type-mutex (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-mutex))
-  "Mutex")
+  "mutex")
 
 ;; Condition variable for thread synchronization
 (defclass elsa-type-conditionvariable (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-conditionvariable))
-  "Condition variable")
+  "condition-variable")
 
 ;; Receive or send characters
 (defclass elsa-type-stream (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-stream))
-  "Stream")
+  "stream")
 
 ;; What function a keystroke invokes
 (defclass elsa-type-keymap (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-keymap))
-  "Keymap")
+  "keymap")
 
 ;; How an overlay is represented
 (defclass elsa-type-overlay (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-overlay))
-  "Overlay")
+  "overlay")
 
 ;; Fonts for displaying text
 (defclass elsa-type-font (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-font))
-  "Font")
+  "font")
 
 (defclass elsa-const-type (elsa-type)
   ((type :type elsa-type :initarg :type)
    (value :initarg :value)))
 
 (cl-defmethod elsa-type-describe ((this elsa-const-type))
-  (format "Const %S" (oref this value)))
+  (format "(const %S)" (oref this value)))
 
 (cl-defmethod elsa-type-composite-p ((_this elsa-const-type)) t)
 
@@ -608,7 +585,7 @@ narrowing of a type to a concrete value from the type's domain."
   nil)
 
 (cl-defmethod elsa-type-describe ((this elsa-readonly-type))
-  (format "Readonly %s" (elsa-type-describe (oref this type))))
+  (format "(readonly %s)" (elsa-type-describe (oref this type))))
 
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
