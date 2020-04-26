@@ -237,7 +237,7 @@ assignments.
 
 *** Difference types
 
-Difference types can be specified as list form starting with =-= so =(-
+Difference types can be specified as list form starting with =diff= so =(diff
 mixed string)= is a type which can be anything except a string.
 
 Difference types are useful in narrowing the possible values of variables after conditional checks.
