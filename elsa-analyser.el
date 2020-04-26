@@ -55,12 +55,12 @@ number by symbol 'many."
 (defun elsa--analyse-symbol (form scope _state)
   (let* ((name (oref form name))
          (type (cond
-                ((eq name t) (elsa-make-type T))
-                ((eq name nil) (elsa-make-type Nil))
+                ((eq name t) (elsa-make-type t))
+                ((eq name nil) (elsa-make-type nil))
                 ((-when-let (var (elsa-scope-get-var scope form))
                    (clone (oref var type))))
                 ((get name 'elsa-type-var))
-                (t (elsa-make-type Unbound)))))
+                (t (elsa-make-type unbound)))))
     (oset form type type)
     (unless (memq name '(t nil))
       (oset form narrow-types
@@ -395,9 +395,9 @@ collects all the arguments, turns &optional arguments into
 nullables and the &rest argument into a variadic."
   (-let (((min . max) (elsa--arglist-to-arity args)))
     (if (eq max 'many)
-        (-snoc (-repeat min (elsa-make-type Mixed))
-               (elsa-make-type Variadic Mixed))
-      (-repeat max (elsa-make-type Mixed)))))
+        (-snoc (-repeat min (elsa-make-type mixed))
+               (elsa-make-type &rest mixed))
+      (-repeat max (elsa-make-type mixed)))))
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
   (let* (;; TODO: there should be an api for `(get name
@@ -462,7 +462,7 @@ make it explicit and precise."
           (progn
             (elsa--analyse-form value scope state)
             (put var-name 'elsa-type-var (oref value type)))
-        (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
+        (put var-name 'elsa-type-var (elsa-make-type unbound))))))
 
 (defun elsa--analyse:defcustom (form scope state)
   "Analyze `defcustom'.
@@ -481,7 +481,7 @@ automatically deriving the type."
             ;; TODO: check the `:type' form here and also compare if we
             ;; are doing a valid assignment.
             (put var-name 'elsa-type-var (oref value type)))
-        (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
+        (put var-name 'elsa-type-var (elsa-make-type unbound))))))
 
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
@@ -503,7 +503,7 @@ If no type annotation is provided, find the value type through
          (body (nthcdr 2 sequence))
          ;; TODO: this should use `elsa--get-default-function-types'
          (arg-types (-repeat (length (elsa-form-sequence args))
-                             (elsa-make-type Mixed)))
+                             (elsa-make-type mixed)))
          (vars))
     (when (elsa-form-list-p args)
       (-each-indexed (elsa-form-sequence args)

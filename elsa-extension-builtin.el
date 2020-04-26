@@ -43,23 +43,23 @@
       (oset form type (elsa-type-t)))
      ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
       (oset form type (elsa-type-nil)))
-     (t (oset form type (elsa-make-type T?))))))
+     (t (oset form type (elsa-make-type bool))))))
 
 (defun elsa--analyse--eq (eq-form symbol-form constant-form)
   (let ((name (elsa-get-name symbol-form))
         (type))
     (setq type
           (cond
-           ((elsa-form-keyword-p constant-form) (elsa-make-type Keyword))
-           ((elsa--quoted-symbol-p constant-form) (elsa-make-type Symbol))
+           ((elsa-form-keyword-p constant-form) (elsa-make-type keyword))
+           ((elsa--quoted-symbol-p constant-form) (elsa-make-type symbol))
            ((and (elsa-form-symbol-p constant-form)
                  (eq (elsa-get-name constant-form) t))
-            (elsa-make-type T))
+            (elsa-make-type t))
            ((and (elsa-form-symbol-p constant-form)
                  (eq (elsa-get-name constant-form) nil))
-            (elsa-make-type Nil))
-           ((elsa-form-integer-p constant-form) (elsa-make-type Int))
-           ((elsa-form-float-p constant-form) (elsa-make-type Float))))
+            (elsa-make-type nil))
+           ((elsa-form-integer-p constant-form) (elsa-make-type int))
+           ((elsa-form-float-p constant-form) (elsa-make-type float))))
     (when type
       (let ((narrow-type
              (if (or (elsa-type-t-p type)
@@ -117,7 +117,7 @@
   (elsa--analyse-function-call form scope state)
   (-when-let* ((arg (cadr (oref form sequence)))
                (arg-type (oref arg type)))
-    (when (elsa-instance-of arg-type (elsa-make-type Sequence))
+    (when (elsa-instance-of arg-type (elsa-make-type sequence))
       (let* ((item-type (elsa-type-get-item-type arg-type))
              ;; with lists it returns nil when overflowing, otherwise
              ;; throws an error
@@ -138,7 +138,7 @@
            ;; example int | string, then it might evaluate
            ;; sometimes to true and sometimes to false
            ((elsa-type-accept arg (elsa-type-string))
-            (elsa-make-type T?))
+            (elsa-make-type bool))
            (t (elsa-type-nil))))))
 
 ;; * control flow

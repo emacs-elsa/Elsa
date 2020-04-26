@@ -60,15 +60,15 @@ Return trinary logic value.")
   "Construct const type based on VALUE."
   (cond
    ((keywordp value)
-    (elsa-const-type :type (elsa-make-type Keyword) :value value))
+    (elsa-const-type :type (elsa-make-type keyword) :value value))
    ((stringp value)
-    (elsa-const-type :type (elsa-make-type String) :value value))
+    (elsa-const-type :type (elsa-make-type string) :value value))
    ((integerp value)
-    (elsa-const-type :type (elsa-make-type Int) :value value))
+    (elsa-const-type :type (elsa-make-type int) :value value))
    ((floatp value)
-    (elsa-const-type :type (elsa-make-type Float) :value value))
+    (elsa-const-type :type (elsa-make-type float) :value value))
    ((symbolp value)
-    (elsa-const-type :type (elsa-make-type Symbol) :value value))
+    (elsa-const-type :type (elsa-make-type symbol) :value value))
    (t (error "Trying to make a const type out of %S" value))))
 
 (defun elsa--make-union-type (definition)
@@ -189,15 +189,15 @@ The grammar is as follows (in eBNF):
 
 (defun elsa-type-nullable-p (type)
   "Test if TYPE is nullable (i.e. accepts nil)."
-  (elsa-type-accept type (elsa-make-type Nil)))
+  (elsa-type-accept type (elsa-make-type nil)))
 
 (defun elsa-type-make-nullable (type)
   "Make TYPE nullable."
-  (elsa-type-sum type (elsa-make-type Nil)))
+  (elsa-type-sum type (elsa-make-type nil)))
 
 (defun elsa-type-make-non-nullable (type)
   "Make TYPE non-nullable."
-  (elsa-type-diff type (elsa-make-type Nil)))
+  (elsa-type-diff type (elsa-make-type nil)))
 
 (cl-defgeneric elsa-type-normalize (type)
   "Normalize TYPE to its most simplest form.")
@@ -207,7 +207,7 @@ The grammar is as follows (in eBNF):
 
 (cl-defmethod elsa-type-normalize ((this elsa-sum-type))
   "Normalize a sum type."
-  (let ((types (--remove (elsa-type-accept (elsa-make-type Empty) it)
+  (let ((types (--remove (elsa-type-accept (elsa-make-type []) it)
                          (oref this types))))
     (cond
      ((not types)
@@ -218,7 +218,7 @@ The grammar is as follows (in eBNF):
 
 (cl-defmethod elsa-type-normalize ((this elsa-intersection-type))
   "Normalize a sum type."
-  (let ((types (--remove (elsa-type-accept it (elsa-make-type Mixed))
+  (let ((types (--remove (elsa-type-accept it (elsa-make-type mixed))
                          (oref this types))))
     (cond
      ((= 1 (length types))
