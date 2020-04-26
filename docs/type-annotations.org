@@ -125,7 +125,7 @@ and applies the function to every item of the list.
 The =app= function requires that we pass in a function which processes a
 number into a number and returns a list of numbers.
 
-** Generic types
+** TODO Generic types
 
 Generic types are types where some of the type arguments are variable.
 Both basic and composite types can be turned into generic types.
@@ -164,13 +164,13 @@ which is of type =a= , whatever that happens to be.
 
 ** Optional types
 
-If a function can take optional arguments we preceed them with
-=&optional= marker just as we do in the argument list.
+If a function can take optional arguments we need to convert them into
+a nullable type =(or type nil)=.
 
 #+BEGIN_SRC elisp
 (defun drop-items (list &optional n)
   "Drop first item of LIST or N items if N is provided."
-  (declare (elsa ((list a*) &optional int) (list a*)))
+  (declare (elsa ((list a*) (or int nil)) (list a*)))
   (setq n (or n 1))
   (dotimes (_ n list)
     (setq list (cdr list))))
@@ -201,11 +201,6 @@ string int)= is a type accepting strings or integers.
 A sum type is useful if the function internally checks the passed
 value and decides what processing to do:
 
-*TODO:* I think the double parens in the "argument" portion will lead to
-a lot of confusion.  People might expect to write just =(elsa (or int
-string) int)=.  I'm not sure if we should omit the "argument wrapping"
-parens or not.
-
 #+BEGIN_SRC elisp
 (defun to-number (x)
   (declare (elsa ((or int string)) int))
@@ -225,8 +220,8 @@ assignments.
 #+BEGIN_SRC elisp
 ;; Such a condition can never evaluate to true
 (if (and (stringp x) (integerp x))
-    "Is both string and int"
-  "This is always true")
+    "X is both string and int which is impossible, this branch never executes"
+  "This branch always executes")
 #+END_SRC
 
 *** Difference types
