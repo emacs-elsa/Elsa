@@ -11,7 +11,7 @@
 
 (require 'elsa-typed-builtin)
 
-;; (elsa--arglist-to-arity :: List Symbol | T | String -> Cons Int (Int | Symbol))
+;; (elsa--arglist-to-arity :: (function ((or (list symbol) t string)) (cons int (or int symbol))))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
@@ -39,7 +39,7 @@ number by symbol 'many."
         (setq max 'many))
       (cons min max)))))
 
-;; (elsa-fn-arity :: Symbol -> Cons Int (Int | Symbol))
+;; (elsa-fn-arity :: (function (symbol) (cons int (or int symbol))))
 (defun elsa-fn-arity (fn)
   (elsa--arglist-to-arity (help-function-arglist fn)))
 
@@ -580,7 +580,7 @@ If no type annotation is provided, find the value type through
        (not (oref arg quote-type))
        (elsa-get-name arg)))
 
-;; (elsa--analyse-normalize-spec :: Bool | List Bool -> Mixed -> List Bool)
+;; (elsa--analyse-normalize-spec :: (function ((or bool (list bool)) mixed) (list bool)))
 (defun elsa--analyse-normalize-spec (spec form)
   "Normalize evaluation SPEC for FORM."
   (cond
@@ -595,7 +595,7 @@ If no type annotation is provided, find the value type through
                       t)))
    (t spec)))
 
-;; (elsa--analyse-macro :: Mixed -> Bool | List Bool -> Mixed -> Mixed -> Mixed)
+;; (elsa--analyse-macro :: (function (mixed (or bool (or list bool)) mixed mixed) mixed))
 (defun elsa--analyse-macro (form spec scope state)
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-car form))

@@ -124,7 +124,7 @@ Return trinary logic value.")
       :return (elsa--make-type (list ret))))
     ((and `(,arg) (guard (and (atom arg)
                               (not (vectorp arg)))))
-     (let* ((type-name (downcase (symbol-name arg)))
+     (let* ((type-name (symbol-name arg))
             (constructor (intern (concat "elsa-type-" type-name))))
        (cond
         ((functionp constructor)

@@ -20,7 +20,7 @@
           (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type (const :keyword)))))
 
       (it "should respect the type assigned from an annotation"
-        (elsa-test-with-analysed-form ";; (foo :: Bool)\n(progn (defvar foo :keyword) foo)" form
+        (elsa-test-with-analysed-form ";; (foo :: bool)\n(progn (defvar foo :keyword) foo)" form
           (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type bool)))))
 
     (describe "defconst"
@@ -34,7 +34,7 @@
             (expect (oref actual type) :to-be-type-equivalent (elsa-make-type (const bar))))))
 
       (it "should respect the type assigned from an annotation"
-        (elsa-test-with-analysed-form ";; (foo :: Bool)\n(progn (defconst foo :keyword) foo)" form
+        (elsa-test-with-analysed-form ";; (foo :: bool)\n(progn (defconst foo :keyword) foo)" form
           (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type bool)))))
 
     (describe "quote"
@@ -411,7 +411,7 @@
                   "Assignment to read-only variable foo")))
 
       (it "should allow assignment of read-only type"
-        (elsa-test-with-analysed-form "(progn (defconst foo 1)\n\n;; (bar :: Int)\n(defvar bar)\n(setq bar foo))" form
+        (elsa-test-with-analysed-form "(progn (defconst foo 1)\n\n;; (bar :: int)\n(defvar bar)\n(setq bar foo))" form
           :state-var state
           (expect (oref state errors) :to-be nil)))))
 

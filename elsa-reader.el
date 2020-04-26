@@ -46,7 +46,7 @@ Nil if FORM is not a quoted symbol."
                 backquote-unquote-symbol
                 backquote-splice-symbol)))
 
-;; (elsa--forward-sexp :: Int? -> Int)
+;; (elsa--forward-sexp :: (function ((or int nil)) int))
 (defsubst elsa--forward-sexp (&optional n)
   "Skip `forward-sexp' N times and return `point'."
   (setq n (or n 1))
@@ -65,10 +65,10 @@ Nil if FORM is not a quoted symbol."
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
 
-;; (elsa-get-name :: Mixed -> Symbol?)
+;; (elsa-get-name :: (function (mixed) (or symbol nil)))
 (cl-defgeneric elsa-get-name (_this) nil)
 
-;; (elsa-form-sequence :: Mixed -> [Mixed])
+;; (elsa-form-sequence :: (function (mixed) (list mixed)))
 (cl-defgeneric elsa-form-sequence (form)
   "Return the sequence of things contained in FORM.")
 
@@ -175,7 +175,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-print ((this elsa-form-keyword))
   (symbol-name (oref this name)))
 
-;; (elsa-form-function-call-p :: Mixed -> Symbol? -> Bool)
+;; (elsa-form-function-call-p :: (function (mixed (or symbol nil)) bool))
 (cl-defgeneric elsa-form-function-call-p (_this &optional _name) nil)
 
 (cl-defmethod elsa-get-name ((this elsa-form-symbol))
@@ -289,7 +289,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-visit ((this elsa-form-list) fn)
   (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
 
-;; (elsa-car :: Mixed -> Mixed)
+;; (elsa-car :: (function (mixed) mixed))
 (cl-defgeneric elsa-car (thing)
   "Return `car' of THING")
 
@@ -299,7 +299,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-car ((this elsa-form))
   (car (elsa-form-sequence this)))
 
-;; (elsa-cdr :: Mixed -> [Mixed])
+;; (elsa-cdr :: (function (mixed) (list mixed)))
 (cl-defgeneric elsa-cdr (thing)
   "Return `cdr' of THING")
 
@@ -309,7 +309,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-cdr ((this elsa-form))
   (cdr (elsa-form-sequence this)))
 
-;; (elsa-cadr :: Mixed -> Mixed)
+;; (elsa-cadr :: (function (mixed) mixed))
 (cl-defgeneric elsa-cadr (thing)
   "Return `cadr' of THING")
 
@@ -319,7 +319,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-cadr ((this elsa-form))
   (cadr (elsa-form-sequence this)))
 
-;; (elsa-nth :: Int -> Mixed -> Mixed)
+;; (elsa-nth :: (function (int mixed) mixed))
 (cl-defgeneric elsa-nth (n thing)
   "Return nth item of THING")
 
@@ -329,7 +329,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-nth (n (this elsa-form))
   (nth n (elsa-form-sequence this)))
 
-;; (elsa-nthcdr :: Int -> Mixed -> [Mixed])
+;; (elsa-nthcdr :: (function (int mixed) (list mixed)))
 (cl-defgeneric elsa-nthcdr (n thing)
   "Return nth `cdr' of THING")
 
@@ -385,7 +385,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-cdr ((this elsa-form-improper-list))
   (cdr (oref this conses)))
 
-;; (elsa--read-cons :: [Mixed] -> Mixed -> Mixed)
+;; (elsa--read-cons :: (function ((list mixed) mixed) mixed))
 (defsubst elsa--read-cons (form state)
   (elsa--skip-whitespace-forward)
   (if (elsa--improper-list-p form)
