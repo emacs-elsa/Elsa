@@ -232,59 +232,8 @@ code.  While at many places the types can be inferred there are
 places, especially in user-defined functions, where we can not guess
 the correct type (we can only infer what we see during runtime).
 
-Users can annotate their `defun` definitions like this:
-
-``` emacs-lisp
-;; (elsa-pluralize :: (function (string int) string))
-(defun elsa-pluralize (word n)
-  "Return singular or plural of WORD based on N."
-  (if (= n 1)
-      word
-    (concat word "s")))
-```
-
-The `(elsa-pluralise :: ...)` inside a comment form provides
-additional information to the Elsa analysis.  Here we say that the
-function following such a comment takes two arguments, string and int,
-and returns a string.
-
-The syntax of the type annotation is somewhat modeled after Haskell
-but there are some special constructs available to Elsa
-
-Here are general guidelines on how the types are constructed.
-
-- For built-in types with test predicates, drop the `p` or `-p` suffix and PascalCase to get the type:
-    - `stringp` → `String`
-    - `integerp` → `Integer` (`Int` is also accepted)
-    - `markerp` → `Marker`
-    - `hash-table-p` → `HashTable`
-- A type for everything is called `Mixed`.  It accepts anything and is
-  always nullable.  This is the default type for when we lack type
-  information.
-- Sum types can be specified with `|` syntax, so `String | Integer` is
-  a type accepting both strings or integers.
-- Cons types are specified by prefixing wrapping the `car` and `cdr`
-  types with a `Cons` constructor, so `Cons Int Int` is a type where
-  the `car` is an int and `cdr` is also an int, for example `(1 . 3)`.
-- List types are specified by wrapping a type in a vector `[]`
-  constructor, so `[Int]` is a list of integers and `[String | Int]`
-  is a list of items where each item is either a string or an integer.
-  A type constructor `List` is also supported.
-- Function types are created by separating argument types and the
-  return type with `->` token.
-- To make variadic types (for the `&rest` keyword) add three dots
-  `...` after the type, so `String... -> String` is a function taking
-  any number of strings and returning a string, such as `concat`.
-  Note: a variadic type is internally just a list of the same base
-  type but it has a flag that allows the function be of variable
-  arity.  A `Variadic` type constructor is also available to construct
-  complex types.
-- To mark type as nullable you can attach `?` to the end of it, so
-  that `Int?` accepts any integer and also a `nil`.  A `Maybe` type
-  constructor is also available to construct complex types.
-
-Some type constructors have optional arguments, for example writing
-just `Cons` will assume the `car` and `cdr` are of type `Mixed`.
+Read the type annotations [documentation](./docs/type-annotations.org)
+for more information on how to write your own types.
 
 # How can I contribute to this project
 
