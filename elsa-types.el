@@ -477,10 +477,10 @@ other, then this is a supertype of other."
   "bool-vector")
 
 ;; Super-fast lookup tables
-(defclass elsa-type-hashtable (elsa-type) ())
+(defclass elsa-type-hash-table (elsa-type) ())
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-hashtable))
-  "hashtable")
+(cl-defmethod elsa-type-describe ((_this elsa-type-hash-table))
+  "hash-table")
 
 ;; Compound objects with programmer-defined types
 (defclass elsa-type-record (elsa-type) ())
