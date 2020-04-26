@@ -354,8 +354,8 @@
 
 ;; File: alloc.c
 (put 'make-string 'elsa-type (elsa-make-type (function (int int) string)))
-(put 'make-bool-vector 'elsa-type (elsa-make-type (function (int bool) boolvector)))
-(put 'bool-vector 'elsa-type (elsa-make-type (function (&rest mixed) boolvector)))
+(put 'make-bool-vector 'elsa-type (elsa-make-type (function (int bool) bool-vector)))
+(put 'bool-vector 'elsa-type (elsa-make-type (function (&rest mixed) bool-vector)))
 ;; TODO: generic type a -> b -> Cons a b...  This fails deriving the
 ;; type of something like (cons 1 "foo")... it still thinks the return
 ;; type is Cons Mixed Mixed
