@@ -62,7 +62,7 @@
               "(or int (function (bool) (or float string)))"))
 
     (it "should"
-      (expect (elsa-test-describe-type (function (or int bool) (cons (or int string) buffer))) :to-equal
+      (expect (elsa-test-describe-type (function (int bool) (cons (or int string) buffer))) :to-equal
               "(function (int bool) (cons (or int string) buffer))"))
 
     (it "should"

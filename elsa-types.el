@@ -468,19 +468,19 @@ other, then this is a supertype of other."
 (defclass elsa-type-chartable (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-chartable))
-  "char-table")
+  "chartable")
 
 ;; One-dimensional arrays of t or nil.
 (defclass elsa-type-boolvector (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-boolvector))
-  "bool-vector")
+  "boolvector")
 
 ;; Super-fast lookup tables
 (defclass elsa-type-hashtable (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-hashtable))
-  "hash-table")
+  "hashtable")
 
 ;; Compound objects with programmer-defined types
 (defclass elsa-type-record (elsa-type) ())
@@ -504,13 +504,13 @@ other, then this is a supertype of other."
 (defclass elsa-type-windowconfiguration (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-windowconfiguration))
-  "window-configuration")
+  "windowconfiguration")
 
 ;; Recording the status of all frames
 (defclass elsa-type-frameconfiguration (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-frameconfiguration))
-  "frame-configuration")
+  "frameconfiguration")
 
 ;; A subprocess of Emacs running on the underlying OS
 (defclass elsa-type-process (elsa-type) ())
@@ -534,7 +534,7 @@ other, then this is a supertype of other."
 (defclass elsa-type-conditionvariable (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-conditionvariable))
-  "condition-variable")
+  "conditionvariable")
 
 ;; Receive or send characters
 (defclass elsa-type-stream (elsa-type) ())
