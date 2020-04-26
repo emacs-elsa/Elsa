@@ -471,10 +471,10 @@ other, then this is a supertype of other."
   "chartable")
 
 ;; One-dimensional arrays of t or nil.
-(defclass elsa-type-boolvector (elsa-type) ())
+(defclass elsa-type-bool-vector (elsa-type) ())
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-boolvector))
-  "boolvector")
+(cl-defmethod elsa-type-describe ((_this elsa-type-bool-vector))
+  "bool-vector")
 
 ;; Super-fast lookup tables
 (defclass elsa-type-hashtable (elsa-type) ())
