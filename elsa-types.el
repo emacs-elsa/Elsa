@@ -30,7 +30,7 @@
 
 (defclass elsa-type nil () :abstract t)
 
-;; (elsa-type-describe :: Mixed -> String)
+;; (elsa-type-describe :: (function (mixed) string))
 (cl-defgeneric elsa-type-describe (type)
   "Return a string representation of TYPE."
   (format "%s" type))
@@ -46,7 +46,7 @@
   "Describe THIS type."
   (symbol-name (eieio-object-class this)))
 
-;; (elsa-type-get-args :: Mixed -> [Mixed])
+;; (elsa-type-get-args :: (function (mixed) (list mixed)))
 (cl-defgeneric elsa-type-get-args (_thing)
   "Get argument types of THING."
   nil)
@@ -430,7 +430,7 @@ other, then this is a supertype of other."
 
 (cl-defmethod elsa-type-composite-p ((_this elsa-function-type)) t)
 
-;; (elsa-function-type-nth-arg :: Int -> Mixed -> Mixed)
+;; (elsa-function-type-nth-arg :: (function (int mixed) mixed))
 (defun elsa-function-type-nth-arg (n elsa-type)
   (let* ((args (oref elsa-type args))
          (type (nth n args)))

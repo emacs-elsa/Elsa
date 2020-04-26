@@ -23,7 +23,7 @@
       (expect (elsa-test-describe-type (function (int) int)) :to-equal "(function (int) int)"))
 
     (it "should make a simple function type wrapped in superfluous parens"
-      (expect (elsa-test-describe-type ((function (int) (Int)))) :to-equal "(function (int) int)"))
+      (expect (elsa-test-describe-type ((function (int) (int)))) :to-equal "(function (int) int)"))
 
     (it "should create a variadic type"
       (expect (elsa-test-describe-type (function (&rest int) int)) :to-equal

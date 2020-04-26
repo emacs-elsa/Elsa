@@ -235,7 +235,7 @@ the correct type (we can only infer what we see during runtime).
 Users can annotate their `defun` definitions like this:
 
 ``` emacs-lisp
-;; (elsa-pluralize :: String -> Int -> String)
+;; (elsa-pluralize :: (function (string int) string))
 (defun elsa-pluralize (word n)
   "Return singular or plural of WORD based on N."
   (if (= n 1)
