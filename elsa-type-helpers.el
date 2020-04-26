@@ -72,99 +72,69 @@ Return trinary logic value.")
    (t (error "Trying to make a const type out of %S" value))))
 
 (defun elsa--make-union-type (definition)
-  (->> (-split-on '| definition)
+  (->> (-partition 1 definition)
        (-map 'elsa--make-type)
        (-reduce 'elsa-type-sum)))
 
 (defun elsa--make-type (definition)
   (pcase definition
-    (`(Readonly . ,type)
+    (`(readonly . ,type)
      (elsa-readonly-type :type (elsa--make-type type)))
-    (`(Const ,value)
+    (`(const ,value)
      (elsa--make-const-type value))
-    (`(Cons) ;; mixed cons by default
+    (`(cons) ;; mixed cons by default
      (elsa-type-cons :car-type (elsa-type-mixed)
                      :cdr-type (elsa-type-mixed)))
-    (`(Vector) ;; mixed vector by default
+    (`(vector) ;; mixed vector by default
      (elsa-type-vector :item-type (elsa-type-mixed)))
-    (`(List) ;; mixed list by default
+    (`(list) ;; mixed list by default
      (let* ((item-type (elsa-type-mixed))
             (list-type (elsa-type-list :item-type item-type)))
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
        list-type))
-    ((and def (guard (vectorp def)))
-     (let* ((item-type (elsa--make-type (append def nil)))
-            (list-type (elsa-type-list :item-type item-type)))
-       (oset list-type car-type item-type)
-       (oset list-type cdr-type item-type)
-       list-type))
-    ((and `(,arg) (guard (and (atom arg)
-                              (not (vectorp arg)))))
-     (let* ((type-name (downcase (symbol-name arg)))
-            (variadic (when (string-suffix-p "..." type-name)
-                        (setq type-name (substring type-name 0 -3))
-                        t))
-            (nullable (when (string-suffix-p "?" type-name)
-                        (setq type-name (substring type-name 0 -1))
-                        t))
-            (constructor (intern (concat "elsa-type-" type-name))))
-       (cond
-        ((functionp constructor)
-         (let* ((type (funcall constructor))
-                (type (if nullable
-                          (elsa-type-make-nullable type)
-                        type))
-                (type (if variadic
-                          (elsa-variadic-type :item-type type)
-                        type)))
-           type))
-        (t (error "Unknown type %s" type-name)))))
-    ((and `(,arg . nil))
-     (elsa--make-type arg))
-    ((and def (guard (memq '-> def)))
-     (let* ((args (-split-on '-> def))
-            (parameters (-map 'elsa--make-type args)))
-       (elsa-function-type
-        :args (-butlast parameters)
-        :return (-last-item parameters))))
-    ((and def (guard (memq '| def)))
+    ((and def (guard (and (vectorp def)
+                          (= (length def) 0))))
+     (elsa-type-empty))
+    (`(or . ,def)
      (elsa--make-union-type def))
-    (`(Cons ,a ,b)
+    (`(cons ,a ,b)
      (elsa-type-cons :car-type (elsa--make-type (list a))
                      :cdr-type (elsa--make-type (list b))))
-    (`(List ,a)
+    (`(list ,a)
      (let* ((item-type (elsa--make-type (list a)))
             (list-type (elsa-type-list :item-type item-type)))
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
        list-type))
-    (`(Variadic ,a)
+    (`(&rest ,a)
      (let* ((item-type (elsa--make-type (list a)))
             (variadic-type (elsa-variadic-type :item-type item-type)))
        variadic-type))
-    (`(Maybe ,a)
-     (let* ((item-type (elsa--make-type (list a))))
-       (elsa-type-make-nullable item-type)))
-    (`(Vector ,a)
+    (`(vector ,a)
      (let* ((item-type (elsa--make-type (list a)))
             (vector-type (elsa-type-vector :item-type item-type)))
-       vector-type))))
+       vector-type))
+    (`(function ,args ,ret)
+     (elsa-function-type
+      :args (-map 'elsa--make-type
+                  (-let* (((positional rest)
+                           (-split-with (lambda (x) (not (equal x '&rest))) args)))
+                    (append (-partition 1 positional) (when rest (list rest)))))
+      :return (elsa--make-type (list ret))))
+    ((and `(,arg) (guard (and (atom arg)
+                              (not (vectorp arg)))))
+     (let* ((type-name (downcase (symbol-name arg)))
+            (constructor (intern (concat "elsa-type-" type-name))))
+       (cond
+        ((functionp constructor)
+         (funcall constructor))
+        (t (error "Unknown type %s" type-name)))))
+    ((and `(,arg . nil))
+     (elsa--make-type arg))))
 
 (defmacro elsa-make-type (&rest definition)
-  "Make a type according to DEFINITION.
-
-
-The grammar is as follows (in eBNF):
-
-<TYPE> ::= <BASE>
-         | '(', <TYPE>, ')'
-         | <CONSTRUCTOR>, {<TYPE>}
-         | <TYPE>, {'|', <TYPE>}
-         | <TYPE>, {'->', <TYPE>}
-
-<BASE> ::= 'String' | 'Int' | 'Float' | 'Marker' | 'Buffer'
-"
+  "Make a type according to DEFINITION. "
   `(elsa--make-type ',definition))
 
 (defun elsa--eieio-class-parents-recursive (type)
