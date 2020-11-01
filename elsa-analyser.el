@@ -11,7 +11,7 @@
 
 (require 'elsa-typed-builtin)
 
-;; (elsa--arglist-to-arity :: List Symbol | T | String -> Cons Int (Int | Symbol))
+;; (elsa--arglist-to-arity :: (function ((or (list symbol) t string)) (cons int (or int symbol))))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
@@ -39,7 +39,7 @@ number by symbol 'many."
         (setq max 'many))
       (cons min max)))))
 
-;; (elsa-fn-arity :: Symbol -> Cons Int (Int | Symbol))
+;; (elsa-fn-arity :: (function (symbol) (cons int (or int symbol))))
 (defun elsa-fn-arity (fn)
   (elsa--arglist-to-arity (help-function-arglist fn)))
 
@@ -55,12 +55,12 @@ number by symbol 'many."
 (defun elsa--analyse-symbol (form scope _state)
   (let* ((name (oref form name))
          (type (cond
-                ((eq name t) (elsa-make-type T))
-                ((eq name nil) (elsa-make-type Nil))
+                ((eq name t) (elsa-make-type t))
+                ((eq name nil) (elsa-make-type nil))
                 ((-when-let (var (elsa-scope-get-var scope form))
                    (clone (oref var type))))
                 ((get name 'elsa-type-var))
-                (t (elsa-make-type Unbound)))))
+                (t (elsa-make-type unbound)))))
     (oset form type type)
     (unless (memq name '(t nil))
       (oset form narrow-types
@@ -395,9 +395,9 @@ collects all the arguments, turns &optional arguments into
 nullables and the &rest argument into a variadic."
   (-let (((min . max) (elsa--arglist-to-arity args)))
     (if (eq max 'many)
-        (-snoc (-repeat min (elsa-make-type Mixed))
-               (elsa-make-type Variadic Mixed))
-      (-repeat max (elsa-make-type Mixed)))))
+        (-snoc (-repeat min (elsa-make-type mixed))
+               (elsa-make-type &rest mixed))
+      (-repeat max (elsa-make-type mixed)))))
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
   (let* (;; TODO: there should be an api for `(get name
@@ -462,7 +462,7 @@ make it explicit and precise."
           (progn
             (elsa--analyse-form value scope state)
             (put var-name 'elsa-type-var (oref value type)))
-        (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
+        (put var-name 'elsa-type-var (elsa-make-type unbound))))))
 
 (defun elsa--analyse:defcustom (form scope state)
   "Analyze `defcustom'.
@@ -481,7 +481,7 @@ automatically deriving the type."
             ;; TODO: check the `:type' form here and also compare if we
             ;; are doing a valid assignment.
             (put var-name 'elsa-type-var (oref value type)))
-        (put var-name 'elsa-type-var (elsa-make-type Unbound))))))
+        (put var-name 'elsa-type-var (elsa-make-type unbound))))))
 
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
@@ -503,7 +503,7 @@ If no type annotation is provided, find the value type through
          (body (nthcdr 2 sequence))
          ;; TODO: this should use `elsa--get-default-function-types'
          (arg-types (-repeat (length (elsa-form-sequence args))
-                             (elsa-make-type Mixed)))
+                             (elsa-make-type mixed)))
          (vars))
     (when (elsa-form-list-p args)
       (-each-indexed (elsa-form-sequence args)
@@ -580,7 +580,7 @@ If no type annotation is provided, find the value type through
        (not (oref arg quote-type))
        (elsa-get-name arg)))
 
-;; (elsa--analyse-normalize-spec :: Bool | List Bool -> Mixed -> List Bool)
+;; (elsa--analyse-normalize-spec :: (function ((or bool (list bool)) mixed) (list bool)))
 (defun elsa--analyse-normalize-spec (spec form)
   "Normalize evaluation SPEC for FORM."
   (cond
@@ -595,7 +595,7 @@ If no type annotation is provided, find the value type through
                       t)))
    (t spec)))
 
-;; (elsa--analyse-macro :: Mixed -> Bool | List Bool -> Mixed -> Mixed -> Mixed)
+;; (elsa--analyse-macro :: (function (mixed (or bool (or list bool)) mixed mixed) mixed))
 (defun elsa--analyse-macro (form spec scope state)
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-car form))

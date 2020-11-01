@@ -17,9 +17,9 @@
         (expect (oref (car grouped) name) :to-be 'a)
         (expect (elsa-type-equivalent-p
                  (oref (car grouped) type)
-                 (elsa-make-type String | Int))
+                 (elsa-make-type (or string int)))
                 :to-be-truthy)
         (expect (elsa-type-equivalent-p
                  (oref (cadr grouped) type)
-                 (elsa-make-type Float | Bool))
+                 (elsa-make-type (or float bool)))
                 :to-be-truthy)))))

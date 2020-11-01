@@ -195,7 +195,7 @@ do that."
          (name (oref var name))
          (var-stack (gethash name vars))
          (scope-var (or (elsa-scope-get-var scope name)
-                        (elsa-make-variable name (elsa-make-type Mixed)))))
+                        (elsa-make-variable name (elsa-make-type mixed)))))
     (let ((narrowed-var (funcall (or updater
                                      (lambda (_a b)
                                        (elsa-variable
