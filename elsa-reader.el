@@ -437,26 +437,28 @@ This only makes sense for the sequence forms:
 
 (defun elsa--read-quote (form state)
   (elsa--skip-whitespace-forward)
-  (let ((expanded-form nil))
+  (let* ((expanded-form nil)
+         (start (point))
+         (seq (cons
+               (elsa-form-symbol
+                :start (cond
+                        ((looking-at (rx (or (and (? "#") "'") "," "`" ",@")))
+                         (prog1 (point)
+                           (forward-char (length (match-string 0)))))
+                        ((looking-at-p "(")
+                         (setq expanded-form t)
+                         (down-list)
+                         (forward-sexp)
+                         (point))
+                        (t (prog1 (point)
+                             (forward-char (length (symbol-name (car form)))))))
+                :name (car form)
+                :end (point))
+               (-map (lambda (f) (elsa--read-form f state)) (cdr form)))))
     (elsa-form-list
      :quote-type (car form)
-     :start (point)
-     :sequence (cons
-                (elsa-form-symbol
-                 :start (cond
-                         ((looking-at (rx (or (and (? "#") "'") "," "`" ",@")))
-                          (prog1 (point)
-                            (forward-char (length (match-string 0)))))
-                         ((looking-at-p "(")
-                          (setq expanded-form t)
-                          (down-list)
-                          (forward-sexp)
-                          (point))
-                         (t (prog1 (point)
-                              (forward-char (length (symbol-name (car form)))))))
-                 :name (car form)
-                 :end (point))
-                (-map (lambda (f) (elsa--read-form f state)) (cdr form)))
+     :start start
+     :sequence seq
      :end (progn
             (when expanded-form (up-list))
             (point)))))

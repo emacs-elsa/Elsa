@@ -10,6 +10,10 @@
    (errors :initform nil)
    (ignored-lines :initform nil)
    (reachable :initform (list (trinary-true)))
+   ;; TODO: I don't remember or understand what this is.  I'm going to
+   ;; commit it since I can't see it making any difference.  But it
+   ;; probably serves some purpose.
+   (quoted :initform (trinary-false))
    (scope :initform (elsa-scope))))
 
 (defun elsa-state-add-defun (state name type)
@@ -43,5 +47,8 @@ STATE is `elsa-state', ERROR is `elsa-message'."
      (push ,reachability (oref ,state reachable))
      ,@body
      (pop (oref ,state reachable))))
+
+(defun elsa-state-quoted-p (state)
+  (trinary-true-p (oref state quoted)))
 
 (provide 'elsa-state)

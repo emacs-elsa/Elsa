@@ -52,9 +52,13 @@ number by symbol 'many."
 (defun elsa--analyse-keyword (_form _scope _state)
   nil)
 
-(defun elsa--analyse-symbol (form scope _state)
+(defun elsa--analyse-symbol (form scope state)
   (let* ((name (oref form name))
          (type (cond
+                ((elsa-state-quoted-p state)
+                 (elsa-const-type
+                  :type (elsa-type-symbol)
+                  :value name))
                 ((eq name t) (elsa-make-type t))
                 ((eq name nil) (elsa-make-type nil))
                 ((-when-let (var (elsa-scope-get-var scope form))
@@ -62,7 +66,8 @@ number by symbol 'many."
                 ((get name 'elsa-type-var))
                 (t (elsa-make-type unbound)))))
     (oset form type type)
-    (unless (memq name '(t nil))
+    (unless (or (memq name '(t nil))
+                (elsa-state-quoted-p state))
       (oset form narrow-types
             (list (elsa-variable :name name
                                  :type (elsa-type-make-non-nullable type)))))))
@@ -519,11 +524,21 @@ If no type annotation is provided, find the value type through
                      :args arg-types
                      :return (oref (-last-item body) type)))))
 
-(defun elsa--analyse:quote (form _scope _state)
+(defun elsa--analyse:quote (form scope state)
+  (oset state quoted (trinary-true))
   (let ((arg (cadr (oref form sequence))))
     (cond
      ((elsa-form-list-p arg)
-      (oset form type (elsa-type-list)))
+      ;; TODO: make sure we analyze everything as static when quoted
+      ;; (elsa--analyse-list arg scope state)
+      (oset form type
+            (elsa-type-list
+             :item-type
+             (-reduce-from
+              (lambda (acc form)
+                (elsa-type-sum acc (elsa-get-type form)))
+              (elsa-type-empty)
+              (elsa-form-sequence arg)))))
      ((elsa-form-symbol-p arg)
       (oset form type
             (elsa-const-type
@@ -534,7 +549,8 @@ If no type annotation is provided, find the value type through
      ((elsa-form-string-p arg)
       (oset form type (elsa-type-string)))
      ((elsa-form-integer-p arg)
-      (oset form type (elsa-type-int))))))
+      (oset form type (elsa-type-int)))))
+  (oset state quoted (trinary-false)))
 
 (defun elsa--analyse--validate-interactive-string (state arg)
   (let ((str (elsa-form-sequence arg))
@@ -674,17 +690,20 @@ If no type annotation is provided, find the value type through
 (defun elsa--analyse-list (form scope state)
   ;; handle special forms
   (let ((head (elsa-car form)))
-    (when (elsa-form-symbol-p head)
-      (let* ((name (oref head name))
-             (analyse-fn-name (intern (concat "elsa--analyse:" (symbol-name name)))))
-        (pcase name
-          ((guard (functionp analyse-fn-name))
-           (funcall analyse-fn-name form scope state))
-          (`\` (elsa--analyse-backquote form scope state))
-          (`\, (elsa--analyse-unquote form scope state))
-          (`\,@ (elsa--analyse-splice form scope state))
-          ;; function call
-          (_ (elsa--analyse-function-call form scope state)))))))
+    (if (and
+         (not (elsa-state-quoted-p state))
+         (elsa-form-symbol-p head))
+        (let* ((name (oref head name))
+               (analyse-fn-name (intern (concat "elsa--analyse:" (symbol-name name)))))
+          (pcase name
+            ((guard (functionp analyse-fn-name))
+             (funcall analyse-fn-name form scope state))
+            (`\` (elsa--analyse-backquote form scope state))
+            (`\, (elsa--analyse-unquote form scope state))
+            (`\,@ (elsa--analyse-splice form scope state))
+            ;; function call
+            (_ (elsa--analyse-function-call form scope state))))
+      (elsa--analyse-body (elsa-form-sequence form) scope state))))
 
 (defun elsa--analyse-improper-list (_form _scope _state)
   nil)
