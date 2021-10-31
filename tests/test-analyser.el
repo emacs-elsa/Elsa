@@ -151,6 +151,7 @@
               (expect or-form :to-be-type-equivalent
                       (elsa-make-type (or string nil))))))
 
+        ;; FIXME: this should be `t' or the diff type.
         (it "should set return type to sum of narrowed types"
           (elsa-test-with-analysed-form "|(defun a (x) (or (stringp x) x))" form
             (let ((or-form (elsa-nth 3 form)))
@@ -173,7 +174,11 @@
 
         (it "should set return type to nil for empty (or) form"
           (elsa-test-with-analysed-form "|(or)" form
-            (expect form :to-be-type-equivalent (elsa-type-nil)))))
+            (expect form :to-be-type-equivalent (elsa-type-nil))))
+
+        (it "should set return type to sum of return types for sum of functions"
+          (elsa-test-with-analysed-form "|(downcase x)" form
+            (expect form :to-be-type-equivalent (elsa-make-type (or string int))))))
 
       (describe "narrowing types"
 

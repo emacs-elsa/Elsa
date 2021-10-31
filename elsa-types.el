@@ -180,6 +180,13 @@ because the actual type can be any of them.")
     (-all? (lambda (ot) (elsa-type-accept this ot)) (oref other types)))
    (t (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
 
+(cl-defmethod elsa-type-get-return ((this elsa-sum-type))
+  "Return type of a sum is the sum of return types of its types.
+
+In case of primitive types the return type is the type it self.
+In case of functions, it is the return type of the function."
+  (-reduce 'elsa-type-sum (-map 'elsa-type-get-return (oref this types))))
+
 (defclass elsa-diff-type (elsa-type)
   ((positive :initform (elsa-type-mixed) :initarg :positive)
    (negative :initform (elsa-type-empty) :initarg :negative))
