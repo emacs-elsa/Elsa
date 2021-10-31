@@ -83,11 +83,14 @@
 (defclass elsa-check-elsa-prefer-elsa-get-type (elsa-check-elsa-oref) ())
 
 (cl-defmethod elsa-check-check ((_ elsa-check-elsa-prefer-elsa-get-type) form scope state)
-  (let* ((prop (elsa-get-name (elsa-nth 2 form))))
+  (let* ((instance-form (elsa-form-print (elsa-nth 1 form)))
+         (prop (elsa-get-name (elsa-nth 2 form))))
     (when (eq prop 'type)
       (elsa-state-add-message state
         (elsa-make-notice (elsa-car form)
-          "Prefer (elsa-get-type x) to (oref x type).")))))
+          (format "Prefer (elsa-get-type %s) to (oref %s type)."
+                  instance-form
+                  instance-form))))))
 
 (defclass elsa-check-elsa-prefer-elsa-form-sequence (elsa-check-elsa-oref) ())
 
