@@ -483,7 +483,7 @@ This only makes sense for the sequence forms:
         (elsa-state-add-defun
          state
          (elsa-get-name (cadr (oref reader-form sequence)))
-         (eval `(elsa-make-type ,@(cddr comment-form)))))
+         (eval `(elsa-make-type (function ,@(cddr comment-form))))))
        ((or (elsa-form-function-call-p reader-form 'defvar)
             (elsa-form-function-call-p reader-form 'defconst))
         (when (and state (not (eq form-name annotation-name)))
