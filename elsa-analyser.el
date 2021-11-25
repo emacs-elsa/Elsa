@@ -644,10 +644,10 @@ If no type annotation is provided, find the value type through
     ;; check the types
     (when type
       ;; analyse the arguments
-      (when (elsa-function-type-p type)
+      (when (elsa-type-callable-p type)
         (cl-mapc
          (lambda (argument-form index)
-           (let* ((expected (elsa-function-type-nth-arg index type))
+           (let* ((expected (elsa-function-type-nth-arg type index))
                   (actual
                    ;; In case we have a quoted symbol and the expected
                    ;; type is function, we will take the function

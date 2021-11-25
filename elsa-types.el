@@ -51,12 +51,11 @@
   "Get argument types of THING."
   nil)
 
-(cl-defmethod elsa-type-get-return (_this)
+(cl-defgeneric elsa-type-get-return (this)
   "Get return type of THIS type."
   nil)
 
 (cl-defmethod elsa-type-get-return ((this elsa-type))
-  "Get return type of THIS type."
   this)
 
 (cl-defmethod elsa-type-accept ((this elsa-type) other)
@@ -78,11 +77,28 @@ THIS."
                 (oref other types))))
    (t nil)))
 
-(cl-defmethod elsa-type-composite-p ((_this elsa-type))
+(cl-defgeneric elsa-type-composite-p (this)
   "Determine if the type is a composite type.
 
 Composite types have to be wrapped in parens when passed as
 arguments to other constructors."
+  nil)
+
+(cl-defgeneric elsa-type-callable-p (this)
+  "Check if the type is callable.
+
+A callable type can be called either directly as a list form or
+with `funcall' or `apply' (or with other similar functions)."
+  nil)
+
+;; (elsa-function-type-nth-arg :: (function (mixed int) mixed))
+(cl-defgeneric elsa-function-type-nth-arg (this n)
+  "Return type of Nth argument.
+
+For non-callable functions, return nil.
+
+If N is more than the arity of the function and the last argument
+is variadic, return that type, otherwise return nil."
   nil)
 
 (cl-defmethod elsa-type-restrict-by ((_this elsa-type) _other)
@@ -179,6 +195,18 @@ because the actual type can be any of them.")
    ((elsa-sum-type-p other)
     (-all? (lambda (ot) (elsa-type-accept this ot)) (oref other types)))
    (t (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
+
+(cl-defmethod elsa-type-callable-p ((this elsa-sum-type))
+  (let ((types (oref this types)))
+    (cond
+     ((= 0 (length types)) nil)
+     (t (-any? #'elsa-type-callable-p types)))))
+
+(cl-defmethod elsa-function-type-nth-arg ((this elsa-sum-type) n)
+  (let ((types (oref this types)))
+    (cond
+     ((= 0 (length types)) nil)
+     (t (-reduce #'elsa-type-sum (--keep (elsa-function-type-nth-arg it n) types))))))
 
 (cl-defmethod elsa-type-get-return ((this elsa-sum-type))
   "Return type of a sum is the sum of return types of its types.
@@ -435,11 +463,12 @@ other, then this is a supertype of other."
           (throw 'ok nil)))
       t)))
 
+(cl-defmethod elsa-type-callable-p ((this elsa-function-type)) t)
+
 (cl-defmethod elsa-type-composite-p ((_this elsa-function-type)) t)
 
-;; (elsa-function-type-nth-arg :: (function (int mixed) mixed))
-(defun elsa-function-type-nth-arg (n elsa-type)
-  (let* ((args (oref elsa-type args))
+(cl-defmethod elsa-function-type-nth-arg ((this elsa-function-type) n)
+  (let* ((args (oref this args))
          (type (nth n args)))
     (cond
      ((eq type nil)
@@ -455,7 +484,6 @@ other, then this is a supertype of other."
   (oref this args))
 
 (cl-defmethod elsa-type-get-return ((this elsa-function-type))
-  "Get return type of THIS type."
   (oref this return))
 
 (defclass elsa-generic-type (elsa-type)
