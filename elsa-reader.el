@@ -476,7 +476,7 @@ This only makes sense for the sequence forms:
             (elsa-form-function-call-p reader-form 'cl-defgeneric))
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
-            (elsa-make-warning reader-form
+            (elsa-make-warning (elsa-nth 1 reader-form)
               "The function name `%s' and the annotation name `%s' do not match"
               (symbol-name form-name)
               (symbol-name annotation-name))))
@@ -491,7 +491,7 @@ This only makes sense for the sequence forms:
             (elsa-form-function-call-p reader-form 'defconst))
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
-            (elsa-make-warning reader-form
+            (elsa-make-warning (elsa-nth 1 reader-form)
               "The variable name `%s' and the annotation name `%s' do not match"
               (symbol-name form-name)
               (symbol-name annotation-name))))
