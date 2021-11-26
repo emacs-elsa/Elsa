@@ -200,7 +200,7 @@ because the actual type can be any of them.")
   (let ((types (oref this types)))
     (cond
      ((= 0 (length types)) nil)
-     (t (-any? #'elsa-type-callable-p types)))))
+     (t (-all? #'elsa-type-callable-p types)))))
 
 (cl-defmethod elsa-function-type-nth-arg ((this elsa-sum-type) n)
   (let ((types (oref this types)))
