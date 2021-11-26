@@ -8,7 +8,7 @@ Elsa is a tool that analyses your code without loading or running it.
 It can track types and provide helpful hints when things don't match
 up before you even try to run the code.
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
 - [State of the project](#state-of-the-project)
@@ -17,7 +17,10 @@ up before you even try to run the code.
     - [Enforce style rules](#enforce-style-rules)
     - [Look for suspicious code](#look-for-suspicious-code)
     - [Track types of expressions](#track-types-of-expressions)
+    - [Understand functional overloads](#understand-functional-overloads)
 - [How do I run it](#how-do-i-run-it)
+    - [makem.sh](#makemsh)
+    - [Cask](#cask)
     - [Flycheck integration](#flycheck-integration)
 - [Configuration](#configuration)
     - [Analysis extension](#analysis-extension)
@@ -31,6 +34,7 @@ up before you even try to run the code.
     - [How to write a ruleset](#how-to-write-a-ruleset)
 
 <!-- markdown-toc end -->
+
 
 # State of the project
 
@@ -109,7 +113,7 @@ Everything you see here actually works, this is not just for show!
 
 ![](./images/type-inference-3.png)
 
-## Understand functional dependencies
+## Understand functional overloads
 
 `downcase` can take a string and return a string or take an int and
 return an int.  Because we pass a string variable `s`, we can
