@@ -8,6 +8,7 @@
 (require 'elsa-english)
 (require 'elsa-state)
 (require 'elsa-scope)
+(require 'elsa-functions)
 
 (require 'elsa-typed-builtin)
 
@@ -646,41 +647,74 @@ If no type annotation is provided, find the value type through
     ;; check the types
     (when type
       ;; analyse the arguments
-      (when (elsa-type-callable-p type)
-        (cl-mapc
-         (lambda (argument-form index)
-           ;; TODO: somewhere here we need to store the functional
-           ;; dependencies.  That is, if the type is (or (string ->
-           ;; string) (int -> int)), we set first argument type to (or
-           ;; string int), but we know that if it is string, the
-           ;; return type must be string and not int.  Maybe this
-           ;; should be somehow included in the "narrowing", or rather
-           ;; narrowing should be extended to more general type guards.
-           (let* ((expected (elsa-function-type-nth-arg type index))
-                  (actual
-                   ;; In case we have a quoted symbol and the expected
-                   ;; type is function, we will take the function
-                   ;; definition from the symbol's plist
-                   (cond
-                    ((and (elsa-function-type-p expected)
-                          (elsa--quoted-symbol-p argument-form))
-                     (or (get (elsa--quoted-symbol-name argument-form) 'elsa-type)
-                         (elsa-type-mixed)))
-                    (t (oref argument-form type)))))
-             (unless (or (not expected)
-                         (elsa-type-accept expected actual))
-               (elsa-state-add-message state
-                 (elsa-make-error head
-                   "Argument %d accepts type %s but received %s"
-                   (1+ index)
-                   (elsa-type-describe expected)
-                   (elsa-type-describe actual))))))
-         args
-         (number-sequence 0 (1- (length args)))))
-
-      ;; set the return type of the form according to the return type
-      ;; of the function's declaration
-      (oset form type (elsa-type-get-return type)))
+      (let ((usable-overloads
+             (catch 'no-overloads
+               (when (elsa-type-callable-p type)
+                 (-when-let* ((all-overloads (elsa-function-get-overloads type))
+                              ;; overloads is progressively filtered
+                              ;; to only the overloads applicable at
+                              ;; current caller
+                              (overloads all-overloads))
+                   (-map-indexed
+                    (lambda (index argument-form)
+                      (let* ((errors-for-this-arg-position nil)
+                             (good-overloads
+                              ;; Check each argument against all
+                              ;; possible overloads.  Keep only those
+                              ;; which can match current arguments.
+                              ;; If we run out of overloads, report
+                              ;; the last set of possible overloads as
+                              ;; the error.
+                              (-filter
+                               (lambda (overload)
+                                 (let* ((expected (elsa-function-type-nth-arg overload index))
+                                        (actual
+                                         (cond
+                                          ((and (elsa-function-type-p expected)
+                                                (elsa--quoted-symbol-p argument-form))
+                                           (or (get
+                                                (elsa--quoted-symbol-name argument-form)
+                                                'elsa-type)
+                                               (elsa-type-mixed)))
+                                          (t (oref argument-form type))))
+                                        (acceptablep
+                                         (elsa-type-assignable-p expected actual)))
+                                   (unless (or (not expected) acceptablep)
+                                     (push (cons
+                                            overload
+                                            (format
+                                             "Argument %d accepts type `%s' but received `%s'"
+                                             (1+ index)
+                                             (elsa-type-describe expected)
+                                             (elsa-type-describe actual)))
+                                           errors-for-this-arg-position))
+                                   acceptablep))
+                               overloads)))
+                        (if good-overloads
+                            (setq overloads good-overloads)
+                          (elsa-state-add-message state
+                            (elsa-make-error argument-form
+                              "No overload matches this call.\n%s"
+                              (s-join
+                               "\n"
+                               (-map-indexed
+                                (lambda (index err)
+                                  (format "  Overload %d of %d: '%s'\n    %s"
+                                          (1+ index)
+                                          (length all-overloads)
+                                          (elsa-type-describe (car err))
+                                          (cdr err)))
+                                errors-for-this-arg-position))))
+                          (throw 'no-overloads nil))))
+                    args)
+                   overloads)))))
+        ;; set the return type of the form according to the return type
+        ;; of the function's declaration
+        (if usable-overloads
+            (oset
+             form type
+             (elsa-type-get-return (elsa-sum-type :types usable-overloads)))
+          (oset form type (elsa-type-get-return type)))))
 
     ;; compute narrowed types of variables in this function if possible
     (when narrow-types

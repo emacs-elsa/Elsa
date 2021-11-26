@@ -109,6 +109,22 @@ Everything you see here actually works, this is not just for show!
 
 ![](./images/type-inference-3.png)
 
+## Understand functional dependencies
+
+`downcase` can take a string and return a string or take an int and
+return an int.  Because we pass a string variable `s`, we can
+disambiguate which overload of the function must be used and we can
+derive the return type of the function as `string` instead of `(or
+string int)`.
+
+![](./images/functional-deps-1.png)
+
+If we pass an input which doesn't match any overload, Elsa will show a
+helpful report of what overloads are available and what argument
+didn't match.
+
+![](./images/functional-deps-2.png)
+
 # How do I run it
 
 Elsa can be run with [makem.sh](https://github.com/alphapapa/makem.sh)
