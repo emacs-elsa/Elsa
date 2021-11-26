@@ -658,7 +658,11 @@ narrowing of a type to a concrete value from the type's domain."
 
 ;; Readonly type for defconst
 (defclass elsa-readonly-type (elsa-type)
-  ((type :type elsa-type :initarg :type)))
+  ((type :type elsa-type :initarg :type))
+  :documentation "Read-only (or constant) type.
+
+It wraps any other type and makes the form or variable
+unassignable.")
 
 (cl-defmethod elsa-type-accept ((_this elsa-readonly-type) _other)
   nil)
