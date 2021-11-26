@@ -625,23 +625,24 @@ If no type annotation is provided, find the value type through
         (when analysep
           (elsa--analyse-form arg scope state))))
     ;; check arity
-    (-let (((min . max) (elsa-fn-arity name))
-           (num-of-args (length args)))
-      (if (< num-of-args min)
-          (elsa-state-add-message state
-            (elsa-make-error head
-              "Function `%s' expects at least %d %s but received %d"
-              name min
-              (elsa-pluralize "argument" min)
-              num-of-args)))
-      (if (and (not (eq max 'many))
-               (> num-of-args max))
-          (elsa-state-add-message state
-            (elsa-make-error head
-              "Function `%s' expects at most %d %s but received %d"
-              name max
-              (elsa-pluralize "argument" max)
-              num-of-args))))
+    (when name
+      (-let (((min . max) (elsa-fn-arity name))
+             (num-of-args (length args)))
+        (if (< num-of-args min)
+            (elsa-state-add-message state
+              (elsa-make-error head
+                "Function `%s' expects at least %d %s but received %d"
+                name min
+                (elsa-pluralize "argument" min)
+                num-of-args)))
+        (if (and (not (eq max 'many))
+                 (> num-of-args max))
+            (elsa-state-add-message state
+              (elsa-make-error head
+                "Function `%s' expects at most %d %s but received %d"
+                name max
+                (elsa-pluralize "argument" max)
+                num-of-args)))))
     ;; check the types
     (when type
       ;; analyse the arguments
