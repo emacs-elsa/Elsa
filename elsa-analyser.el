@@ -409,9 +409,6 @@ nullables and the &rest argument into a variadic."
          ;; 'elsa-type)'... probably on `scope', but for now scope is
          ;; separate for each processed file which is not great.
          (function-type (get name 'elsa-type))
-         (arg-types (or (elsa-type-get-args function-type)
-                        (elsa--get-default-function-types
-                         (-map 'elsa-get-name args))))
          (vars))
     (when args
       (-each-indexed (--remove
@@ -420,7 +417,9 @@ nullables and the &rest argument into a variadic."
         (lambda (index arg)
           (let ((var (elsa-variable
                       :name (elsa-get-name arg)
-                      :type (nth index arg-types))))
+                      :type (if function-type
+                                (elsa-function-type-nth-arg function-type index)
+                              (elsa-type-mixed)))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
     (when body (elsa--analyse-body body scope state))
@@ -437,7 +436,8 @@ nullables and the &rest argument into a variadic."
                 (elsa-type-describe body-return-type))))
         ;; infer the type of the function
         (put name 'elsa-type (elsa-function-type
-                              :args arg-types
+                              :args (elsa--get-default-function-types
+                                     (-map 'elsa-get-name args))
                               :return body-return-type))))
     (--each vars (elsa-scope-remove-var scope it))))
 

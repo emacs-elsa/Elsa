@@ -28,7 +28,6 @@
 
   (describe "Working with function calls"
 
-
     (it "should recognize return type of defun"
       (let* ((state (elsa-state)))
         (elsa-state-add-defun
