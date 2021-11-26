@@ -6,21 +6,22 @@ places, especially in user-defined functions, where we can not infer
 the correct type.
 
 Therefore Elsa provides users with the option to annotate their
-function definitions.  The annotations are placed in the body of the
-function inside a =declare= form:
+function definitions.  The annotations are placed in front of the body
+of the function inside a special comment form:
 
 #+BEGIN_SRC elisp
+;; (add-one :: (function (int) int))
 (defun add-one (x)
-  (declare (elsa (int) int))
   (1+ x))
 #+END_SRC
 
-The =declare= form starts with =elsa= followed by one or two values.  If
-two are provided, first must be a list which is the list of input
-types and the second is the return type.
+The type annotation form starts with the function name followed by two
+colons =::= and the type.  The same annotation is used for functions
+(currently =defun=) and variables =defvar=, =defcustom=, =defconst=.
 
-If only one is provided it is taken to be the return type and the
-function must have no input arguments.
+The name in the annotation must match the name of the following form.
+This is checked to prevent accidental copy-paste errors when the
+comment form is forgotten or misplaced.
 
 Here are general guidelines on how the types are constructed.
 
@@ -82,21 +83,37 @@ know that the property is always of a certain type.
 It is recommended to always provide type signatures for top-level
 functions instead of implicit =mixed=.
 
-** Most general type
+** TODO Most general type [not implemented yet]
 
-A type for everything is called =mixed=.  It accepts anything and is
+A type for everything is called =unknown=.  It accepts anything and is
 always nullable (that means it accepts =nil=).  This is the default type
 for when we lack type information.
 
-Because a =mixed= type can be anything it itself is only accepted by
-=mixed=, so that the following would not type-check:
+Because an =unknown= type can be anything it itself is only accepted by
+=unknown= (and =mixed=), so that the following would not type-check:
 
 #+BEGIN_SRC elisp
-(defun a-goes-in (a) ;; a is mixed
-  (declare (elsa (mixed) int))
-  ;; a *might* be an int, but we don't know for sure
+;; (a-goes-in :: (function (unknown) number))
+(defun a-goes-in (a)
+  ;; a *might* be an number, but we don't know for sure
   (1+ a))
 #+END_SRC
+
+This is useful for APIs and cases where we want to signal "this can be
+any value, so you must perform some type of checking before you use
+it". This forces users to safely introspect returned values.
+
+#+BEGIN_SRC elisp
+;; (a-goes-in :: (function (unknown) number))
+(defun a-goes-in (a)
+  (if (numberp a) ;; type guard makes sure a is a number
+      (1+ a)
+    (error "A is not a number")))
+#+END_SRC
+
+The difference between =unknown= and =mixed= is that =mixed= is acepted by
+any type by implicitly casting it to the required type.  It is an
+opt-out from type-safety.
 
 ** Composite (higher order) types
 
@@ -148,9 +165,9 @@ example of such a function is =mapcar= which takes a function and a list
 and applies the function to every item of the list.
 
 #+BEGIN_SRC elisp
+;; (app :: (function ((function (number) number)) (list number)))
 (defun app (fn)
   "Apply FN to the list (1 2 3 4)"
-  (declare (elsa ((function (number) number)) (list number)))
   (mapcar fn (list 1 2 3 4)))
 
 (app (lambda (x) (* x x)))
@@ -159,7 +176,7 @@ and applies the function to every item of the list.
 The =app= function requires that we pass in a function which processes a
 number into a number and returns a list of numbers.
 
-** TODO Generic types
+** TODO Generic types [not implemented yet]
 
 Generic types are types where some of the type arguments are variable.
 Both basic and composite types can be turned into generic types.
@@ -202,9 +219,9 @@ If a function can take optional arguments we need to convert them into
 a nullable type =(or type nil)=.
 
 #+BEGIN_SRC elisp
+;; (drop-items :: (function ((list a*) (or int nil)) (list a*)))
 (defun drop-items (list &optional n)
   "Drop first item of LIST or N items if N is provided."
-  (declare (elsa ((list a*) (or int nil)) (list a*)))
   (setq n (or n 1))
   (dotimes (_ n list)
     (setq list (cdr list))))
@@ -217,9 +234,9 @@ last variadic argument with =&rest= marker just as we do in the argument
 list.
 
 #+BEGIN_SRC elisp
+;; (join :: (function (string &rest string) string))
 (defun join (separator &rest strings)
   "Join STRINGS with SEPARATOR."
-  (declare (elsa (string &rest string) string))
   (mapconcat 'identity strings separator))
 #+END_SRC
 
@@ -236,8 +253,8 @@ A sum type is useful if the function internally checks the passed
 value and decides what processing to do:
 
 #+BEGIN_SRC elisp
+;; (to-number :: (function ((or int string)) int))
 (defun to-number (x)
-  (declare (elsa ((or int string)) int))
   (cond
    ((numberp x) x)
    ((stringp x) (string-to-number x))))
