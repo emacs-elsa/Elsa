@@ -221,7 +221,7 @@ The BINDING should have one of the following forms:
                 (unless (elsa-type-accept var-type val)
                   (elsa-state-add-message state
                     (elsa-make-error place
-                      "Variable %s expects %s, got %s"
+                      "Variable %s expects `%s', got `%s'"
                       (symbol-name (elsa-get-name place))
                       (elsa-type-describe var-type)
                       (elsa-type-describe (elsa-get-type val)))))))))))
