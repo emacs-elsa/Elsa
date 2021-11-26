@@ -189,9 +189,9 @@
 (put 'nth 'elsa-type (elsa-make-type (function (int (list mixed)) mixed)))
 (put 'elt 'elsa-type (elsa-make-type (function (sequence int) mixed)))
 ;; TODO: Could use generics as well? a -> List a -> List a?
-(put 'member 'elsa-type (elsa-make-type (function (nil) (list mixed))))
-(put 'memq 'elsa-type (elsa-make-type (function (nil) (list mixed))))
-(put 'memql 'elsa-type (elsa-make-type (function (nil) (list mixed))))
+(put 'member 'elsa-type (elsa-make-type (function (mixed (list mixed)) (list mixed))))
+(put 'memq 'elsa-type (elsa-make-type (function (mixed (list mixed)) (list mixed))))
+(put 'memql 'elsa-type (elsa-make-type (function (mixed (list mixed)) (list mixed))))
 ;; TODO: this can be a -> [Mixed] -> Cons a Mixed
 (put 'assq 'elsa-type (elsa-make-type (function (mixed (list mixed)) (cons mixed mixed))))
 (put 'assoc 'elsa-type (elsa-make-type (function (mixed (list mixed)) (cons mixed mixed))))

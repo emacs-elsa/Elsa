@@ -11,7 +11,7 @@
 
 (require 'elsa-typed-builtin)
 
-;; (elsa--arglist-to-arity :: (function ((or (list symbol) t string)) (cons int (or int symbol))))
+;; (elsa--arglist-to-arity :: (function ((or (list symbol) t string)) (cons int (or int (const many)))))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
@@ -612,7 +612,7 @@ If no type annotation is provided, find the value type through
                       t)))
    (t spec)))
 
-;; (elsa--analyse-macro :: (function (mixed (or bool (or list bool)) mixed mixed) mixed))
+;; (elsa--analyse-macro :: (function (mixed (or bool (or (list bool))) mixed mixed) mixed))
 (defun elsa--analyse-macro (form spec scope state)
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((head (elsa-car form))
