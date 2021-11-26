@@ -1,0 +1,18 @@
+* Narrowing (type guards)
+
+The general type narrowing analysis works as follows:
+
+1. During analysis of a function call, determine if the function
+   narrows the type of any variable passed in as an argument
+2. Set this type on the function call form as =narrow-types=
+3. If later this form is found in a condition (=if=, =cond= etc.), we can
+   use the =narrow-types= to narrow the type of the variable /in the
+   branch which evaluates when condition is true/.  For the false
+   branch, we can use the diff type (anything except the narrowed
+   type).
+
+Narrowing can be set on a function statically by setting
+=elsa-narrow-types= on the function symbol as a positional list
+(i.e. type after narrowing of nth input variable) or dynamically
+during analysis by setting the form's =narrow-types= to a list of
+=elsa-variable= items.
