@@ -22,8 +22,8 @@
   (let ((state (or (plist-get body :state-var) (make-symbol "state")))
         (errors (or (plist-get body :errors-var) (make-symbol "errors"))))
     `(elsa-test-with-buffer ,initial
-       (let ((,form-var (elsa-read-form (elsa-scope)))
-             (,state (elsa-state)))
+       (let* ((,state (elsa-state))
+              (,form-var (elsa-read-form ,state)))
          (elsa--analyse-form ,form-var (oref ,state scope) ,state)
          (let ((,errors (oref ,state errors)))
            ,@body)))))
