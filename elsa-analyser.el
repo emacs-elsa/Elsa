@@ -710,18 +710,21 @@ If no type annotation is provided, find the value type through
                         (if good-overloads
                             (setq overloads good-overloads)
                           (elsa-state-add-message state
-                            (elsa-make-error argument-form
-                              "No overload matches this call.\n%s"
-                              (s-join
-                               "\n"
-                               (-map-indexed
-                                (lambda (index err)
-                                  (format "  Overload %d of %d: '%s'\n    %s"
-                                          (1+ index)
-                                          (length all-overloads)
-                                          (elsa-type-describe (car err))
-                                          (cdr err)))
-                                errors-for-this-arg-position))))
+                            (if (< 1 (length errors-for-this-arg-position))
+                                (elsa-make-error argument-form
+                                  "No overload matches this call.\n%s"
+                                  (s-join
+                                   "\n"
+                                   (-map-indexed
+                                    (lambda (index err)
+                                      (format "  Overload %d of %d: '%s'\n    %s"
+                                              (1+ index)
+                                              (length all-overloads)
+                                              (elsa-type-describe (car err))
+                                              (cdr err)))
+                                    errors-for-this-arg-position)))
+                              (elsa-make-error argument-form
+                                (cdar errors-for-this-arg-position))))
                           (throw 'no-overloads nil))))
                     args)
                    overloads)))))
