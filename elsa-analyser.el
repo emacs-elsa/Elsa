@@ -502,6 +502,7 @@ If no type annotation is provided, find the value type through
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))
 
+;; TODO: add support for reading type annotations for lambda forms
 (defun elsa--analyse:lambda (form scope state)
   (let* ((sequence (oref form sequence))
          (args (nth 1 sequence))
@@ -647,6 +648,13 @@ If no type annotation is provided, find the value type through
       (when (elsa-type-callable-p type)
         (cl-mapc
          (lambda (argument-form index)
+           ;; TODO: somewhere here we need to store the functional
+           ;; dependencies.  That is, if the type is (or (string ->
+           ;; string) (int -> int)), we set first argument type to (or
+           ;; string int), but we know that if it is string, the
+           ;; return type must be string and not int.  Maybe this
+           ;; should be somehow included in the "narrowing", or rather
+           ;; narrowing should be extended to more general type guards.
            (let* ((expected (elsa-function-type-nth-arg type index))
                   (actual
                    ;; In case we have a quoted symbol and the expected
