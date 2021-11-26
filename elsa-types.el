@@ -30,6 +30,23 @@
 
 (defclass elsa-type nil () :abstract t)
 
+(cl-defgeneric elsa-type-accept (this other)
+  "Check if THIS accepts OTHER.
+
+This means OTHER is assignable to THIS.
+
+This method only performs sound analysis.  To account for the
+special handling of `elsa-type-mixed', use
+`elsa-type-assignable-p'.")
+
+(defun elsa-type-assignable-p (this other)
+  "Check if THIS accepts OTHER.
+
+Uses special rules for `elsa-type-mixed'."
+  (or (elsa-type-mixed-p this)
+      (elsa-type-mixed-p other)
+      (elsa-type-accept this other)))
+
 ;; (elsa-type-describe :: (function (mixed) string))
 (cl-defgeneric elsa-type-describe (type)
   "Return a string representation of TYPE."
@@ -277,7 +294,34 @@ type and none of the negative types.")
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
-(defclass elsa-type-mixed (elsa-type) ())
+(defclass elsa-type-mixed (elsa-type) ()
+  :documentation "Type of anything.
+
+Mixed is a special type in a way that it serves as an opt-out
+from type analysis.
+
+Mixed accepts any other type except unbound.  This is
+type-theoretically sound because mixed is the union of all types.
+
+However, mixed is also accepted by any other type.  This is
+unsafe and works as an implicit type-casting.
+
+Typically, if some function returns mixed, such as reading a
+property from a symbol with `get', we can wrap this call in a
+function and provide a more narrow type signature for the return
+type provided we know that the property is always of a certain
+type.
+
+  ;; (set-property :: (function (symbol int) int))
+  (defun set-property (name value)
+    (set name value))
+
+  ;; (get-property :: (function (symbol) int))
+  (defun get-property (name)
+    ;; Even though `get' returns mixed, we know that if we only set it
+    ;; with `set-property' it will always be int and so we can provide
+    ;; more specific return type.
+    (get name value))")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-mixed))
   "mixed")

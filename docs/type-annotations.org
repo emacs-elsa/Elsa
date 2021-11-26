@@ -48,6 +48,40 @@ mark a type nullable you can combine it with =nil= type using the [[id:5a21a68a-
 combinator: =(or string nil)= is a type which takes any string but also
 =nil=.
 
+** Implicitly castable type
+
+Type of anything is called =mixed=.
+
+Mixed is a special type in a way that it serves as an opt-out from
+type analysis.
+
+Mixed accepts any other type except unbound.  This is
+type-theoretically sound because =mixed= is the union of all types.
+
+However, =mixed= is also accepted by any other type.  This is unsafe and
+works as an implicit type-casting.
+
+Typically, if some function returns =mixed=, such as reading a property
+from a symbol with =get=, we can wrap this call in a function and
+provide a more narrow type signature for the return type provided we
+know that the property is always of a certain type.
+
+#+begin_src elisp
+;; (set-property :: (function (symbol int) int))
+(defun set-property (name value)
+  (set name value))
+
+;; (get-property :: (function (symbol) int))
+(defun get-property (name)
+  ;; Even though `get' returns mixed, we know that if we only set it
+  ;; with `set-property' it will always be int and so we can provide
+  ;; more specific return type.
+  (get name value))
+#+end_src
+
+It is recommended to always provide type signatures for top-level
+functions instead of implicit =mixed=.
+
 ** Most general type
 
 A type for everything is called =mixed=.  It accepts anything and is

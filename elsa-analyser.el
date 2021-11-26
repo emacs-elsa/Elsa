@@ -428,7 +428,7 @@ nullables and the &rest argument into a variadic."
     (let* ((body-return-type (if body (oref (-last-item body) type) (elsa-type-nil)))
            (function-return-type (elsa-type-get-return function-type)))
       (if function-return-type
-          (unless (elsa-type-accept function-return-type body-return-type)
+          (unless (elsa-type-assignable-p function-return-type body-return-type)
             (elsa-state-add-message state
               (elsa-make-error (elsa-car form)
                 "Function is expected to return %s but returns %s."
