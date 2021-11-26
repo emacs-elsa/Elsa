@@ -463,11 +463,18 @@ make it explicit and precise."
          (value (elsa-nth 2 form))
          (var-name (elsa-get-name name))
          (var-type (get var-name 'elsa-type-var)))
-    (unless var-type
+    (when value
+      (elsa--analyse-form value scope state))
+    (if var-type
+        (unless (elsa-type-assignable-p var-type (elsa-get-type value))
+          (elsa-state-add-message state
+            (elsa-make-error value
+              "Variable %s expects `%s', got `%s'"
+              var-name
+              (elsa-type-describe var-type)
+              (elsa-type-describe (elsa-get-type value)))))
       (if value
-          (progn
-            (elsa--analyse-form value scope state)
-            (put var-name 'elsa-type-var (oref value type)))
+          (put var-name 'elsa-type-var (oref value type))
         (put var-name 'elsa-type-var (elsa-make-type unbound))))))
 
 (defun elsa--analyse:defcustom (form scope state)
@@ -480,13 +487,20 @@ automatically deriving the type."
          (value (elsa-nth 2 form))
          (var-name (elsa-get-name name))
          (var-type (get var-name 'elsa-type-var)))
-    (unless var-type
+    (when value
+      (elsa--analyse-form value scope state))
+    (if var-type
+        (unless (elsa-type-assignable-p var-type (elsa-get-type value))
+          (elsa-state-add-message state
+            (elsa-make-error value
+              "Variable %s expects `%s', got `%s'"
+              var-name
+              (elsa-type-describe var-type)
+              (elsa-type-describe (elsa-get-type value)))))
+      ;; TODO: check the `:type' form here and also compare if we
+      ;; are doing a valid assignment.
       (if value
-          (progn
-            (elsa--analyse-form value scope state)
-            ;; TODO: check the `:type' form here and also compare if we
-            ;; are doing a valid assignment.
-            (put var-name 'elsa-type-var (oref value type)))
+          (put var-name 'elsa-type-var (oref value type))
         (put var-name 'elsa-type-var (elsa-make-type unbound))))))
 
 (defun elsa--analyse:defconst (form scope state)
@@ -494,11 +508,14 @@ automatically deriving the type."
 
 If no type annotation is provided, find the value type through
 `elsa--analyse:defvar' and wrap it as read-only."
+  (elsa--analyse:defvar form scope state)
   (let* ((name (elsa-nth 1 form))
-         (var-name (elsa-get-name name)))
-    (unless (get var-name 'elsa-type-var)
-      (elsa--analyse:defvar form scope state)
-      (put var-name 'elsa-type-var (elsa-readonly-type :type (get var-name 'elsa-type-var))))))
+         (var-name (elsa-get-name name))
+         (var-type (get var-name 'elsa-type-var)))
+    (when var-type
+      (unless (elsa-readonly-type-p var-type)
+        (put var-name 'elsa-type-var
+             (elsa-readonly-type :type var-type))))))
 
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))

@@ -488,6 +488,7 @@ This only makes sense for the sequence forms:
            (eval `(elsa-make-type (function () ,@(cddr comment-form)))))
           (t (eval `(elsa-make-type ,@(cddr comment-form)))))))
        ((or (elsa-form-function-call-p reader-form 'defvar)
+            (elsa-form-function-call-p reader-form 'defcustom)
             (elsa-form-function-call-p reader-form 'defconst))
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
