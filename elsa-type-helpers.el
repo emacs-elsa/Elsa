@@ -206,11 +206,6 @@ Return trinary logic value.")
       (clone pos))
      (t this))))
 
-(cl-defgeneric elsa-type-intersect (this other)
-  "Return the intersection of THIS and OTHER type.
-
-An intersection only accepts what both THIS and OTHER accept.")
-
 (cl-defgeneric elsa-type-sum (this other)
   "Return the sum of THIS and OTHER type.
 
