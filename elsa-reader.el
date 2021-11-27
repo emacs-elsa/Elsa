@@ -445,6 +445,7 @@ This only makes sense for the sequence forms:
                         ((looking-at (rx (or (and (? "#") "'") "," "`" ",@")))
                          (prog1 (point)
                            (forward-char (length (match-string 0)))))
+                        ;; when we write (quote foo) instead of 'foo
                         ((looking-at-p "(")
                          (setq expanded-form t)
                          (down-list)
