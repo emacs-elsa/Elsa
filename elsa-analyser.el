@@ -416,11 +416,21 @@ nullables and the &rest argument into a variadic."
                       (memq (elsa-get-name it) '(&rest &optional))
                       args)
         (lambda (index arg)
-          (let ((var (elsa-variable
-                      :name (elsa-get-name arg)
-                      :type (if function-type
-                                (elsa-function-type-nth-arg function-type index)
-                              (elsa-type-mixed)))))
+          (let ((var
+                 (elsa-variable
+                  :name (elsa-get-name arg)
+                  :type (if function-type
+                            (--if-let (elsa-function-type-nth-arg
+                                       function-type
+                                       index)
+                                it
+                              (elsa-state-add-message state
+                                (elsa-make-warning arg
+                                  "Argument %d `%s' is expected but has no declared type.  Use of top-level implicit mixed is discouraged."
+                                  (1+ index)
+                                  (elsa-get-name arg)))
+                              (elsa-type-mixed))
+                          (elsa-type-mixed)))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
     (when body (elsa--analyse-body body scope state))
