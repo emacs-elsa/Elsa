@@ -648,6 +648,13 @@ When we use a constant literal, it has a const type.  Const wraps
 a real type, such as int or string, but can only take one
 predefined value.")
 
+(cl-defmethod clone ((this elsa-const-type))
+  "Make a deep copy of a intersection type."
+  (let ((type (clone (oref this type)))
+        (new (cl-call-next-method this)))
+    (oset new type type)
+    new))
+
 (cl-defmethod elsa-type-describe ((this elsa-const-type))
   (format "(const %S)" (oref this value)))
 
