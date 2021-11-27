@@ -23,9 +23,10 @@
 
 ;; TODO: this will be easier to do later when we properly push quoted
 ;; types up.  The check will then be just for a symbol and a quote
-(defun elsa--quoted-symbol-p (form)
+(defun elsa--quoted-symbol-p (form &optional quote-types)
   "Return non-nil if FORM represents a quoted symbol."
-  (when (eq (oref form quote-type) 'quote)
+  (setq quote-types (or quote-types (list 'quote)))
+  (when (memq (oref form quote-type) quote-types)
     (-when-let (seq (elsa-form-sequence form))
       (when (= (length seq) 2)
         (elsa-form-symbol-p (cadr seq))))))
