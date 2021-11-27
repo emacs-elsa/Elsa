@@ -7,6 +7,11 @@
   "Get position narrow types of function NAME."
   (get name 'elsa-narrow-types))
 
+;; (elsa-function-get-type :: (function (symbol) mixed))
+(defun elsa-function-get-type (name)
+  "Get type of the function NAME."
+  (get name 'elsa-type))
+
 (cl-defgeneric elsa-function-get-overloads (callable)
   "Get all overloads of CALLABLE.
 
