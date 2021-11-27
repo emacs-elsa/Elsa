@@ -641,7 +641,12 @@ other, then this is a supertype of other."
 
 (defclass elsa-const-type (elsa-type)
   ((type :type elsa-type :initarg :type)
-   (value :initarg :value)))
+   (value :initarg :value))
+  :documentation "A type of a concrete value.
+
+When we use a constant literal, it has a const type.  Const wraps
+a real type, such as int or string, but can only take one
+predefined value.")
 
 (cl-defmethod elsa-type-describe ((this elsa-const-type))
   (format "(const %S)" (oref this value)))
