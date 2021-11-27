@@ -122,9 +122,6 @@ If N is more than the arity of the function and the last argument
 is variadic, return that type, otherwise return nil."
   nil)
 
-(cl-defmethod elsa-type-restrict-by ((_this elsa-type) _other)
-  (error "Not implemented yet"))
-
 (defclass elsa-type-unbound (elsa-type) ()
   :documentation "Type of an unbound variable.
 
