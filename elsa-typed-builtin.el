@@ -109,8 +109,8 @@
 (put 'logxor 'elsa-type (elsa-make-type (function (&rest (or number marker)) int)))
 (put 'ash 'elsa-type (elsa-make-type (function (int int) int)))
 (put 'lsh 'elsa-type (elsa-make-type (function (int int) int)))
-(put '1+ 'elsa-type (elsa-make-type (function ((or number marker)) int)))
-(put '1- 'elsa-type (elsa-make-type (function ((or number marker)) int)))
+(put '1+ 'elsa-type (elsa-make-type (function ((or number marker)) number)))
+(put '1- 'elsa-type (elsa-make-type (function ((or number marker)) number)))
 (put 'lognot 'elsa-type (elsa-make-type (function (int) int)))
 (put 'byteorder 'elsa-type (elsa-make-type int))
 ;; TODO: Implement bool vectors
