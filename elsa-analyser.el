@@ -553,6 +553,13 @@ If no type annotation is provided, find the value type through
                      :args arg-types
                      :return (oref (-last-item body) type)))))
 
+(defun elsa--analyse:function (form scope state)
+  (let* ((arg (elsa-cadr form))
+         (name (elsa-get-name arg))
+         (type (elsa-function-get-type name)))
+    (when (and type (elsa-form-symbol-p arg))
+      (oset form type type))))
+
 (defun elsa--analyse:quote (form scope state)
   (oset state quoted (trinary-true))
   (let ((arg (cadr (oref form sequence))))
@@ -569,10 +576,15 @@ If no type annotation is provided, find the value type through
               (elsa-type-empty)
               (elsa-form-sequence arg)))))
      ((elsa-form-symbol-p arg)
-      (oset form type
-            (elsa-const-type
-             :type (elsa-type-symbol)
-             :value (elsa--quoted-symbol-name form))))
+      (let* ((funciton-type (elsa-function-get-type (elsa-get-name arg)))
+             (const-type (elsa-const-type
+                          :type (elsa-type-symbol)
+                          :value (elsa--quoted-symbol-name form)))
+             (final-type (if funciton-type
+                             (elsa-intersection-type
+                              :types (list const-type funciton-type))
+                           const-type)))
+        (oset form type final-type)))
      ((elsa-form-keyword-p arg)
       (oset form type (elsa-type-keyword)))
      ((elsa-form-string-p arg)
@@ -695,15 +707,7 @@ If no type annotation is provided, find the value type through
                               (-filter
                                (lambda (overload)
                                  (let* ((expected (elsa-function-type-nth-arg overload index))
-                                        (actual
-                                         (cond
-                                          ((and (elsa-function-type-p expected)
-                                                (elsa--quoted-symbol-p argument-form))
-                                           (or (get
-                                                (elsa--quoted-symbol-name argument-form)
-                                                'elsa-type)
-                                               (elsa-type-mixed)))
-                                          (t (oref argument-form type))))
+                                        (actual (oref argument-form type))
                                         (acceptablep
                                          (elsa-type-assignable-p expected actual)))
                                    (unless (or (not expected) acceptablep)

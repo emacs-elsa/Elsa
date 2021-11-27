@@ -92,6 +92,10 @@ THIS."
          (-all? (lambda (other-type)
                   (elsa-type-accept this other-type))
                 (oref other types))))
+   ((and (elsa-intersection-type-p other)
+         (-any? (lambda (other-type)
+                  (elsa-type-accept this other-type))
+                (oref other types))))
    (t nil)))
 
 (cl-defgeneric elsa-type-composite-p (this)
@@ -173,6 +177,9 @@ of them.")
 
 (cl-defmethod elsa-type-accept ((this elsa-intersection-type) other)
   (-all? (lambda (type) (elsa-type-accept type other)) (oref this types)))
+
+(cl-defmethod elsa-type-describe ((this elsa-intersection-type))
+  (format "(and %s)" (mapconcat 'elsa-type-describe (oref this types) " ")))
 
 (defclass elsa-sum-type (elsa-type)
   ((types :type list
