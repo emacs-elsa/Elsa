@@ -5,7 +5,7 @@
 
 (require 'elsa-test-helpers)
 
-(describe "Elsa analyser"
+(describe "Elsa analyser - builtin"
 
   (describe "eq"
 

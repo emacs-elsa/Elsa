@@ -4,7 +4,7 @@
 
 (require 'elsa-test-helpers)
 
-(describe "Elsa analyser"
+(describe "Elsa analyser - special forms"
 
   (before-each
     (put 'a 'elsa-type nil))
@@ -35,7 +35,8 @@
 
       (it "should respect the type assigned from an annotation"
         (elsa-test-with-analysed-form ";; (foo :: bool)\n(progn (defconst foo :keyword) foo)" form
-          (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type bool)))))
+          (expect (elsa-type-describe (elsa-get-type (elsa-nth 2 form))) :to-equal
+                  "(readonly bool)"))))
 
     (describe "quote"
 
@@ -163,8 +164,9 @@
         (it "should set return type to nullable sum if there is no sure branch of multiple branches."
           (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) x) (and (integerp x) x)))" form
             (let ((or-form (elsa-nth 3 form)))
-              (expect or-form :to-be-type-equivalent
-                      (elsa-make-type (or string int nil))))))
+              (expect (elsa-type-describe
+                       (elsa-get-type or-form))
+                      :to-equal "(or string nil int)"))))
 
         (it "should set return type to non-nullable sum if there is a sure branch."
           (elsa-test-with-analysed-form "|(defun a (x) (or (stringp x) 2 nil))" form

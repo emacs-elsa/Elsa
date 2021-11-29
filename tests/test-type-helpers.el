@@ -83,7 +83,28 @@
 
     (it "should support construction of lists of higher order types through vector shorthand"
       (expect (elsa-test-describe-type (list (cons int string))) :to-equal
-              "(list (cons int string))")))
+              "(list (cons int string))"))
+
+    (it "should normalize the diff type after creation"
+      (expect (elsa-type-describe (elsa-make-type (diff int (const "foo"))))
+              :to-equal "int")))
+
+  (describe "elsa-type-normalize"
+
+    (it "should normalize diff type to only positive if negative is not a subtype"
+      (expect (elsa-type-describe
+               (elsa-type-normalize
+                (elsa-make-type (diff int (const :kek)))))
+              :to-equal "int")))
+
+  (describe "elsa-type-equivalent-p"
+
+    (it "empty sum and empty type are equivalent"
+      (expect (elsa-type-equivalent-p (elsa-sum-type) (elsa-type-empty))
+              :to-be-truthy)
+
+      (expect (elsa-type-equivalent-p (elsa-type-empty) (elsa-sum-type))
+              :to-be-truthy)))
 
   (describe "elsa-type-is-nil"
 

@@ -87,8 +87,48 @@
                (elsa-make-type (cons int string)))
               :not :to-be-truthy)))
 
+  (describe "Empty type"
+
+    (it "should accept empty type"
+      (expect (elsa-type-accept (elsa-type-empty) (elsa-type-empty)) :to-be-truthy))
+
+    (it "should accept empty sum type"
+      (expect (elsa-type-accept (elsa-type-empty) (elsa-sum-type)) :to-be-truthy))
+
+    (it "should not accept non-empty type"
+      (expect (elsa-type-accept (elsa-type-empty) (elsa-type-int))
+              :not :to-be-truthy))
+
+    (it "should be accepted by non-empty type"
+      (expect (elsa-type-accept (elsa-type-int) (elsa-type-empty)) :to-be-truthy)))
 
   (describe "Sum type"
+
+    (describe "empty sum type"
+
+      (it "should accept empty sum type"
+        (expect (elsa-type-accept (elsa-sum-type) (elsa-sum-type)) :to-be-truthy))
+
+      (it "should accept empty type"
+        (expect (elsa-type-accept (elsa-sum-type) (elsa-type-empty)) :to-be-truthy))
+
+      (it "should not accept non-empty type"
+        (expect (elsa-type-accept (elsa-sum-type) (elsa-make-type int))
+                :not :to-be-truthy))
+
+      (it "should be accepted by non-empty type"
+        (expect (elsa-type-accept (elsa-make-type int) (elsa-sum-type))
+                :to-be-truthy)))
+
+    (it "sum of constants should accept one of the constants"
+      (expect (elsa-type-accept
+               (elsa-make-type (or (const 1) (const 2)))
+               (elsa-make-type (const 1))) :to-be-truthy))
+
+    (it "sum of constant and primitive should accept the constant"
+      (expect (elsa-type-accept
+               (elsa-make-type (or (const 1) string))
+               (elsa-make-type (const 1))) :to-be-truthy))
 
     (it "should not share data with its clone"
       (let* ((old (elsa-make-type (or int string)))
@@ -103,12 +143,6 @@
     (it "should be able to hold no types"
       (let ((sum (elsa-sum-type)))
         (expect (length (oref sum types)) :to-equal 0)))
-
-    (it "should accept nothing if empty"
-      (let ((sum (elsa-sum-type)))
-        (expect (elsa-type-accept sum (elsa-make-type mixed)) :not :to-be-truthy)
-        (expect (elsa-type-accept sum (elsa-make-type int)) :not :to-be-truthy)
-        (expect (elsa-type-accept sum (elsa-sum-type)) :not :to-be-truthy)))
 
     (it "should be able to hold more types"
       (let ((sum (elsa-type-sum (elsa-make-type int) (elsa-make-type string))))
@@ -177,7 +211,6 @@
         (setq sumB (elsa-type-sum sumB (elsa-make-type int)))
         (expect (elsa-type-accept sumA sumB) :not :to-be-truthy))))
 
-
   (describe "Diff type"
 
     (it "should not accept types where the positive does not accept the other type"
@@ -188,9 +221,7 @@
       (expect (elsa-diff-type :negative (elsa-type-int))
               :not :to-accept-type (elsa-type-number))))
 
-
   (describe "Mixed type"
-
 
     (it "should accept any proper type"
       (expect (elsa-type-accept (elsa-make-type mixed)
@@ -231,7 +262,6 @@
 
   (describe "Simple type"
 
-
     (it "should not be changed by being made non-nullable"
       (expect (elsa-type-make-non-nullable (elsa-make-type string)) :to-equal (elsa-make-type string)))
 
@@ -261,7 +291,6 @@
       (expect (elsa-type-accept (elsa-type-bool) (elsa-make-type (or int t))) :not :to-be-truthy)))
 
   (describe "Just-nullable type"
-
 
     (it "should accept nil if nullable"
       (expect (elsa-type-accept (elsa-make-type (or string nil))

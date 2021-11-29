@@ -31,6 +31,7 @@
 (require 'trinary)
 
 (require 'elsa-types)
+(require 'elsa-type-algebra)
 
 (cl-defgeneric elsa-type-is-nil (type)
   "Test if TYPE is always nil.
@@ -76,6 +77,11 @@ Return trinary logic value.")
        (-map 'elsa--make-type)
        (-reduce 'elsa-type-sum)))
 
+(defun elsa--make-intersection-type (definition)
+  (->> (-partition 1 definition)
+       (-map 'elsa--make-type)
+       (-reduce 'elsa-type-intersect)))
+
 (defun elsa--make-type (definition)
   (pcase definition
     (`(readonly . ,type)
@@ -98,6 +104,12 @@ Return trinary logic value.")
      (elsa-type-empty))
     (`(or . ,def)
      (elsa--make-union-type def))
+    (`(and . ,def)
+     (elsa--make-intersection-type def))
+    (`(diff ,positive ,negative)
+     (elsa-type-normalize
+      (elsa-diff-type :positive (elsa--make-type (list positive))
+                      :negative (elsa--make-type (list negative)))))
     (`(cons ,a ,b)
      (elsa-type-cons :car-type (elsa--make-type (list a))
                      :cdr-type (elsa--make-type (list b))))
@@ -172,12 +184,15 @@ Return trinary logic value.")
 (cl-defgeneric elsa-type-normalize (type)
   "Normalize TYPE to its most simplest form.")
 
-(cl-defgeneric elsa-type-normalize ((this elsa-type))
+(cl-defmethod elsa-type-normalize ((this elsa-type))
+  "Normalize a type.
+
+Regular type normalizes to itself."
   this)
 
 (cl-defmethod elsa-type-normalize ((this elsa-sum-type))
   "Normalize a sum type."
-  (let ((types (--remove (elsa-type-accept (elsa-make-type []) it)
+  (let ((types (--remove (elsa-type-accept (elsa-make-type empty) it)
                          (oref this types))))
     (cond
      ((not types)
@@ -187,7 +202,7 @@ Return trinary logic value.")
      (t (elsa-sum-type :types types)))))
 
 (cl-defmethod elsa-type-normalize ((this elsa-intersection-type))
-  "Normalize a sum type."
+  "Normalize an intersection type."
   (let ((types (--remove (elsa-type-accept it (elsa-make-type mixed))
                          (oref this types))))
     (cond
@@ -204,165 +219,9 @@ Return trinary logic value.")
       (elsa-type-empty))
      ((elsa-type-equivalent-p neg (elsa-type-empty))
       (clone pos))
+     ((not (elsa-type-accept pos neg))
+      (clone pos))
      (t this))))
-
-(cl-defgeneric elsa-type-sum (this other)
-  "Return the sum of THIS and OTHER type.
-
-A sum accept anything that either THIS or OTHER accepts.")
-
-(cl-defmethod elsa-type-sum ((_this elsa-type-empty) (other elsa-type))
-  other)
-
-(cl-defmethod elsa-type-sum ((this elsa-type) (_other elsa-type-empty))
-  this)
-
-(cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
-  (cond
-   ((or (and (elsa-type-nil-p this) (elsa-type-t-p other))
-        (and (elsa-type-t-p this) (elsa-type-nil-p other)))
-    (elsa-type-bool))
-   ((elsa-type-accept this other)
-    (clone this))
-   ((elsa-type-accept other this)
-    (clone other))
-   (t (let ((sum (elsa-sum-type :types (list this))))
-        (elsa-type-sum sum other)))))
-
-(cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
-  (elsa-type-normalize
-   (let ((new nil))
-     (-each (oref other types)
-       (lambda (type)
-         (unless (elsa-type-accept this type)
-           (push (clone type) new))))
-     (elsa-sum-type :types (-concat (oref this types) (nreverse new))))))
-
-(cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-type))
-  (elsa-type-normalize
-   (if (elsa-type-accept this other)
-       (clone this)
-     (elsa-sum-type :types (-snoc (oref this types) (clone other))))))
-
-(cl-defmethod elsa-type-sum ((this elsa-diff-type) (other elsa-type))
-  (elsa-type-normalize
-   (if (elsa-type-accept this other)
-       (clone this)
-     (let ((new (clone this)))
-       (oset new positive (elsa-type-sum (oref new positive) (clone other)))
-       new))))
-
-(cl-defgeneric elsa-type-diff (this other)
-  "Return the difference of THIS without OTHER.
-
-The diff type only accepts those types accepted by THIS which are
-not accepted by OTHER.")
-
-(cl-defmethod elsa-type-diff ((this elsa-type) other)
-  "Any base type without another is the same type, there is no intersection."
-  (if (elsa-type-accept other this)
-      (elsa-type-empty)
-    (if (and (elsa-const-type-p other)
-             (elsa-type-accept this (oref other type)))
-        (elsa-diff-type :positive (clone this)
-                        :negative (clone other))
-      (clone this))))
-
-(cl-defmethod elsa-type-diff ((_this elsa-type-mixed) other)
-  "Mixed is one with everything, so we need to subtract OTHER from the world."
-  (elsa-type-normalize (elsa-diff-type :negative (clone other))))
-
-(cl-defmethod elsa-type-diff ((this elsa-type-mixed) (other elsa-diff-type))
-  "Mixed without (Mixed without something) is something.
-
-This uses the rule that A \ (A \ B) = A ∩ B where A is
-everything (Mixed)."
-  (let ((pos (oref other positive))
-        (neg (oref other negative)))
-    (if (elsa-type-equivalent-p this pos)
-        (clone neg)
-      (elsa-diff-type :negative (clone other)))))
-
-(cl-defmethod elsa-type-diff ((this elsa-type-number) (_other elsa-type-int))
-  "Number without int must be float."
-  (cond
-   ((elsa-type-int-p this)
-    (elsa-type-empty))
-   ((elsa-type-float-p this)
-    this)
-   (t
-    (elsa-type-float))))
-
-(cl-defmethod elsa-type-diff ((this elsa-type-number) (_other elsa-type-float))
-  "Number without float must by int."
-  (cond
-   ((elsa-type-int-p this)
-    this)
-   ((elsa-type-float-p this)
-    (elsa-type-empty))
-   (t
-    (elsa-type-int))))
-
-(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-t))
-  "Bool without T is Nil."
-  (elsa-type-nil))
-
-(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-nil))
-  "Bool without NIL is T."
-  (elsa-type-t))
-
-(cl-defmethod elsa-type-diff ((this elsa-type) (other elsa-sum-type))
-  "A difference of a type and sum is THIS minus all the summed types."
-  (let ((new (clone this)))
-    (-reduce-from 'elsa-type-diff new (oref other types))))
-
-(cl-defmethod elsa-type-diff ((this elsa-sum-type) other)
-  "A difference of sum and some other type can only reduce the arguments of the sum."
-  (let (new)
-    (-each (oref this types)
-      (lambda (type)
-        (let ((diff-type (elsa-type-diff type other)))
-          (unless (elsa-type-empty-p diff-type)
-            (push (clone diff-type) new)))))
-    (elsa-type-normalize
-     (elsa-sum-type :types (nreverse new)))))
-
-(cl-defmethod elsa-type-diff ((this elsa-diff-type) other)
-  "This uses the rule that (A \ B) \ C = A \ (B ∪ C)"
-  (elsa-type-normalize
-   (elsa-diff-type :positive (clone (oref this positive))
-                   :negative (elsa-type-sum (oref this negative) other))))
-
-(cl-defgeneric elsa-type-intersect (this other)
-  "Return the intersection of THIS and OTHER.
-
-The intersection type only accepts those types which are both
-THIS and OTHER at the same time.")
-
-(cl-defmethod elsa-type-intersect ((this elsa-type) (other elsa-type))
-  (cond
-   ((elsa-type-accept this other)
-    (clone other))
-   ((elsa-type-accept other this)
-    (clone this))
-   (t (elsa-type-empty))))
-
-(cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-type))
-  (let ((types (oref this types)))
-    (elsa-type-normalize
-     (elsa-sum-type :types
-       (-map (lambda (type) (elsa-type-intersect type other)) types)))))
-
-(cl-defmethod elsa-type-intersect ((this elsa-diff-type) (other elsa-type))
-  (let ((pos (oref this positive))
-        (neg (oref this negative)))
-    (elsa-type-normalize
-     (elsa-type-diff (elsa-type-intersect pos other) (clone neg)))))
-
-(cl-defmethod elsa-type-intersect ((this elsa-intersection-type) (other elsa-type))
-  (if (-any? (lambda (type) (elsa-type-accept other type)) (oref this types))
-      (clone this)
-    (elsa-intersection-type :types (-snoc (oref this types) other))))
 
 (provide 'elsa-type-helpers)
 ;;; elsa-type-helpers.el ends here
