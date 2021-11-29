@@ -21,8 +21,13 @@
     (it "sum type with string and int is not callable"
       (expect (elsa-type-callable-p (elsa-make-type (or string int))) :not :to-be-truthy))
 
-    (it "sum type with string and function is callable"
-      (expect (elsa-type-callable-p (elsa-make-type (or string (function () int)))) :to-be-truthy)))
+    (it "sum type with string and function is not callable"
+      (expect (elsa-type-callable-p (elsa-make-type (or string (function () int)))) :not :to-be-truthy))
+
+    (it "sum of two functions is callable"
+      (expect (elsa-type-callable-p (elsa-make-type (or (function (int) int)
+                                                        (function () int))))
+              :to-be-truthy)))
 
   (describe "elsa-function-type-nth-arg"
 

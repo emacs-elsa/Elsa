@@ -484,7 +484,8 @@ make it explicit and precise."
     (when value
       (elsa--analyse-form value scope state))
     (if var-type
-        (unless (elsa-type-assignable-p var-type (elsa-get-type value))
+        (unless (or (not value)
+                    (elsa-type-assignable-p var-type (elsa-get-type value)))
           (elsa-state-add-message state
             (elsa-make-error value
               "Variable %s expects `%s', got `%s'"
@@ -508,7 +509,8 @@ automatically deriving the type."
     (when value
       (elsa--analyse-form value scope state))
     (if var-type
-        (unless (elsa-type-assignable-p var-type (elsa-get-type value))
+        (unless (or (not value)
+                    (elsa-type-assignable-p var-type (elsa-get-type value)))
           (elsa-state-add-message state
             (elsa-make-error value
               "Variable %s expects `%s', got `%s'"
