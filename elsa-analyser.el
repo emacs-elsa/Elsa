@@ -341,6 +341,7 @@ The BINDING should have one of the following forms:
 (defun elsa--analyse:or (form scope state)
   (let* ((body (elsa-cdr form))
          (return-type (elsa-type-nil))
+         ;; (can-be-nil-p :: bool)
          (can-be-nil-p t))
     (elsa-save-scope scope
       (-each body
@@ -375,6 +376,10 @@ The BINDING should have one of the following forms:
                   (trinary-and
                    condition-reachable
                    (elsa-type-is-non-nil arg)))))))
+    ;; Group all the narrowing variables by name and intersect the
+    ;; narrowing types, because we require all forms to be
+    ;; simultaneously true.  Set the resulting intersections on this
+    ;; form.
     (-when-let (grouped
                 (elsa-variables-group-and-intersect
                  (->> body
@@ -385,6 +390,9 @@ The BINDING should have one of the following forms:
     (cond
      ((trinary-false-p condition-reachable)
       (setq return-type (elsa-type-nil)))
+     ;; If we emptied the domain of any narrowed variable, this
+     ;; condition can never be true, because there is no value that
+     ;; the variable can inhibit to satisfy all conditions.
      ((-any-p
        (lambda (var) (elsa-type-equivalent-p (oref var type) (elsa-type-empty)))
        (oref form narrow-types))
