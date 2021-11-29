@@ -59,8 +59,12 @@ another, because there is a many-to-many relationship."
 (defun elsa-type-assignable-p (this other)
   "Check if THIS accepts OTHER.
 
-Uses special rules for `elsa-type-mixed'."
-  (or (elsa-type-mixed-p this)
+Uses special rules for `elsa-type-mixed'.
+
+- Mixed accepts anything except unbound.
+- Mixed is accepted by anything."
+  (or (and (elsa-type-mixed-p this)
+           (not (elsa-type-unbound-p other)))
       (elsa-type-mixed-p other)
       (elsa-type-accept this other)))
 
@@ -72,6 +76,9 @@ Uses special rules for `elsa-type-mixed'."
 (cl-defgeneric elsa-get-type (_thing)
   "Return type of THING."
   nil)
+
+(cl-defmethod elsa-get-type ((this null))
+  (elsa-type-unbound))
 
 (cl-defmethod elsa-get-type ((this elsa-type))
   this)
