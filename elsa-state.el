@@ -42,7 +42,8 @@ STATE is `elsa-state', ERROR is `elsa-message'."
   (car (oref state reachable)))
 
 (defmacro elsa-with-reachability (state reachability &rest body)
-  (declare (indent 2))
+  (declare (indent 2)
+           (debug (form form body)))
   `(progn
      (push ,reachability (oref ,state reachable))
      ,@body

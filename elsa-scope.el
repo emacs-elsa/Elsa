@@ -82,7 +82,8 @@ do that."
 
 (defmacro elsa-save-scope (scope &rest body)
   "Protect all variables in SCOPE from unassignment."
-  (declare (indent 1))
+  (declare (indent 1)
+           (debug (form body)))
   (let ((barrier (make-symbol "elsa--barrier")))
     `(progn
        (elsa-scope-protect ,scope ',barrier)
