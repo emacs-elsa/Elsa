@@ -286,9 +286,7 @@ type and none of the negative types.")
         (elsa-type-intersect (oref this negative) other))))
 
 (cl-defmethod elsa-type-is-accepted-by ((this elsa-diff-type) other)
-  (and (elsa-type-accept other (oref this positive))
-       (elsa-type-empty-p
-        (elsa-type-intersect other (oref this negative)))))
+  (elsa-type-accept other (oref this positive)))
 
 (cl-defmethod elsa-type-describe ((this elsa-diff-type))
   (if (oref this negative)
