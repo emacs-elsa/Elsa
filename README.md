@@ -281,3 +281,17 @@ to set up some additional font-locking for Elsa types.
 ## How to write an extension for your-favourite-package
 
 ## How to write a ruleset
+
+# Acknowledgments
+
+The biggest inspiration has been the
+[PHPStan][https://github.com/phpstan/phpstan] project, which provided
+me the initial impetus to start this project.  I have went through
+their sources many times finding inspiration and picking out features.
+
+The second inspiration is
+[TypeScript][https://www.typescriptlang.org/], which turned a rather
+uninteresting language into a powerhouse of the (not only) web.
+
+I borrow heavily from both of these projects and extend my gratitude
+and admiration.
