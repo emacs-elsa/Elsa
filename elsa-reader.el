@@ -364,7 +364,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-print ((this elsa-form-improper-list))
   (let* ((seq (oref this conses))
          (len (safe-length seq))
-         (prefix (-take len seq))
+         (prefix (seq-take seq len))
          (last (cdr (last seq))))
     (format "(%s . %s)"
             (mapconcat 'elsa-form-print prefix " ")
@@ -373,7 +373,7 @@ This only makes sense for the sequence forms:
 (cl-defmethod elsa-form-foreach ((this elsa-form-improper-list) fn)
   (let* ((seq (oref this conses))
          (len (safe-length seq))
-         (prefix (-take len seq))
+         (prefix (seq-take seq len))
          (last (cdr (last seq))))
     (mapc fn (-snoc prefix last))))
 
