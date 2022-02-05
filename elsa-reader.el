@@ -3,6 +3,7 @@
 (require 'eieio)
 (require 'pcase)
 (require 'backquote)
+(require 'seq)
 
 (require 'trinary)
 
