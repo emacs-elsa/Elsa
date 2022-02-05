@@ -160,6 +160,12 @@ Return trinary logic value.")
   (and (elsa-type-accept (elsa-get-type this) (elsa-get-type other))
        (elsa-type-accept (elsa-get-type other) (elsa-get-type this))))
 
+(defun elsa-type-is-empty-p (this)
+  "Test if THIS is type-equivalent to `elsa-type-empty'.
+
+This means that the domain of the type is empty."
+  (elsa-type-equivalent-p this (elsa-type-empty)))
+
 ;; TODO: what is the relationship of `a' and `a?'
 (defun elsa-instance-of (this other)
   "Non-nil if THIS is instance of OTHER."
@@ -217,11 +223,16 @@ Regular type normalizes to itself."
     (cond
      ((elsa-type-equivalent-p pos neg)
       (elsa-type-empty))
-     ((elsa-type-equivalent-p neg (elsa-type-empty))
+     ((elsa-type-is-empty-p neg)
       (clone pos))
-     ((not (elsa-type-accept pos neg))
+     ((elsa-type-is-empty-p (elsa-type-intersect pos neg))
       (clone pos))
-     (t this))))
+     (t (let ((new-neg (elsa-type-intersect pos neg)))
+          (if (elsa-type-equivalent-p new-neg neg)
+              (clone this)
+            (elsa-type-normalize
+             (elsa-diff-type :positive pos
+                             :negative (elsa-type-intersect pos neg)))))))))
 
 (provide 'elsa-type-helpers)
 ;;; elsa-type-helpers.el ends here

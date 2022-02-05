@@ -91,11 +91,22 @@
 
   (describe "elsa-type-normalize"
 
-    (it "should normalize diff type to only positive if negative is not a subtype"
-      (expect (elsa-type-describe
-               (elsa-type-normalize
-                (elsa-make-type (diff int (const :kek)))))
-              :to-equal "int")))
+    (describe "diff type"
+
+      (it "should normalize diff type to only positive if negative is not a subtype"
+        (expect (elsa-type-describe
+                 (elsa-type-normalize
+                  (elsa-make-type (diff int (const :kek)))))
+                :to-equal "int"))
+
+      (it "should normalize diff type to empty if negative is super set of positive"
+        (expect (elsa-make-type (diff (const 4) (or int (const 2))))
+                :to-be-type-equivalent (elsa-type-empty)))
+
+      (it "should normalize neg to the intersection of pos and neg"
+        (expect (elsa-make-type (diff string (or int (const "foo"))))
+                :to-be-type-equivalent
+                (elsa-make-type (diff string (const "foo")))))))
 
   (describe "elsa-type-equivalent-p"
 

@@ -48,7 +48,14 @@
       (it "should not add the same primitive type twice"
         (let ((sum (elsa-type-sum (elsa-make-type string) (elsa-make-type int))))
           (setq sum (elsa-type-sum sum (elsa-make-type int)))
-          (expect (length (oref sum types)) :to-equal 2))))
+          (expect (length (oref sum types)) :to-equal 2)))
+
+      (it "should absorb a const type of the same type"
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-make-type int)
+                  (elsa-make-type (or string (const 1)))))
+                :to-equal "(or string int)")))
 
     (describe "first arg sum type"
 
@@ -58,6 +65,22 @@
           (expect (length (oref sum types)) :to-equal 2)
           (expect (elsa-type-nullable-p sum) :to-be-truthy))))
 
+
+    (describe "constants"
+
+      (it "should simplify sum of constant with itself to itself"
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-make-type (const 1))
+                  (elsa-make-type (const 1))))
+                :to-equal "(const 1)"))
+
+      (it "should sum two constants"
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-make-type (const 1))
+                  (elsa-make-type (const 2))))
+                :to-equal "(or (const 1) (const 2))")))
 
     (describe "first arg diff type"
 
@@ -86,6 +109,12 @@
                  (elsa-type-sum
                   (elsa-make-type (diff int (const 1)))
                   (elsa-make-type (const 1))))
+                :to-equal "int")
+
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-make-type (const 1))
+                  (elsa-make-type (diff int (const 1)))))
                 :to-equal "int"))
 
       (it "sum where other accepts negative should undo the diff type and return simpler type 1"
@@ -115,7 +144,40 @@
                  (elsa-type-sum
                   (elsa-make-type (diff int (const 2)))
                   (elsa-make-type (diff int (const 1)))))
-                :to-equal "int"))))
+                :to-equal "int"))
+
+      (it "sum of two mixed - int should stay the same"
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-make-type (diff mixed int))
+                  (elsa-make-type (diff mixed int))))
+                :to-equal "(diff mixed int)"))
+
+      (it "sum of two mixed with non-overlapping negatives should be mixed"
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-make-type (diff mixed int))
+                  (elsa-make-type (diff mixed string))))
+                :to-equal "mixed")))
+
+    (describe "intersections"
+
+      (it "sum of two intersections which are logically empty should be empty"
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-intersection-type
+                   :types (list (elsa-make-type string) (elsa-make-type int)))
+                  (elsa-intersection-type
+                   :types (list (elsa-make-type symbol) (elsa-make-type float)))))
+                :to-equal "empty"))
+
+      (it "sum of anything with logically empty intersection should return the first argument unchanged"
+        (expect (elsa-type-describe
+                 (elsa-type-sum
+                  (elsa-make-type (or int string))
+                  (elsa-intersection-type
+                   :types (list (elsa-make-type symbol) (elsa-make-type float)))))
+                :to-equal "(or int string)"))))
 
   (describe "elsa-type-diff"
 
@@ -158,7 +220,14 @@
                                 (elsa-make-type string)))
                   (elsa-make-type int))
                  (elsa-make-type (or string float)))
-                :to-be t)))
+                :to-be t))
+
+      (it "should subtract a const which overlaps with some of the summands"
+        (expect (elsa-type-describe
+                 (elsa-type-diff
+                  (elsa-make-type (or int string))
+                  (elsa-make-type (const "foo"))))
+                :to-equal "(diff (or string int) (const \"foo\"))")))
 
     (describe "subtracting a sum"
 
@@ -282,7 +351,31 @@
         (expect (elsa-type-intersect
                  (elsa-type-vector)
                  (elsa-type-sequence))
-                :to-be-type-equivalent (elsa-type-vector))))
+                :to-be-type-equivalent (elsa-type-vector)))
+
+      (it "intersection of two diff types with same positive should set negative to sum of negatives (with mixed)"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-make-type (diff mixed int))
+                  (elsa-make-type (diff mixed string))))
+                :to-equal "(diff mixed (or string int))"))
+
+      (it "intersection of two diff types with same positive should set negative to sum of negatives (with const)"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-make-type (diff int (const 1)))
+                  (elsa-make-type (diff int (const 2)))))
+                :to-equal "(diff int (or (const 2) (const 1)))"))
+
+      (it "should narrow primitive type to its subtype when intersected with a sum containing the subtype"
+        (expect (elsa-type-intersect
+                 (elsa-make-type number)
+                 (elsa-make-type (or int string)))
+                :to-be-type-equivalent (elsa-type-int))
+        (expect (elsa-type-intersect
+                 (elsa-make-type number)
+                 (elsa-make-type (or int string)))
+                :to-be-type-equivalent (elsa-type-int))))
 
     (describe "sum types"
 
@@ -291,5 +384,74 @@
                  (elsa-make-type (or number string))
                  (elsa-type-int))
                 :to-be-type-equivalent
-                (elsa-make-type int)))))
-  )
+                (elsa-make-type int)))
+
+      (it "should return common types over two sum types"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-sum-type :types (list (elsa-make-type symbol)
+                                              (elsa-make-type int)
+                                              (elsa-make-type string)))
+                  (elsa-sum-type :types (list (elsa-make-type int)
+                                              (elsa-make-type string)))))
+                :to-equal "(or int string)"))
+
+      (it "should return empty for two sum types with no common types"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-sum-type :types (list (elsa-make-type symbol)
+                                              (elsa-make-type string)))
+                  (elsa-sum-type :types (list (elsa-make-type int)))))
+                :to-equal "empty")))
+
+    (describe "diff types"
+
+      (it "with its negative should give empty type"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-make-type (diff int (const 1)))
+                  (elsa-make-type (const 1))))
+                :to-equal "empty"))
+
+      (it "with a constant overlapping the positive should give the constant"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-make-type (diff int (const 1)))
+                  (elsa-make-type (const 2))))
+                :to-equal "(const 2)")))
+
+    (describe "constants"
+
+      (it "should return empty for intersection of different constants"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-make-type (const 1))
+                  (elsa-make-type (const 2))))
+                :to-equal "empty"))
+
+      (it "should simplify intersection of the same constant with itself to itself"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-make-type (const 1))
+                  (elsa-make-type (const 1))))
+                :to-equal "(const 1)")))
+
+    (describe "intersections"
+
+      (it "intersection of intersections with no overlap should be empty"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-intersection-type
+                   :types (list (elsa-make-type string) (elsa-make-type int)))
+                  (elsa-intersection-type
+                   :types (list (elsa-make-type symbol) (elsa-make-type float)))))
+                :to-equal "empty"))
+
+      (it "intersection of intersections one overlap should simplify to simple type"
+        (expect (elsa-type-describe
+                 (elsa-type-intersect
+                  (elsa-intersection-type
+                   :types (list (elsa-make-type number) (elsa-make-type int)))
+                  (elsa-intersection-type
+                   :types (list (elsa-make-type int) (elsa-make-type float)))))
+                :to-equal "int")))))

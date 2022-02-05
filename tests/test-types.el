@@ -54,6 +54,22 @@
       (it "should compare two instances"
         (expect (elsa-instance-of (elsa-make-type int) (elsa-make-type int))))))
 
+  (describe "primitive type"
+
+    (it "should accept itself without a constant"
+      (expect (elsa-type-accept
+               (elsa-make-type int)
+               (elsa-make-type (diff int (const 4)))) :to-be-truthy))
+
+    (it "without a constant should not accept itself"
+      (expect (elsa-type-accept
+               (elsa-make-type (diff int (const 4)))
+               (elsa-make-type int)) :not :to-be-truthy))
+
+    (it "float should accept int"
+      (expect (elsa-type-accept
+               (elsa-make-type float)
+               (elsa-make-type int)) :to-be-truthy)))
 
   (describe "Cons type"
 
@@ -119,6 +135,10 @@
       (it "should be accepted by non-empty type"
         (expect (elsa-type-accept (elsa-make-type int) (elsa-sum-type))
                 :to-be-truthy)))
+
+    (it "should accept diff type where positive is one of the summands"
+      (expect (elsa-make-type (or int string)) :to-accept-type
+              (elsa-make-type (diff int (const 4)))))
 
     (it "sum of constants should accept one of the constants"
       (expect (elsa-type-accept
@@ -209,7 +229,15 @@
         (setq sumB (elsa-type-sum sumB (elsa-make-type float)))
         (setq sumB (elsa-type-sum sumB (elsa-make-type string)))
         (setq sumB (elsa-type-sum sumB (elsa-make-type int)))
-        (expect (elsa-type-accept sumA sumB) :not :to-be-truthy))))
+        (expect (elsa-type-accept sumA sumB) :not :to-be-truthy)))
+
+    (it "should accept intersection type containing one of the summands"
+      (expect
+       (elsa-sum-type :types (list (elsa-make-type int)
+                                   (elsa-make-type symbol)))
+       :to-accept-type
+       (elsa-intersection-type :types (list (elsa-make-type int)
+                                            (elsa-make-type string))))))
 
   (describe "Diff type"
 
@@ -219,7 +247,38 @@
 
     (it "should not accept types where the negative is accepted by the other type"
       (expect (elsa-diff-type :negative (elsa-type-int))
-              :not :to-accept-type (elsa-type-number))))
+              :not :to-accept-type (elsa-type-number)))
+
+    (it "should accept itself"
+      (expect (elsa-make-type (diff int (const 1))) :to-accept-type
+              (elsa-make-type (diff int (const 1)))))
+
+    (it "should not accept diff type where the other negative have intersection with this"
+      (expect (elsa-make-type (diff int (const 2))) :not :to-accept-type
+              (elsa-make-type (diff int (const 4)))))
+
+    (it "should accept a constant which is not excluded"
+      (expect (elsa-make-type (diff int (const 1))) :to-accept-type
+              (elsa-make-type (const 2)))))
+
+  (describe "Intersection type"
+
+    (it "intersection should accept more specific intersection"
+      (expect
+       (elsa-intersection-type :types (list (elsa-make-type int)
+                                            (elsa-make-type string)))
+       :to-accept-type
+       (elsa-intersection-type :types (list (elsa-make-type int)
+                                            (elsa-make-type string)
+                                            (elsa-make-type symbol)))))
+
+    (it "should accept itself"
+      (expect
+       (elsa-intersection-type :types (list (elsa-make-type int)
+                                            (elsa-make-type string)))
+       :to-accept-type
+       (elsa-intersection-type :types (list (elsa-make-type int)
+                                            (elsa-make-type string))))))
 
   (describe "Mixed type"
 
