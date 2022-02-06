@@ -457,10 +457,10 @@ nullables and the &rest argument into a variadic."
                 (elsa-type-describe function-return-type)
                 (elsa-type-describe body-return-type))))
         ;; infer the type of the function
-        (put name 'elsa-type (elsa-function-type
-                              :args (elsa--get-default-function-types
-                                     (-map 'elsa-get-name args))
-                              :return body-return-type))))
+        (elsa-state-add-defun state name (elsa-function-type
+                                          :args (elsa--get-default-function-types
+                                                 (-map 'elsa-get-name args))
+                                          :return body-return-type))))
     (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:defun (form scope state)
