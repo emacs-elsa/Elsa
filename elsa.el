@@ -108,6 +108,8 @@
 
 (defun elsa-load-config ()
   "Load config and register extensions."
+  (elsa-ruleset-load (elsa-ruleset-default))
+
   (let ((config-buffer (find-file-noselect "Elsafile.el"))
         form)
     (with-current-buffer config-buffer

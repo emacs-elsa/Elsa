@@ -1,14 +1,3 @@
-(register-extensions
- dash
- eieio
- cl
- elsa
- )
+(register-extensions elsa)
 
-(register-ruleset
- dead-code
- style
- error
- variables
- elsa
- )
+(register-ruleset elsa)
