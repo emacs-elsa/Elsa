@@ -422,13 +422,6 @@
           :state-var state
           (expect (oref state errors) :to-be nil)))))
 
-  (describe "Analysis defun"
-
-    (it "should introduce the arguments as variables into the scope"
-      (elsa-test-with-analysed-form "|(defun x (a b) a b)" form
-        (expect (elsa-nth 3 form) :to-be-type-equivalent (elsa-type-mixed))
-        (expect (elsa-nth 4 form) :to-be-type-equivalent (elsa-type-mixed)))))
-
   (describe "Normalize spec"
 
     (it "should evaluate all arguments when the spec is t"

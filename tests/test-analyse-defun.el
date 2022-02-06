@@ -6,6 +6,11 @@
 
 (describe "Elsa analyser - defun"
 
+  (it "should introduce the arguments as variables into the scope"
+    (elsa-test-with-analysed-form "|(defun x (a b) a b)" form
+      (expect (elsa-nth 3 form) :to-be-type-equivalent (elsa-type-mixed))
+      (expect (elsa-nth 4 form) :to-be-type-equivalent (elsa-type-mixed))))
+
   (describe "return type"
 
     (it "Should read function argument types from declaration."
