@@ -12,6 +12,7 @@
 (require 'elsa-type-helpers)
 
 (defun elsa--skip-whitespace-forward ()
+  (while (forward-comment 1))
   (skip-chars-forward " \t\n\r"))
 
 (defun elsa--improper-list-p (cell)
