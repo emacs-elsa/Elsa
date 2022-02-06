@@ -560,7 +560,9 @@ for the analysis."
       (forward-line -1)
       (elsa--skip-whitespace-forward)
       (let ((line-end (line-end-position)))
-        (when (and (re-search-forward "(.*?::" line-end t)
+        (when (and (re-search-forward
+                    (rx "(" (+? (or word (syntax symbol))) " :: ")
+                    line-end t)
                    (nth 4 (syntax-ppss)))
           ;; we are inside a comment and inside a form starting with
           ;; (elsa
