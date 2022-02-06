@@ -51,6 +51,7 @@
   ((name :initarg :name)
    (type :initarg :type)))
 
+;; (elsa-process-file :: (function (string) mixed))
 (defun elsa-process-file (file)
   "Process FILE."
   (let ((state (elsa-state))
