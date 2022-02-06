@@ -707,7 +707,7 @@ If no type annotation is provided, find the value type through
                                ;; overloads is progressively filtered
                                ;; to only the overloads applicable at
                                ;; current caller
-                               (overloads all-overloads))
+                               (overloads (--map-indexed (cons it it-index) all-overloads)))
                     (-map-indexed
                      (lambda (index argument-form)
                        (let* ((good-overloads
@@ -718,7 +718,7 @@ If no type annotation is provided, find the value type through
                                ;; the last set of possible overloads as
                                ;; the error.
                                (-filter
-                                (lambda (overload)
+                                (-lambda ((overload . overload-index))
                                   (let* ((expected (elsa-function-type-nth-arg overload index))
                                          (expected-normalized
                                           (or expected (elsa-type-mixed)))
@@ -728,8 +728,9 @@ If no type annotation is provided, find the value type through
                                            expected-normalized
                                            actual)))
                                     (unless acceptablep
-                                      (push (cons
+                                      (push (list
                                              overload
+                                             overload-index
                                              (format
                                               "Argument %d accepts type `%s' but received `%s'"
                                               (1+ index)
@@ -737,8 +738,9 @@ If no type annotation is provided, find the value type through
                                               (elsa-type-describe actual)))
                                             overloads-errors))
                                     (unless expected
-                                      (push (cons
+                                      (push (list
                                              overload
+                                             overload-index
                                              (format
                                               "Argument %d is present but the function does not define it.  Missing overload?"
                                               (1+ index)))
@@ -756,16 +758,16 @@ If no type annotation is provided, find the value type through
                                     (-map-indexed
                                      (lambda (index err)
                                        (format "  Overload %d of %d: '%s'\n    %s"
-                                               (1+ index)
+                                               (1+ (nth 1 err))
                                                (length all-overloads)
                                                (elsa-type-describe (car err))
-                                               (cdr err)))
-                                     overloads-errors)))
+                                               (nth 2 err)))
+                                     (-sort (-on #'< #'cadr) overloads-errors))))
                                (elsa-make-error argument-form
-                                 (cdar overloads-errors))))
+                                 (nth 2 (car overloads-errors)))))
                            (throw 'no-overloads nil))))
                      args)
-                    overloads)))))
+                    (mapcar #'car overloads))))))
         ;; set the return type of the form according to the return type
         ;; of the function's declaration
         (if usable-overloads
