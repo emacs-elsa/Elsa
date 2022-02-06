@@ -577,9 +577,11 @@ for the analysis."
 
 (defun elsa-read-form (state)
   "Read form at point."
-  (let* ((form (save-excursion
-                 (read (current-buffer)))))
-    (while (forward-comment 1))
-    (elsa--read-form form state)))
+  (while (forward-comment 1))
+  (unless (eobp)
+    (let* ((form (save-excursion
+                   (read (current-buffer)))))
+      (while (forward-comment 1))
+      (elsa--read-form form state))))
 
 (provide 'elsa-reader)
