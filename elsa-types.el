@@ -736,5 +736,11 @@ unassignable.")
 (cl-defmethod elsa-type-describe ((this elsa-readonly-type))
   (format "(readonly %s)" (elsa-type-describe (oref this type))))
 
+(cl-defmethod elsa-type-accept ((this null) other)
+  "This method catches the impossible situation when we are
+trying to analyse 'nil, which is not a valid type or form."
+  (message "An error happened trying to analyse nil")
+  (backtrace))
+
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
