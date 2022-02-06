@@ -442,21 +442,22 @@ This only makes sense for the sequence forms:
   (let* ((expanded-form nil)
          (start (point))
          (seq (cons
-               (elsa-form-symbol
-                :start (cond
-                        ((looking-at (rx (or (and (? "#") "'") "," "`" ",@")))
-                         (prog1 (point)
-                           (forward-char (length (match-string 0)))))
-                        ;; when we write (quote foo) instead of 'foo
-                        ((looking-at-p "(")
-                         (setq expanded-form t)
-                         (down-list)
-                         (forward-sexp)
-                         (point))
-                        (t (prog1 (point)
-                             (forward-char (length (symbol-name (car form)))))))
-                :name (car form)
-                :end (point))
+               (elsa--set-line-and-column
+                (elsa-form-symbol
+                 :start (cond
+                         ((looking-at (rx (or (and (? "#") "'") "," "`" ",@")))
+                          (prog1 (point)
+                            (forward-char (length (match-string 0)))))
+                         ;; when we write (quote foo) instead of 'foo
+                         ((looking-at-p "(")
+                          (setq expanded-form t)
+                          (down-list)
+                          (prog1 (point)
+                            (forward-sexp)))
+                         (t (prog1 (point)
+                              (forward-char (length (symbol-name (car form)))))))
+                 :name (car form)
+                 :end (point)))
                (-map (lambda (f) (elsa--read-form f state)) (cdr form)))))
     (elsa-form-list
      :quote-type (car form)
@@ -503,6 +504,22 @@ This only makes sense for the sequence forms:
              'elsa-type-var
              (eval `(elsa-make-type ,@(cddr comment-form))))))))))
 
+(defun elsa--set-line-and-column (form)
+  "Set line and column properties of form.
+
+Each form must have start and end properties supplied in
+constructor.  These are used to derive line and column."
+  (oset form line
+        (or (get-text-property (save-excursion
+                                 (goto-char (oref form start))
+                                 (line-beginning-position))
+                               'elsa-line)
+            (line-number-at-pos (oref form start))))
+  (oset form column (save-excursion
+                      (goto-char (oref form start))
+                      (current-column)))
+  form)
+
 (defun elsa--read-form (form state)
   "Read FORM.
 
@@ -532,15 +549,7 @@ for the analysis."
                (lambda (f) (oset f parent cons-form)))
              cons-form))
           (t (error "Invalid form")))))
-    (oset reader-form line
-          (or (get-text-property (save-excursion
-                                   (goto-char (oref reader-form start))
-                                   (line-beginning-position))
-                                 'elsa-line)
-              (line-number-at-pos (oref reader-form start))))
-    (oset reader-form column (save-excursion
-                               (goto-char (oref reader-form start))
-                               (current-column)))
+    (elsa--set-line-and-column reader-form)
     ;; check if there is a comment atached to this form
     ;; TODO: this is really inefficient because it checks the same
     ;; line multiple times.  We should only do this parsing for the

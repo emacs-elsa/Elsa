@@ -181,6 +181,14 @@
         (expect (elsa-get-name form) :to-be 'function)
         (expect (oref form quote-type) :to-be 'function)))
 
+    (it "should set line and column of a quote symbol"
+      (elsa-test-with-read-form "|(function foo)" form
+        (expect (oref (elsa-car form) line) :to-be 1)))
+
+    (it "should set line and column of a quote character"
+      (elsa-test-with-read-form "|'foo" form
+        (expect (oref (elsa-car form) line) :to-be 1)))
+
     (it "should read an expanded quoted function nested inside a list"
       (elsa-test-with-read-form "|(foo (function foo) bar)" form
         (expect (elsa-form-list-p form) :to-be-truthy)
