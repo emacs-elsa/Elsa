@@ -1,6 +1,7 @@
 (require 'f)
 
 (require 'elsa-analyser)
+(require 'elsa-extension-subr)
 
 (defvar elsa-analyzed nil
   "List of already analyzed files.")
