@@ -133,6 +133,9 @@ The BINDING should have one of the following forms:
       (oset form type (oref (-last-item body) type)))
     (-each new-vars (lambda (v) (elsa-scope-remove-var scope v)))))
 
+;; TODO: add analysis of the reachability of body
+(defalias 'elsa--analyse:when-let* 'elsa--analyse:let*)
+
 (defun elsa--analyse:if (form scope state)
   (let ((condition (elsa-nth 1 form))
         (true-body (elsa-nth 2 form))
