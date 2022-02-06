@@ -1,4 +1,5 @@
 /.cask
+/.elsa
 *.elc
 /.emake
 /emake.mk
