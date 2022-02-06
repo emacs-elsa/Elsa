@@ -80,7 +80,8 @@
   (let ((error-message (nth 1 (oref form sequence))))
     (when (elsa-form-string-p error-message)
       (let ((msg (oref error-message sequence)))
-        (when (equal (substring msg -1) ".")
+        (when (and (< 0 (length msg))
+                   (equal (substring msg -1) "."))
           (elsa-state-add-message state
             (elsa-make-notice (elsa-car form) "Error messages should not end with a period.")))
         (let ((case-fold-search nil))
