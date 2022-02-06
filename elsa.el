@@ -24,6 +24,7 @@
 
 ;;; Code:
 
+(require 'jka-compr)
 (require 'eieio)
 
 (require 'dash)
@@ -51,10 +52,13 @@
   ((name :initarg :name)
    (type :initarg :type)))
 
-;; (elsa-process-file :: (function (string) mixed))
-(defun elsa-process-file (file)
+;; (elsa-process-file :: (function (string (or mixed nil)) mixed))
+(defun elsa-process-file (file &optional state)
   "Process FILE."
-  (let ((state (elsa-state))
+  (let ((state (elsa-state
+                :project-directory (if state
+                                       (oref state project-directory)
+                                     (f-parent file))))
         (form))
     (with-temp-buffer
       (insert-file-contents file)
@@ -83,19 +87,20 @@
         (end-of-file t)))
     ;; dump defun cache
     ;; FIXME: temporarily disable caching since new-style structs can't be read.
-    ;; (with-temp-buffer
-    ;;   (let ((elsa-cache-file (elsa--get-cache-file-name file)))
-    ;;     (unwind-protect
-    ;;         (progn
-    ;;           (-each (nreverse (oref state defuns))
-    ;;             (lambda (dfn)
-    ;;               (insert (format "%s\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
-    ;;           (f-mkdir (f-parent elsa-cache-file))
-    ;;           (f-write-text
-    ;;            (buffer-string) 'utf-8
-    ;;            elsa-cache-file)
-    ;;           (byte-compile-file elsa-cache-file))
-    ;;       (f-delete elsa-cache-file))))
+    (with-temp-buffer
+      (when-let ((feature (oref state provide)))
+        (let ((feature-name (symbol-name feature))
+              (elsa-cache-file (elsa--get-cache-file-name state feature)))
+          (unless (string-match-p "^elsa-\\(typed\\|extension\\)-" feature-name)
+            (condition-case _err
+                (progn
+                  (-each (nreverse (oref state defuns))
+                    (lambda (dfn)
+                      (insert (format "%s\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
+                  (f-mkdir (f-parent elsa-cache-file))
+                  (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
+                  (byte-compile-file elsa-cache-file))
+              (error t))))))
     state))
 
 (defun elsa-process-form ()
@@ -109,6 +114,10 @@
 (defun elsa-load-config ()
   "Load config and register extensions."
   (elsa-ruleset-load (elsa-ruleset-default))
+  ;; enable auto-compression-mode for reading of sources
+  (auto-compression-mode 1)
+  ;; silence the "uncompressing" messages
+  (setq jka-compr-verbose nil)
 
   (let ((config-buffer (find-file-noselect "Elsafile.el"))
         form)

@@ -8,6 +8,10 @@
   ((defuns :initform nil)
    (defvars :initform (make-hash-table))
    (errors :initform nil)
+   (project-directory :type string
+                      :initarg :project-directory
+                      :documentation "Directory from which the analysis was started.")
+   (provide :initform nil)
    (ignored-lines :initform nil)
    (reachable :initform (list (trinary-true)))
    ;; TODO: I don't remember or understand what this is.  I'm going to

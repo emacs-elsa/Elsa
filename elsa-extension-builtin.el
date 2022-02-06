@@ -6,32 +6,37 @@
 (defvar elsa-analyzed nil
   "List of already analyzed files.")
 
-(defun elsa--get-cache-file-name (library &optional compiled)
+(defun elsa--get-cache-file-name (state feature &optional compiled)
   "Return the cache file name for LIBRARY."
   (f-expand (format ".elsa/%s-elsa-cache.el%s"
-                    (f-base library)
+                    (symbol-name feature)
                     (if compiled "c" ""))
-            (f-parent library)))
+            (oref state project-directory)))
 
 (defun elsa--analyse:require (form scope state)
   (let ((feature (elsa-nth 1 form)))
     (when (elsa--quoted-symbol-p feature)
-      (let* ((load-suffixes (list ".el"))
+      (let* ((load-suffixes (list ".el" ".el.gz"))
              (load-file-rep-suffixes (list ""))
-             (library-name (symbol-name (elsa-get-name (elsa-nth 1 feature))))
+             ;; elsa-nth because feature is (quote library)
+             (library-symbol (elsa-get-name (elsa-nth 1 feature)))
+             (library-name (symbol-name library-symbol))
              (library (locate-library library-name)))
         (when (and library
                    (not (member library elsa-analyzed)))
-          (let* ((elsa-cache-file (elsa--get-cache-file-name library 'compiled)))
-            (if (or t ;; FIXME: temporarily disable caching since
-                      ;; new-style structs can't be read.
-                    (file-newer-than-file-p library elsa-cache-file))
-                (progn
-                  (require (intern (concat "elsa-typed-" library-name)) nil t)
-                  (require (intern (concat "elsa-extension-" library-name)) nil t)
-                  (push library elsa-analyzed)
-                  (elsa-process-file library))
-              (load elsa-cache-file t t))))))))
+          (let* ((elsa-cache-file (elsa--get-cache-file-name state library-symbol)))
+            (require (intern (concat "elsa-typed-" library-name)) nil t)
+            (require (intern (concat "elsa-extension-" library-name)) nil t)
+            (push library elsa-analyzed)
+            (if (file-newer-than-file-p library elsa-cache-file)
+                (elsa-process-file library state)
+              (load (f-no-ext elsa-cache-file) t t))))))))
+
+(defun elsa--analyse:provide (form scope state)
+  (let ((feature (elsa-nth 1 form)))
+    (when (elsa--quoted-symbol-p feature)
+      (oset state provide (elsa-get-name (elsa-cadr feature))))))
+
 (declare-function elsa-process-file "elsa" (file))
 
 ;; * boolean functions
