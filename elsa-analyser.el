@@ -720,22 +720,36 @@ If no type annotation is provided, find the value type through
                               (-filter
                                (lambda (overload)
                                  (let* ((expected (elsa-function-type-nth-arg overload index))
+                                        (expected-normalized
+                                         (or expected (elsa-type-mixed)))
                                         (actual (oref argument-form type))
                                         (acceptablep
-                                         (elsa-type-assignable-p expected actual)))
-                                   (unless (or (not expected) acceptablep)
+                                         (elsa-type-assignable-p
+                                          expected-normalized
+                                          actual)))
+                                   (unless acceptablep
                                      (push (cons
                                             overload
                                             (format
                                              "Argument %d accepts type `%s' but received `%s'"
                                              (1+ index)
-                                             (elsa-type-describe expected)
+                                             (elsa-type-describe expected-normalized)
                                              (elsa-type-describe actual)))
                                            errors-for-this-arg-position))
-                                   acceptablep))
+                                   (unless expected
+                                     (push (cons
+                                            overload
+                                            (format
+                                             "Argument %d is present but the function does not define it.  Missing overload?"
+                                             (1+ index)))
+                                           errors-for-this-arg-position))
+                                   (and expected acceptablep)))
                                overloads)))
                         (if good-overloads
                             (setq overloads good-overloads)
+                          ;; TODO: I don't think this works if the
+                          ;; error in filtering happens on the second
+                          ;; argument
                           (elsa-state-add-message state
                             (if (< 1 (length errors-for-this-arg-position))
                                 (elsa-make-error argument-form
