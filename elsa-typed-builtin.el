@@ -346,7 +346,7 @@
 (put 'message-box 'elsa-type (elsa-make-type (function (string &rest mixed) string)))
 (put 'message-or-box 'elsa-type (elsa-make-type (function (string &rest mixed) string)))
 (put 'current-message 'elsa-type (elsa-make-type string))
-(put 'propertize 'elsa-type (elsa-make-type (function (string mixed) string)))
+(put 'propertize 'elsa-type (elsa-make-type (function (string &rest mixed) string)))
 (put 'format 'elsa-type (elsa-make-type (function (string &rest mixed) string)))
 (put 'format-message 'elsa-type (elsa-make-type (function (string &rest mixed) string)))
 (put 'char-equal 'elsa-type (elsa-make-type (function (int int) bool)))
