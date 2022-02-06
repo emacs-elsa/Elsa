@@ -699,76 +699,73 @@ If no type annotation is provided, find the value type through
     ;; check the types
     (when type
       ;; analyse the arguments
-      (let ((usable-overloads
-             (catch 'no-overloads
-               (when (elsa-type-callable-p type)
-                 (-when-let* ((all-overloads (elsa-function-get-overloads type))
-                              ;; overloads is progressively filtered
-                              ;; to only the overloads applicable at
-                              ;; current caller
-                              (overloads all-overloads))
-                   (-map-indexed
-                    (lambda (index argument-form)
-                      (let* ((errors-for-this-arg-position nil)
-                             (good-overloads
-                              ;; Check each argument against all
-                              ;; possible overloads.  Keep only those
-                              ;; which can match current arguments.
-                              ;; If we run out of overloads, report
-                              ;; the last set of possible overloads as
-                              ;; the error.
-                              (-filter
-                               (lambda (overload)
-                                 (let* ((expected (elsa-function-type-nth-arg overload index))
-                                        (expected-normalized
-                                         (or expected (elsa-type-mixed)))
-                                        (actual (oref argument-form type))
-                                        (acceptablep
-                                         (elsa-type-assignable-p
-                                          expected-normalized
-                                          actual)))
-                                   (unless acceptablep
-                                     (push (cons
-                                            overload
-                                            (format
-                                             "Argument %d accepts type `%s' but received `%s'"
-                                             (1+ index)
-                                             (elsa-type-describe expected-normalized)
-                                             (elsa-type-describe actual)))
-                                           errors-for-this-arg-position))
-                                   (unless expected
-                                     (push (cons
-                                            overload
-                                            (format
-                                             "Argument %d is present but the function does not define it.  Missing overload?"
-                                             (1+ index)))
-                                           errors-for-this-arg-position))
-                                   (and expected acceptablep)))
-                               overloads)))
-                        (if good-overloads
-                            (setq overloads good-overloads)
-                          ;; TODO: I don't think this works if the
-                          ;; error in filtering happens on the second
-                          ;; argument
-                          (elsa-state-add-message state
-                            (if (< 1 (length errors-for-this-arg-position))
-                                (elsa-make-error argument-form
-                                  "No overload matches this call.\n%s"
-                                  (s-join
-                                   "\n"
-                                   (-map-indexed
-                                    (lambda (index err)
-                                      (format "  Overload %d of %d: '%s'\n    %s"
+      (let* ((overloads-errors nil)
+             (usable-overloads
+              (catch 'no-overloads
+                (when (elsa-type-callable-p type)
+                  (-when-let* ((all-overloads (elsa-function-get-overloads type))
+                               ;; overloads is progressively filtered
+                               ;; to only the overloads applicable at
+                               ;; current caller
+                               (overloads all-overloads))
+                    (-map-indexed
+                     (lambda (index argument-form)
+                       (let* ((good-overloads
+                               ;; Check each argument against all
+                               ;; possible overloads.  Keep only those
+                               ;; which can match current arguments.
+                               ;; If we run out of overloads, report
+                               ;; the last set of possible overloads as
+                               ;; the error.
+                               (-filter
+                                (lambda (overload)
+                                  (let* ((expected (elsa-function-type-nth-arg overload index))
+                                         (expected-normalized
+                                          (or expected (elsa-type-mixed)))
+                                         (actual (oref argument-form type))
+                                         (acceptablep
+                                          (elsa-type-assignable-p
+                                           expected-normalized
+                                           actual)))
+                                    (unless acceptablep
+                                      (push (cons
+                                             overload
+                                             (format
+                                              "Argument %d accepts type `%s' but received `%s'"
                                               (1+ index)
-                                              (length all-overloads)
-                                              (elsa-type-describe (car err))
-                                              (cdr err)))
-                                    errors-for-this-arg-position)))
-                              (elsa-make-error argument-form
-                                (cdar errors-for-this-arg-position))))
-                          (throw 'no-overloads nil))))
-                    args)
-                   overloads)))))
+                                              (elsa-type-describe expected-normalized)
+                                              (elsa-type-describe actual)))
+                                            overloads-errors))
+                                    (unless expected
+                                      (push (cons
+                                             overload
+                                             (format
+                                              "Argument %d is present but the function does not define it.  Missing overload?"
+                                              (1+ index)))
+                                            overloads-errors))
+                                    (and expected acceptablep)))
+                                overloads)))
+                         (if good-overloads
+                             (setq overloads good-overloads)
+                           (elsa-state-add-message state
+                             (if (< 1 (length overloads-errors))
+                                 (elsa-make-error argument-form
+                                   "No overload matches this call.\n%s"
+                                   (s-join
+                                    "\n"
+                                    (-map-indexed
+                                     (lambda (index err)
+                                       (format "  Overload %d of %d: '%s'\n    %s"
+                                               (1+ index)
+                                               (length all-overloads)
+                                               (elsa-type-describe (car err))
+                                               (cdr err)))
+                                     overloads-errors)))
+                               (elsa-make-error argument-form
+                                 (cdar overloads-errors))))
+                           (throw 'no-overloads nil))))
+                     args)
+                    overloads)))))
         ;; set the return type of the form according to the return type
         ;; of the function's declaration
         (if usable-overloads
