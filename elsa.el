@@ -55,6 +55,7 @@
 ;; (elsa-process-file :: (function (string (or mixed nil)) mixed))
 (defun elsa-process-file (file &optional state)
   "Process FILE."
+  (princ (concat "Processing file " file "\n"))
   (let ((state (elsa-state
                 :project-directory (if state
                                        (oref state project-directory)
@@ -81,10 +82,14 @@
                        (nth 4 (syntax-ppss)))
               (elsa-state-ignore-line state line)))))
       (goto-char (point-min))
-      (condition-case _err
+      (condition-case err
           (while (setq form (elsa-read-form state))
             (elsa-analyse-form state form))
-        (end-of-file t)))
+        (error (error "Error happened at %s:%d:%d\n %s"
+                      file
+                      (oref form line)
+                      (oref form column)
+                      (error-message-string err)))))
     ;; dump defun cache
     ;; FIXME: temporarily disable caching since new-style structs can't be read.
     (with-temp-buffer
@@ -92,24 +97,26 @@
         (let ((feature-name (symbol-name feature))
               (elsa-cache-file (elsa--get-cache-file-name state feature)))
           (unless (string-match-p "^elsa-\\(typed\\|extension\\)-" feature-name)
-            (condition-case _err
-                (progn
-                  (-each (nreverse (oref state defuns))
-                    (lambda (dfn)
-                      (insert (format "%s\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
-                  (f-mkdir (f-parent elsa-cache-file))
-                  (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
-                  (byte-compile-file elsa-cache-file))
-              (error t))))))
+            (progn
+              (-each (nreverse (oref state defuns))
+                (lambda (dfn)
+                  (insert (format "%S\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
+              (-each (nreverse (oref state requires))
+                (lambda (req)
+                  (insert (format ";; %S\n" `(elsa-load-cache ',req)))))
+              (f-mkdir (f-parent elsa-cache-file))
+              (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
+              (byte-compile-file elsa-cache-file))))))
+    (princ (concat "Processing file " file "... done\n"))
     state))
 
 (defun elsa-process-form ()
   "Read and analyse form at point."
   (interactive)
-  (let* ((state (elsa-state))
-         (form (elsa-read-form state)))
-    (elsa--analyse-form form (oref state scope) state)
-    form))
+  (let* ((state (elsa-state :project-directory (f-parent (buffer-file-name)))))
+    (when-let ((form (elsa-read-form state)))
+      (elsa--analyse-form form (oref state scope) state)
+      form)))
 
 (defun elsa-load-config ()
   "Load config and register extensions."
