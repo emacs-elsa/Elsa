@@ -196,6 +196,14 @@ This means that the domain of the type is empty."
 Regular type normalizes to itself."
   this)
 
+(cl-defmethod elsa-type-normalize ((this elsa-readonly-type))
+  "Normalize a readonly type.
+
+A readonly of readonly can be squashed to just readonly."
+  (if (elsa-readonly-type-p (oref this type))
+      (oref this type)
+    this))
+
 (cl-defmethod elsa-type-normalize ((this elsa-sum-type))
   "Normalize a sum type."
   (let ((types (--remove (elsa-type-accept (elsa-make-type empty) it)

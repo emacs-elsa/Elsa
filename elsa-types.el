@@ -726,8 +726,14 @@ It wraps any other type and makes the form or variable
 unassignable.")
 
 (cl-defmethod elsa-type-accept ((this elsa-readonly-type) other)
+  "Check if this readonly type accept other type.
+
+The acceptance does not depend on the readonly status.  Here we
+simply work with the wrapped types.  The readonly type wrapper is
+only a flag which is used during assignability checks (such as
+`setq'), not as a type check!"
   (if (elsa-type-composite-p other)
-      (elsa-type-is-accepted-by other this)
+      (elsa-type-is-accepted-by other (oref this type))
     (elsa-type-accept (oref this type) other)))
 
 (cl-defmethod elsa-type-is-accepted-by ((this elsa-readonly-type) other)
