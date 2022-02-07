@@ -613,15 +613,16 @@ If no type annotation is provided, find the value type through
     (with-temp-buffer
       (save-excursion (insert str))
       (skip-chars-forward "@^*")
-      (insert "\n")
-      (backward-char 1)
-      (while (search-forward "\n" nil t)
-        (unless (looking-at-p allowed-codes)
-          (elsa-state-add-message state
-            (elsa-make-error
-             arg
-             "Unknown interactive code letter: %c"
-             (char-after (point)))))))))
+      (unless (eolp)
+        (insert "\n")
+        (backward-char 1)
+        (while (search-forward "\n" nil t)
+          (unless (looking-at-p allowed-codes)
+            (elsa-state-add-message state
+              (elsa-make-error
+                  arg
+                "Unknown interactive code letter: %c"
+                (char-after (point))))))))))
 
 (defun elsa--analyse:interactive (form scope state)
   (let ((arg (elsa-cadr form)))
