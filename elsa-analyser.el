@@ -731,11 +731,24 @@ If no type annotation is provided, find the value type through
                                       (push (list
                                              overload
                                              overload-index
-                                             (format
-                                              "Argument %d accepts type `%s' but received `%s'"
-                                              (1+ index)
-                                              (elsa-type-describe expected-normalized)
-                                              (elsa-type-describe actual)))
+                                             ;; we need to sanitize
+                                             ;; the % sign in the
+                                             ;; error because it is
+                                             ;; later passed to format
+                                             ;; in `elsa-make-error'.
+                                             ;; And the "but received"
+                                             ;; string can contain
+                                             ;; arbitrary text as one
+                                             ;; possible type is
+                                             ;; (const "whatever")
+                                             (replace-regexp-in-string
+                                              "%"
+                                              "%%"
+                                              (format
+                                               "Argument %d accepts type `%s' but received `%s'"
+                                               (1+ index)
+                                               (elsa-type-describe expected-normalized)
+                                               (elsa-type-describe actual))))
                                             overloads-errors))
                                     (unless expected
                                       (push (list
