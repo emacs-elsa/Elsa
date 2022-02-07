@@ -11,7 +11,10 @@
    (project-directory :type string
                       :initarg :project-directory
                       :documentation "Directory from which the analysis was started.")
-   (provide :initform nil)
+   (provide :initform nil
+            :documentation "Symbol provided by current file")
+   (requires :initform nil :type list
+             :documentation "Symbols required by current file")
    (ignored-lines :initform nil)
    (reachable :initform (list (trinary-true)))
    ;; TODO: I don't remember or understand what this is.  I'm going to
