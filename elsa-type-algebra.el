@@ -26,6 +26,9 @@ A sum accept anything that either THIS or OTHER accepts.")
    (t (let ((sum (elsa-sum-type :types (list this))))
         (elsa-type-sum sum other)))))
 
+(cl-defmethod elsa-type-sum ((this elsa-readonly-type) (other elsa-readonly-type))
+  (elsa-readonly-type :type (elsa-type-sum (oref this type) (oref other type))))
+
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
   "(A ∪ B ∪ ...) ∪ (C ∪ D ∪ ...) = A ∪ B ∪ C ∪ D ∪ ...
 
