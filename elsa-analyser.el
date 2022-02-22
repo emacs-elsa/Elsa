@@ -470,6 +470,10 @@ nullables and the &rest argument into a variadic."
          (body (nthcdr 3 sequence)))
     (elsa--analyse-defun-like-form name args body form scope state)))
 
+(defun elsa--analyse:defmacro (form scope state)
+  "just skip for now, it's too complicated."
+  nil)
+
 (defun elsa--analyse:defvar (form scope state)
   "Analyze `defvar'.
 

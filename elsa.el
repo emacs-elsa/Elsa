@@ -28,9 +28,11 @@
 (require 'eieio)
 
 (require 'dash)
+(require 'cl-lib)
 (require 'cl-extra)
 (require 'warnings)
 
+(require 'elsa-dependencies)
 (require 'elsa-types)
 (require 'elsa-scope)
 (require 'elsa-state)
@@ -47,15 +49,44 @@
 (require 'elsa-typed-thingatpt)
 (require 'elsa-typed-subr)
 
+;; (toggle-debug-on-error)
+
 ;; TODO: unify with `elsa-variable'?
 (defclass elsa-defvar nil
   ((name :initarg :name)
    (type :initarg :type)))
 
+(defun elsa-analyse-file (file)
+  (let ((global-state (elsa-state :project-directory (f-parent file)))
+        (dependencies (elsa-get-dependencies file))
+        (visited nil)
+        (file-state nil))
+    (princ (format "Processing transitive dependencies: %s\n" (s-join ", " dependencies)))
+    (dolist (dep dependencies)
+      (let* ((dep (replace-regexp-in-string "-CIRCULAR\\'" "" dep))
+             (elsa-cache-file (elsa--get-cache-file-name global-state dep)))
+        (when-let* ((library (if (f-exists? dep) dep
+                               (elsa--find-dependency dep))))
+          (unless (member library visited)
+            (push library visited)
+            (when (require (intern (concat "elsa-typed-" dep)) nil t)
+              (princ (format "Autoloading types for %s\n" dep)))
+            (when (require (intern (concat "elsa-extension-" dep)) nil t)
+              (princ (format "Autoloading extension for %s\n" dep)))
+            (if (file-newer-than-file-p library elsa-cache-file)
+                (let ((state (elsa-process-file library global-state)))
+                  (elsa-save-cache state)
+                  (setq file-state state))
+              (princ (format "Loading %s from cache\n" dep))
+              (load (f-no-ext elsa-cache-file) t t))))))
+    file-state))
+
 ;; (elsa-process-file :: (function (string (or mixed nil)) mixed))
 (defun elsa-process-file (file &optional state)
   "Process FILE."
-  (princ (concat "Processing file " file "\n"))
+  (princ (format "Processing file %s, stack depth %d\n"
+                 file
+                 (let ((i 0)) (mapbacktrace (lambda (&rest x) (cl-incf i))) i)))
   (let ((state (elsa-state
                 :project-directory (if state
                                        (oref state project-directory)
@@ -89,26 +120,28 @@
                       file
                       (oref form line)
                       (oref form column)
-                      (error-message-string err)))))
-    ;; dump defun cache
-    ;; FIXME: temporarily disable caching since new-style structs can't be read.
-    (with-temp-buffer
-      (when-let ((feature (oref state provide)))
-        (let ((feature-name (symbol-name feature))
-              (elsa-cache-file (elsa--get-cache-file-name state feature)))
-          (unless (string-match-p "^elsa-\\(typed\\|extension\\)-" feature-name)
-            (progn
-              (-each (nreverse (oref state defuns))
-                (lambda (dfn)
-                  (insert (format "%S\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
-              (-each (nreverse (oref state requires))
-                (lambda (req)
-                  (insert (format ";; %S\n" `(elsa-load-cache ',req)))))
-              (f-mkdir (f-parent elsa-cache-file))
-              (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
-              (byte-compile-file elsa-cache-file))))))
+                      (error-message-string err)))
+        ))
     (princ (concat "Processing file " file "... done\n"))
     state))
+
+(defun elsa-save-cache (state)
+  "Save all cached defuns from STATE."
+  (with-temp-buffer
+    (when-let ((feature (oref state provide)))
+      (let ((feature-name (symbol-name feature))
+            (elsa-cache-file (elsa--get-cache-file-name state feature)))
+        (unless (string-match-p "^elsa-\\(typed\\|extension\\)-" feature-name)
+          (progn
+            (-each (nreverse (oref state defuns))
+              (lambda (dfn)
+                (insert (format "%S\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
+            (-each (nreverse (oref state requires))
+              (lambda (req)
+                (insert (format ";; %S\n" `(elsa-load-cache ',req)))))
+            (f-mkdir (f-parent elsa-cache-file))
+            (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
+            (byte-compile-file elsa-cache-file)))))))
 
 (defun elsa-process-form ()
   "Read and analyse form at point."
@@ -125,6 +158,9 @@
   (auto-compression-mode 1)
   ;; silence the "uncompressing" messages
   (setq jka-compr-verbose nil)
+  ;; make the available stack bigger
+  (setq max-specpdl-size 1000)
+  (setq max-lisp-eval-depth 1000)
 
   (let ((config-buffer (find-file-noselect "Elsafile.el"))
         form)
@@ -148,7 +184,7 @@
   "Run `elsa-process-file' and output errors to stdout for flycheck."
   (elsa-load-config)
   (dolist (file command-line-args-left)
-    (--each (reverse (oref (elsa-process-file file) errors))
+    (--each (reverse (oref (elsa-analyse-file file) errors))
       (princ (concat file ":" (elsa-message-format it))))))
 
 (defun elsa-run-files-and-exit ()

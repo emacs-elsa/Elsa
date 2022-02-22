@@ -9,7 +9,7 @@
 (defun elsa--get-cache-file-name (state feature &optional compiled)
   "Return the cache file name for LIBRARY."
   (f-expand (format ".elsa/%s-elsa-cache.el%s"
-                    (symbol-name feature)
+                    (if (stringp feature) feature (symbol-name feature))
                     (if compiled "c" ""))
             (oref state project-directory)))
 
@@ -22,19 +22,7 @@
              (library-symbol (elsa-get-name (elsa-nth 1 feature)))
              (library-name (symbol-name library-symbol))
              (library (locate-library library-name)))
-        (push (elsa-get-name (elsa-cadr feature)) (oref state requires))
-        (when (and library
-                   (not (member library elsa-analyzed)))
-          (let* ((elsa-cache-file (elsa--get-cache-file-name state library-symbol)))
-            (when (require (intern (concat "elsa-typed-" library-name)) nil t)
-              (princ (format "Autoloading types for %s\n" library-name)))
-            (when (require (intern (concat "elsa-extension-" library-name)) nil t)
-              (princ (format "Autoloading extension for %s\n" library-name)))
-            (push library elsa-analyzed)
-            (if (file-newer-than-file-p library elsa-cache-file)
-                (elsa-process-file library state)
-              (princ (format "Loading %s from cache\n" library-name))
-              (load (f-no-ext elsa-cache-file) t t))))))))
+        (push (elsa-get-name (elsa-cadr feature)) (oref state requires))))))
 
 (defun elsa--analyse:provide (form scope state)
   (let ((feature (elsa-nth 1 form)))
