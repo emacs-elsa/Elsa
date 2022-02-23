@@ -302,7 +302,7 @@
 (put 'char-after 'elsa-type (elsa-make-type (function ((or int marker nil)) int)))
 (put 'char-before 'elsa-type (elsa-make-type (function ((or int marker nil)) int)))
 ;; TODO: Can only return nil if arg is non-nil; same for user-full-name
-(put 'user-login-name 'elsa-type (elsa-make-type Number? -> String?))
+(put 'user-login-name 'elsa-type (elsa-make-type (function ((or number nil)) (or string nil))))
 (put 'user-real-login-name 'elsa-type (elsa-make-type string))
 (put 'user-uid 'elsa-type (elsa-make-type number))
 (put 'user-real-uid 'elsa-type (elsa-make-type number))
@@ -495,7 +495,8 @@
 ;; File: search.c
 (put 'looking-at 'elsa-type (elsa-make-type (function (string) bool)))
 (put 'posix-looking-at 'elsa-type (elsa-make-type (function (string) bool)))
-(put 'string-match 'elsa-type (elsa-make-type (function (string string int) (or int nil))))
+;; TODO: string-match has an &optional arg
+(put 'string-match 'elsa-type (elsa-make-type (function (string string (or int nil)) (or int nil))))
 (put 'posix-string-match 'elsa-type (elsa-make-type (function (string string int) (or int nil))))
 (put 'search-backward 'elsa-type (elsa-make-type (function (string (or int nil) mixed) (or int nil))))
 (put 'search-forward 'elsa-type (elsa-make-type (function (string (or int nil) mixed) (or int nil))))
