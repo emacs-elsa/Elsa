@@ -103,7 +103,7 @@
         (it "should empty the domain in case the tests are incompatible"
           (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) (integerp x) x))" form
             (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
-              (expect test-form :to-be-type-equivalent (elsa-make-type [])))))
+              (expect test-form :to-be-type-equivalent (elsa-type-empty)))))
 
         (it "should return nil if one condition rules out the other"
           (elsa-test-with-analysed-form "|(defun a (x y) (and x (unless x y)))" form

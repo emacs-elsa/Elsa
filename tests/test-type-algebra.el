@@ -185,11 +185,11 @@
 
       (it "string diffed with itself should give empty"
         (expect (elsa-type-diff (elsa-make-type string) (elsa-make-type string))
-                :to-equal (elsa-make-type [])))
+                :to-equal (elsa-type-empty)))
 
       (it "symbol diffed with itself should give empty"
         (expect (elsa-type-diff (elsa-make-type symbol) (elsa-make-type symbol))
-                :to-equal (elsa-make-type [])))
+                :to-equal (elsa-type-empty)))
 
       (it "string diffed with symbol should return string unchanged as there is no domain overlap"
         (expect (elsa-type-diff (elsa-make-type string) (elsa-make-type symbol))
@@ -237,7 +237,7 @@
                  (elsa-sum-type
                   :types (list (elsa-make-type int)
                                (elsa-make-type string))))
-                :to-equal (elsa-make-type [])))
+                :to-equal (elsa-type-empty)))
 
       (it "should resolve a number to float if the sum contains int"
         (expect (elsa-type-diff

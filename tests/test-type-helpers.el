@@ -13,17 +13,8 @@
     (it "should make a primitive type"
       (expect (elsa-test-describe-type int) :to-equal "int"))
 
-    (it "should make a primitive type wrapped in superfluous parens"
-      (expect (elsa-test-describe-type (int)) :to-equal "int"))
-
-    (it "should make a primitive type wrapped in superfluous parens multiple times"
-      (expect (elsa-test-describe-type ((int))) :to-equal "int"))
-
     (it "should make a simple function type"
       (expect (elsa-test-describe-type (function (int) int)) :to-equal "(function (int) int)"))
-
-    (it "should make a simple function type wrapped in superfluous parens"
-      (expect (elsa-test-describe-type ((function (int) (int)))) :to-equal "(function (int) int)"))
 
     (it "should create a variadic type"
       (expect (elsa-test-describe-type (function (&rest int) int)) :to-equal
@@ -69,25 +60,43 @@
       (expect (elsa-test-describe-type (function (int (function (string) float) buffer) (cons (or int string) buffer))) :to-equal
               "(function (int (function (string) float) buffer) (cons (or int string) buffer))"))
 
-    (it "should support construction of lists through vector shorthand"
+    (it "should support construction of lists"
       (expect (elsa-test-describe-type (list int)) :to-equal "(list int)"))
 
-    (it "should support construction of lists of lists through vector shorthand"
+    (it "should support construction of lists of lists"
       (expect (elsa-test-describe-type (list (list int))) :to-equal "(list (list int))"))
 
-    (it "should support construction of lists of functions through vector shorthand"
+    (it "should support construction of lists of functions"
       (expect (elsa-test-describe-type (list (function (int) bool))) :to-equal "(list (function (int) bool))"))
 
-    (it "should support construction of lists of sums through vector shorthand"
+    (it "should support construction of lists of sums"
       (expect (elsa-test-describe-type (list (or int bool))) :to-equal "(list (or int bool))"))
 
-    (it "should support construction of lists of higher order types through vector shorthand"
+    (it "should support construction of lists of higher order types"
       (expect (elsa-test-describe-type (list (cons int string))) :to-equal
               "(list (cons int string))"))
 
     (it "should normalize the diff type after creation"
       (expect (elsa-type-describe (elsa-make-type (diff int (const "foo"))))
-              :to-equal "int")))
+              :to-equal "int"))
+
+    (describe "constant type creation"
+
+      (it "should create a constant symbol from quoted symbol"
+        (expect (elsa-type-describe (elsa-make-type 'foo))
+                :to-equal "(const foo)"))
+
+      (it "should throw an error for unquoted symbol which is not a type"
+        (expect (elsa-type-describe (elsa-make-type foo))
+                :to-throw 'error))
+
+      (it "should create a constant symbol from a string"
+        (expect (elsa-type-describe (elsa-make-type "foo"))
+                :to-equal "(const \"foo\")"))
+
+      (it "should create a constant symbol from quoted string"
+        (expect (elsa-type-describe (elsa-make-type '"foo"))
+                :to-equal "(const \"foo\")"))))
 
   (describe "elsa-type-normalize"
 

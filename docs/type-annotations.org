@@ -149,6 +149,15 @@ that:
 - =(const 1)= is the integer =1=,
 - =(const "foo")= is the string ="foo"=.
 
+Because constant types are pretty common, we provide a short-hand
+syntax, where any "atom" simply stands for itself, so that:
+
+- In any type context, ="foo"= is the same as =(const "foo")=.
+- In any type context, =1= is the same as =(const 1)=.
+- In any type context, ='sym= is the same as =(const sym)=.  Notice that
+  the quote is missing inside =const=, similar to how it is not repeated
+  inside =quote=, such as =(quote sym)=.
+
 ** Function types
 
 Function types are types of functions.  They have input argument types
