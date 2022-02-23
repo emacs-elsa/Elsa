@@ -558,7 +558,7 @@ for the analysis."
     (save-excursion
       (goto-char (oref reader-form start))
       (forward-line -1)
-      (elsa--skip-whitespace-forward)
+      (skip-chars-forward " \t\n\r")
       (let ((line-end (line-end-position)))
         (when (and (re-search-forward
                     (rx "(" (+? (or word (syntax symbol))) " :: ")
