@@ -135,6 +135,17 @@ Composite types usually correspond to data constructors such as =cons=,
   If the hash table can hold anything, write =(hash-table mixed mixed)=
   or simply =hash-table= for short.
 
+** Tuple
+
+Tuple is a list of fixed length.  Unlike =(list a)=, a tuple can have a
+different type for each position.  This is sometimes useful for "poor
+man's data types", such as =(list "firstname" "secondname" 45)=, for
+first and second name and age.
+
+The tuple type is created by simply enclosing the types in
+parentheses, so the tuple from the example has type =(string string
+int)=.
+
 ** Constant types
 
 A constant type always holds a specific value.  Functions often take

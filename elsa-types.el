@@ -477,6 +477,33 @@ other, then this is a supertype of other."
           (elsa-type-describe (oref this car-type))
           (elsa-type-describe (oref this cdr-type))))
 
+(defclass elsa-type-tuple (elsa-type)
+  ((types :type list :initarg :types)))
+
+(cl-defmethod clone ((this elsa-type-tuple))
+  "Make a deep copy of a cons type."
+  (let ((types (-map 'clone (oref this types)))
+        (new (cl-call-next-method this)))
+    (oset new types types)
+    new))
+
+(cl-defmethod elsa-type-accept ((this elsa-type-tuple) (other elsa-type-tuple))
+  (catch 'ok
+    ;; types are accepted co-variantly
+    (let ((this-types (oref this types))
+          (other-types (oref other types)))
+      (unless (= (length this-types) (length other-types))
+        (throw 'ok nil))
+      (cl-mapc
+       (lambda (this-type other-type)
+         (unless (elsa-type-accept this-type other-type)
+           (throw 'ok nil)))
+       this-types other-types))
+    t))
+
+(cl-defmethod elsa-type-describe ((this elsa-type-tuple))
+  (format "(%s)" (mapconcat 'elsa-type-describe (oref this types) " ")))
+
 (defclass elsa-type-list (elsa-type-cons elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
@@ -489,7 +516,7 @@ other, then this is a supertype of other."
     (oset new item-type item-type)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-type-list) (other elsa-type-list))
+(cl-defmethod elsa-type-accept ((this elsa-type-list) (other elsa-type))
   "A list type accepts another list type covariantly.
 
 That means that iff the item type of this is supertype of other,
@@ -500,7 +527,15 @@ unknown length where elements are all of the same type.
 
 For a list of fixed length with heterogeneous types, see
 `elsa-type-tuple'."
-  (elsa-type-accept (oref this item-type) (oref other item-type)))
+  (cond
+   ((elsa-type-tuple-p other)
+    ;; we can accept a tuple if all of its types are accepted by this
+    (-all?
+     (lambda (ot) (elsa-type-accept (oref this item-type) ot))
+     (oref other types)))
+   ((elsa-type-list-p other)
+    (elsa-type-accept (oref this item-type) (oref other item-type)))
+   (t (cl-call-next-method this other))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-list))
   (format "(list %s)" (elsa-type-describe (oref this item-type))))

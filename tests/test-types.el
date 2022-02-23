@@ -392,4 +392,41 @@
         (setq sum (elsa-type-sum sum (elsa-make-type int)))
         (setq sum (elsa-type-sum sum (elsa-make-type string)))
         (expect
-         (elsa-type-accept (elsa-make-type number) sum) :not :to-be-truthy)))))
+         (elsa-type-accept (elsa-make-type number) sum) :not :to-be-truthy))))
+
+  (describe "tuple type"
+
+    (it "should not accept tuple of different length"
+      (expect (elsa-type-accept (elsa-make-type (int int))
+                                (elsa-make-type (int)))
+              :not :to-be-truthy))
+
+    (it "should accept tuple of same length and types"
+      (expect (elsa-type-accept (elsa-make-type (int string))
+                                (elsa-make-type (int string)))
+              :to-be-truthy))
+
+    (it "should not accept tuple of same length and different types"
+      (expect (elsa-type-accept (elsa-make-type (int string))
+                                (elsa-make-type (string int)))
+              :not :to-be-truthy))
+
+    (it "should accept tuple of same length and subtypes"
+      (expect (elsa-type-accept (elsa-make-type ((or int string) string))
+                                (elsa-make-type (string string)))
+              :to-be-truthy))
+
+    (it "should not accept tuple of same length and supertypes"
+      (expect (elsa-type-accept (elsa-make-type (string string))
+                                (elsa-make-type ((or int string) string)))
+              :not :to-be-truthy))
+
+    (it "should be accepted by a list of a supertype of all types of tuple"
+      (expect (elsa-type-accept (elsa-make-type (list int))
+                                (elsa-make-type (int int int)))
+              :to-be-truthy))
+
+    (it "should not be accepted by a list if some type is not acceptable by item-type of list"
+      (expect (elsa-type-accept (elsa-make-type (list int))
+                                (elsa-make-type (int string int)))
+              :not :to-be-truthy))))

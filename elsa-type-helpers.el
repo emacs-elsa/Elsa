@@ -142,7 +142,12 @@ Return trinary logic value.")
                            (stringp arg)
                            (integerp arg)
                            (floatp arg))))
-     (elsa--make-const-type arg))))
+     (elsa--make-const-type arg))
+    ;; this must be after the symbol check because nil is also a list
+    ;; but also can be constructor for `elsa-type-nil'.
+    ((and (pred listp) args)
+     (elsa-type-tuple :types (-map #'elsa--make-type args)))
+    (_ (error "Unknown type %S" definition))))
 
 (defmacro elsa-make-type (&rest definition)
   "Make a type according to DEFINITION."

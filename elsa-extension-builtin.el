@@ -194,5 +194,17 @@
     (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-get-type (-last-item body)))))
 
+(defun elsa--analyse:list (form scope state)
+  (let ((items (elsa-cdr form)))
+    (elsa--analyse-body items scope state)
+    ;; we need to promote constant types, because the chances this
+    ;; tuple is of constant type is slim-to-none
+    (let* ((types (-map #'elsa-get-type items))
+           (types (--map
+                   (if (elsa-const-type-p it)
+                       (oref it type)
+                     it)
+                   types)))
+      (oset form type (elsa-type-tuple :types types)))))
 
 (provide 'elsa-extension-builtin)
