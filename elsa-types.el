@@ -489,6 +489,19 @@ other, then this is a supertype of other."
     (oset new item-type item-type)
     new))
 
+(cl-defmethod elsa-type-accept ((this elsa-type-list) (other elsa-type-list))
+  "A list type accepts another list type covariantly.
+
+That means that iff the item type of this is supertype of other,
+then this is a supertype of other.
+
+Note that a list here is a homogeneous list, meaning a list of
+unknown length where elements are all of the same type.
+
+For a list of fixed length with heterogeneous types, see
+`elsa-type-tuple'."
+  (elsa-type-accept (oref this item-type) (oref other item-type)))
+
 (cl-defmethod elsa-type-describe ((this elsa-type-list))
   (format "(list %s)" (elsa-type-describe (oref this item-type))))
 
@@ -507,6 +520,13 @@ other, then this is a supertype of other."
         (new (cl-call-next-method this)))
     (oset new item-type item-type)
     new))
+
+(cl-defmethod elsa-type-accept ((this elsa-type-vector) (other elsa-type-vector))
+  "A vector type accepts another vector type covariantly.
+
+That means that iff the item type of this is supertype of other,
+then this is a supertype of other."
+  (elsa-type-accept (oref this item-type) (oref other item-type)))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
   (format "(vector %s)" (elsa-type-describe (oref this item-type))))
