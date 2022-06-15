@@ -109,8 +109,8 @@
 (put 'logxor 'elsa-type (elsa-make-type (function (&rest (or number marker)) int)))
 (put 'ash 'elsa-type (elsa-make-type (function (int int) int)))
 (put 'lsh 'elsa-type (elsa-make-type (function (int int) int)))
-(put '1+ 'elsa-type (elsa-make-type (function ((or number marker)) number)))
-(put '1- 'elsa-type (elsa-make-type (function ((or number marker)) number)))
+(put '1+ 'elsa-type (elsa-make-type (and (function (int) int) (function ((or number marker)) number))))
+(put '1- 'elsa-type (elsa-make-type (and (function (int) int) (function ((or number marker)) number))))
 (put 'lognot 'elsa-type (elsa-make-type (function (int) int)))
 (put 'byteorder 'elsa-type (elsa-make-type int))
 ;; TODO: Implement bool vectors
@@ -569,8 +569,8 @@
 ;; (put 'overlay-put 'elsa-type (elsa-make-type ))
 
 ;; File: casefiddle.c
-(put 'upcase 'elsa-type (elsa-make-type (or (function (string) string) (function (int) int))))
-(put 'downcase 'elsa-type (elsa-make-type (or (function (string) string) (function (int) int))))
+(put 'upcase 'elsa-type (elsa-make-type (and (function (string) string) (function (int) int))))
+(put 'downcase 'elsa-type (elsa-make-type (and (function (string) string) (function (int) int))))
 
 ;; boolean functions
 (put 'not 'elsa-type (elsa-make-type (function (mixed) bool)))

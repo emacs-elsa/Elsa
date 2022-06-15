@@ -23,3 +23,6 @@ Return a list of all overloads."
 
 (cl-defmethod elsa-function-get-overloads ((callable elsa-sum-type))
   (oref callable types))
+
+(cl-defmethod elsa-function-get-overloads ((callable elsa-intersection-type))
+  (-filter #'elsa-type-callable-p (oref callable types)))

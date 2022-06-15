@@ -196,6 +196,29 @@ and applies the function to every item of the list.
 The =app= function requires that we pass in a function which processes a
 number into a number and returns a list of numbers.
 
+Sometimes, functions can have multiple signatures based.  For example,
+a function can return a number if a number is passed in, or it can
+return a string if a string is passed in.  The different variants are
+called /overloads/.
+
+#+begin_src elisp
+(my-fn 1) ;; => evaluates to 2
+(my-fn "1") ;; => evaluates to "2"
+#+end_src
+
+To capture the overloads, we construct an intersection type:
+
+#+begin_src elisp
+(my-fn :: (and (function (int) int) (function (string) string)))
+#+end_src
+
+When we pass an int into this function, Elsa can use match the input
+arguments against the different overloads and determine the return
+type.
+
+Note that the type is constructed with =and= and not =or=.  Here, the
+function really is /both/ types at the same time, not one or the other.
+
 ** TODO Generic types [not implemented yet]
 
 Generic types are types where some of the type arguments are variable.

@@ -201,6 +201,30 @@ of them.")
 (cl-defmethod elsa-type-describe ((this elsa-intersection-type))
   (format "(and %s)" (mapconcat 'elsa-type-describe (oref this types) " ")))
 
+(cl-defmethod elsa-type-callable-p ((this elsa-intersection-type))
+  "An intersection type is callable if at least one intersected type is callable."
+  (let ((types (oref this types)))
+    (cond
+     ((= 0 (length types)) nil)
+     (t (-any? #'elsa-type-callable-p types)))))
+
+(cl-defmethod elsa-type-get-return ((this elsa-intersection-type))
+  "Return type of an intersection is the sum of return types of intersected types.
+
+In case of primitive types the return type is the type it self.
+In case of functions, it is the return type of the function."
+  (-reduce 'elsa-type-sum (-map 'elsa-type-get-return (oref this types))))
+
+;; TODO: this is exactly the same implementation as for elsa-sum-type.
+;; It's weird, because they should be "anti-symmetric", but they both
+;; return sums for arguments and also return types.  Will need to
+;; investigate further what are the exact semantics.
+(cl-defmethod elsa-function-type-nth-arg ((this elsa-intersection-type) n)
+  (let ((types (oref this types)))
+    (cond
+     ((= 0 (length types)) nil)
+     (t (-reduce #'elsa-type-sum (--keep (elsa-function-type-nth-arg it n) types))))))
+
 (defclass elsa-sum-type (elsa-type elsa-composite-type)
   ((types :type list
           :initarg :types
@@ -244,6 +268,7 @@ because the actual type can be any of them.")
   (-all? (lambda (type) (elsa-type-accept other type)) (oref this types)))
 
 (cl-defmethod elsa-type-callable-p ((this elsa-sum-type))
+  "A sum type is callable only if all the summands are callable."
   (let ((types (oref this types)))
     (cond
      ((= 0 (length types)) nil)
@@ -255,6 +280,9 @@ because the actual type can be any of them.")
      ((= 0 (length types)) nil)
      (t (-reduce #'elsa-type-sum (--keep (elsa-function-type-nth-arg it n) types))))))
 
+;; TODO: is this true?  It seems that return type of intersection of
+;; functions is also a sum of their return types... and this kind of
+;; breaks the expected symmetry.
 (cl-defmethod elsa-type-get-return ((this elsa-sum-type))
   "Return type of a sum is the sum of return types of its types.
 

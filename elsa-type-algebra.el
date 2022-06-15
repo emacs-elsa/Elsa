@@ -193,6 +193,21 @@ THIS and OTHER at the same time.")
     (clone this))
    (t (elsa-type-empty))))
 
+(cl-defmethod elsa-type-intersect ((this elsa-function-type) (other elsa-function-type))
+  "An intersection of functions represents overloads.
+
+A function can have multiple signatures and it is all of them at
+the same time.  For example, the same function can process
+numbers or strings and return some (different) return values
+based on the input type.
+
+It is not correct to say that the function is one *or* the other,
+because that only implies we are not certain which implementation
+it is, but once determined it collapses to only one possible
+signature.  A function with overloads is always all of the
+possible signatures."
+  (elsa-intersection-type :types (list this other)))
+
 (cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-type))
   "(A ∪ B) ∩ C = (A ∩ C) ∪ (B ∩ C)"
   (elsa-type-normalize
@@ -213,6 +228,14 @@ THIS and OTHER at the same time.")
    (-reduce
     #'elsa-type-intersect
     (-map (lambda (type) (elsa-type-intersect type other)) (oref this types)))))
+
+(cl-defmethod elsa-type-intersect ((this elsa-intersection-type) (other elsa-intersection-type))
+  "(A ∩ B ∩ ...) ∩ (C ∩ D ∩ ...) = A ∩ B ∩ C ∩ D ∩ ...
+
+Intersection of two intersections in intersection of all types."
+  (elsa-type-normalize
+   ;; TODO: just as with sum, here we need to filter out repeated types.
+   (elsa-intersection-type :types (-concat (oref this types) (oref other types)))))
 
 (provide 'elsa-type-algebra)
 ;;; elsa-type-algebra.el ends here
