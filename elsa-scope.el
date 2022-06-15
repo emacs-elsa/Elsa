@@ -22,6 +22,9 @@
 
 ;;; Commentary:
 
+;; TODO: this needs to be properly documented because I have no idea
+;; how it works anymore.
+
 ;;; Code:
 
 (require 'eieio)

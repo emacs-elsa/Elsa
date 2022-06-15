@@ -46,9 +46,19 @@ STATE is `elsa-state', ERROR is `elsa-message'."
 
 
 (defun elsa-state-get-reachability (state)
+  "Return the current reachability.
+
+It is a trinary value of yes, no or maybe specifying whether the
+currently analysed form is surely reachable, surely unreachable
+or maybe reachable."
   (car (oref state reachable)))
 
 (defmacro elsa-with-reachability (state reachability &rest body)
+  "Set REACHABILITY of all expressions analysed in BODY.
+
+After BODY is executed, restore previous reachability.
+
+Reachability is tracked on the STATE."
   (declare (indent 2)
            (debug (form form body)))
   `(progn

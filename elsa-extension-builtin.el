@@ -44,6 +44,9 @@
      (t (oset form type (elsa-make-type bool))))))
 
 (defun elsa--analyse--eq (eq-form symbol-form constant-form)
+  "Setup narrowing for the EQ-FORM based on the SYMBOL-FORM variable.
+
+CONSTANT-FORM is the value to which the variable is narrowed."
   (let ((name (elsa-get-name symbol-form))
         (type))
     (setq type
@@ -77,6 +80,8 @@
   (let* ((args (elsa-cdr form))
          (first (car args))
          (second (cadr args)))
+    ;; If one or the other value are constants, we set-up narrowing
+    ;; for the variable the symbol represents.
     (cond
      ((and (elsa-form-symbol-p first)
            (elsa-scope-get-var scope first))
@@ -84,6 +89,9 @@
      ((and (elsa-form-symbol-p second)
            (elsa-scope-get-var scope second))
       (elsa--analyse--eq form second first)))
+    ;; Here we compute the type of the eq form itself.  By default, it
+    ;; has a mixed type, so here we only make the type information
+    ;; more precise.
     (cond
      ((elsa-type-equivalent-p
        (elsa-type-empty)
