@@ -207,4 +207,13 @@
                    types)))
       (oset form type (elsa-type-tuple :types types)))))
 
+(defun elsa--analyse:funcall (form scope state)
+  (let ((head (elsa-cadr form))
+        (args (elsa-nthcdr 2 form)))
+    ;; In case head is a variable, this should set its type to the
+    ;; callable type it represents indirectly.
+    (elsa--analyse-form head scope state)
+    (elsa--analyse-function-like-invocation
+     form t head args scope state)))
+
 (provide 'elsa-extension-builtin)

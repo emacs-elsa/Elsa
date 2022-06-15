@@ -670,13 +670,34 @@ If no type annotation is provided, find the value type through
                       t)))
    (t spec)))
 
-;; (elsa--analyse-macro :: (function (mixed (or bool (or (list bool))) mixed mixed) mixed))
-(defun elsa--analyse-macro (form spec scope state)
+(defun elsa--analyse-function-like-invocation (form spec head args scope state)
+  "Analyse function or macro invocation.
+
+A function invocation can be direct or indirect.
+
+A direct invocation is simply a list form
+
+    (function arg1 arg2 ...).
+
+An indirect invocation is a function called through `funcall' or
+`apply'.
+
+FORM the form being analyzed.  This should be only used to
+update its type or narrowing information.
+
+SPEC determines which arguments are evaluated (used for macros).
+
+HEAD is the form representing the function.  It can be the head
+symbol of a list, a symbol used as a variable holding a function
+or a quoted or function-quoted symbol.  It should be a form
+object.
+
+ARGS is a list of argument forms.
+
+SCOPE and STATE are the scope and state objects."
   (setq spec (elsa--analyse-normalize-spec spec form))
-  (let* ((head (elsa-car form))
-         (name (elsa-get-name head))
-         (args (elsa-cdr form))
-         (type (get name 'elsa-type))
+  (let* ((name (elsa-get-name head))
+         (type (elsa-get-type head))
          (narrow-types (get name 'elsa-narrow-types)))
     (-each (-zip args spec)
       (-lambda ((arg . analysep))
@@ -791,7 +812,7 @@ If no type annotation is provided, find the value type through
         (if usable-overloads
             (oset
              form type
-             (elsa-type-get-return (elsa-sum-type :types usable-overloads)))
+             (elsa-type-sum-all (-map #'elsa-type-get-return usable-overloads)))
           (oset form type (elsa-type-get-return type)))))
 
     ;; compute narrowed types of variables in this function if possible
@@ -804,6 +825,16 @@ If no type annotation is provided, find the value type through
                 (push (elsa-variable :name varname :type narrow-type)
                       form-narrow-types)))))
         (oset form narrow-types form-narrow-types)))))
+
+;; (elsa--analyse-macro :: (function (mixed (or bool (or (list bool))) mixed mixed) mixed))
+(defun elsa--analyse-macro (form spec scope state)
+  (let* ((head (elsa-car form))
+         (name (elsa-get-name head))
+         (type (get name 'elsa-type))
+         (args (elsa-cdr form)))
+    (when type (oset head type type))
+    (elsa--analyse-function-like-invocation
+     form spec head args scope state)))
 
 (defun elsa--analyse-function-call (form scope state)
   (elsa--analyse-macro form t scope state))

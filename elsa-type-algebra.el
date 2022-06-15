@@ -8,6 +8,17 @@
 
 A sum accept anything that either THIS or OTHER accepts.")
 
+(defun elsa-type-sum-all (types)
+  "Sum of all the TYPES.
+
+This will sum the empty type with the first type, then the result
+of this with the second type and so on until all types are
+summed.
+
+Type sum is similar to set union in that it is commutative and
+associative."
+  (-reduce-from #'elsa-type-sum (elsa-type-empty) types))
+
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
   "Basic primitive type sum."
   (cond
