@@ -21,6 +21,7 @@ up before you even try to run the code.
 - [How do I run it](#how-do-i-run-it)
     - [makem.sh](#makemsh)
     - [Cask](#cask)
+    - [Eask](#eask)
     - [Flycheck integration](#flycheck-integration)
 - [Configuration](#configuration)
     - [Analysis extension](#analysis-extension)
@@ -169,6 +170,27 @@ and use the `cask link` feature to use the code from the clone.
 2. Add `(depends-on "elsa")` to `Cask` file of your project.
 3. Run `cask link elsa <path-to-elsa-repo>`.
 4. `cask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
+
+## Eask
+
+### [RECOMMENDED] Using packaged version
+
+This method uses [Eask](https://github.com/emacs-eask/cli) and installs
+Elsa from [MELPA](http://melpa.org/#/).
+
+1. Add `(depends-on "elsa")` to `Eask` file of your project.
+2. Run `eask install-deps`.
+3. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
+
+### Using development version
+
+To use the development version of Elsa, you can clone the repository
+and use the `eask link` feature to use the code from the clone.
+
+1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
+2. Add `(depends-on "elsa")` to `Eask` file of your project.
+3. Run `eask link elsa <path-to-elsa-repo>`.
+4. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
 ## Flycheck integration
 
