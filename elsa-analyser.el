@@ -104,9 +104,16 @@ The BINDING should have one of the following forms:
    (t nil)))
 
 (defun elsa--analyse:let (form scope state)
-  (let ((new-vars nil)
-        (bindings (elsa-form-sequence (elsa-cadr form)))
-        (body (cddr (oref form sequence))))
+  (let* ((new-vars nil)
+         (bindings-maybe (elsa-cadr form))
+         (bindings
+          ;; If the binding list argument to let is not a list, we are
+          ;; probably dealing with some pcase macro or another special
+          ;; use-case.  So we simply skip the binding.  It can also be
+          ;; empty (that is nil).
+          (when (elsa-form-sequence-p bindings-maybe)
+            (elsa-form-sequence bindings-maybe)))
+         (body (cddr (oref form sequence))))
     ;; TODO: move this to extension?
     (-each bindings
       (lambda (binding)
@@ -119,9 +126,16 @@ The BINDING should have one of the following forms:
     (-each new-vars (lambda (v) (elsa-scope-remove-var scope v)))))
 
 (defun elsa--analyse:let* (form scope state)
-  (let ((new-vars nil)
-        (bindings (oref (cadr (oref form sequence)) sequence))
-        (body (cddr (oref form sequence))))
+  (let* ((new-vars nil)
+         (bindings-maybe (elsa-cadr form))
+         (bindings
+          ;; If the binding list argument to let is not a list, we are
+          ;; probably dealing with some pcase macro or another special
+          ;; use-case.  So we simply skip the binding.  It can also be
+          ;; empty (that is nil).
+          (when (elsa-form-sequence-p bindings-maybe)
+            (elsa-form-sequence bindings-maybe)))
+         (body (cddr (oref form sequence))))
     (-each bindings
       (lambda (binding)
         (let ((variable (elsa--analyse-variable-from-binding binding scope state)))
