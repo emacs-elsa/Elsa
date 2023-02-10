@@ -578,11 +578,14 @@ If no type annotation is provided, find the value type through
                       :type (nth index arg-types))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
-    (elsa--analyse-body body scope state)
+    (when body
+      (elsa--analyse-body body scope state))
     (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-function-type
                      :args arg-types
-                     :return (oref (-last-item body) type)))))
+                     :return (if body
+                                 (oref (-last-item body) type)
+                               (elsa-make-type nil))))))
 
 (defun elsa--analyse:function (form scope state)
   (let* ((arg (elsa-cadr form))
