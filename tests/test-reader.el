@@ -32,7 +32,7 @@
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
         (expect form :to-print-as "(a . b)")))
 
-   (it "should read a simple cons pair with integers"
+    (it "should read a simple cons pair with integers"
       (elsa-test-with-read-form "|(0 . 1)" form
         (expect (elsa-form-improper-list-p form) :to-be-truthy)
         (expect form :to-print-as "(0 . 1)")))
@@ -235,4 +235,8 @@
       (elsa-test-with-read-form "',@foo" form
         (expect (elsa-form-list-p form) :to-be-truthy)
         (expect (elsa-form-list-p (elsa-cadr form)) :to-be-truthy)
-        (expect (oref (elsa-cadr form) quote-type) :to-be '\,@)))))
+        (expect (oref (elsa-cadr form) quote-type) :to-be '\,@)))
+
+    (it "should read a quoted quote without expecting that a quote has one `cadr' param"
+      (elsa-test-with-read-form "(quote (function . foo))" form
+        (expect (elsa-form-list-p form) :to-be-truthy)))))

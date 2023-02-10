@@ -459,7 +459,13 @@ This only makes sense for the sequence forms:
                               (forward-char (length (symbol-name (car form)))))))
                  :name (car form)
                  :end (point)))
-               (-map (lambda (f) (elsa--read-form f state)) (cdr form)))))
+               (-map (lambda (f) (elsa--read-form f state))
+                     ;; make sure to make list here, because we might
+                     ;; be reading a "quoted quote" where the structure
+                     ;; can be for example an alist with key
+                     ;; `function' or `quote' and value anything,
+                     ;; including just a symbol.
+                     (-list (cdr form))))))
     (elsa-form-list
      :quote-type (car form)
      :start start
