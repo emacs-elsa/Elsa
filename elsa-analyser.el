@@ -413,7 +413,7 @@ nullables and the &rest argument into a variadic."
   (-let (((min . max) (elsa--arglist-to-arity args)))
     (if (eq max 'many)
         (-snoc (-repeat min (elsa-make-type mixed))
-               (elsa-make-type &rest mixed))
+               (elsa-make-type (&rest mixed)))
       (-repeat max (elsa-make-type mixed)))))
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
