@@ -15,7 +15,15 @@
         (expect (oref form name) :to-be 'foo)
         (expect (oref form start) :to-be 2)
         (expect (oref form end) :to-be 5)
-        (expect form :to-print-as "foo"))))
+        (expect form :to-print-as "foo")))
+
+    (it "should read a symbol composed of multiple dots"
+      (elsa-test-with-read-form "| ..." form
+        (expect (elsa-form-symbol-p form) :to-be-truthy)
+        (expect (oref form name) :to-be '...)
+        (expect (oref form start) :to-be 2)
+        (expect (oref form end) :to-be 5)
+        (expect form :to-print-as "..."))))
 
   (describe "improper lists"
 

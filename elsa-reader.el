@@ -402,7 +402,7 @@ This only makes sense for the sequence forms:
                      (push head items)
                      (!cdr form)
                      (elsa--skip-whitespace-forward)
-                     (when (looking-at-p "\\.[^[:alnum:]]")
+                     (when (looking-at-p "\\.[^[:alnum:].]")
                        (forward-char 1)
                        (if (consp form)
                            (progn
@@ -429,7 +429,7 @@ This only makes sense for the sequence forms:
             (push (elsa--read-form (car form) state) items)
             (!cdr form)))
           (elsa--skip-whitespace-forward)
-          (when (and form (looking-at-p "\\.[^[:alnum:]]"))
+          (when (and form (looking-at-p "\\.[^[:alnum:].]"))
             (if (elsa--quote-p (car form))
                 (forward-sexp) ;; skip the dot
               (cl-incf depth)
