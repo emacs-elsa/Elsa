@@ -3,3 +3,5 @@
 *.elc
 /.emake
 /emake.mk
+/.eask
+/dist
