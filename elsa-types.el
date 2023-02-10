@@ -56,6 +56,51 @@ This method is used to unpack composite types and perform a
 another, because there is a many-to-many relationship."
   nil)
 
+;; Mixed type is special in that it is always created nullable.  Mixed
+;; can also serve as bool type in Emacs Lisp.
+(defclass elsa-type-mixed (elsa-type) ()
+  :documentation "Type of anything.
+
+Mixed is a special type in a way that it serves as an opt-out
+from type analysis.
+
+Mixed accepts any other type except unbound.  This is
+type-theoretically sound because mixed is the union of all types.
+
+However, mixed is also accepted by any other type.  This is
+unsafe and works as an implicit type-casting.
+
+Typically, if some function returns mixed, such as reading a
+property from a symbol with `get', we can wrap this call in a
+function and provide a more narrow type signature for the return
+type provided we know that the property is always of a certain
+type.
+
+  ;; (set-property :: (function (symbol int) int))
+  (defun set-property (name value)
+    (set name value))
+
+  ;; (get-property :: (function (symbol) int))
+  (defun get-property (name)
+    ;; Even though `get' returns mixed, we know that if we only set it
+    ;; with `set-property' it will always be int and so we can provide
+    ;; more specific return type.
+    (get name value))")
+
+(cl-defmethod elsa-type-describe ((_this elsa-type-mixed))
+  "mixed")
+
+(cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other)
+  ;; Since the specialization on the first argument runs first, the
+  ;; (type form) signature from elsa-reader.el is never invoked.  We
+  ;; will therefore "manually" dispatch, or rather resolve, the second
+  ;; argument from a form to a type here.
+  (when (elsa-form-child-p other)
+    (setq other (elsa-get-type other)))
+  (unless (elsa-type-child-p other)
+    (error "Other must be `elsa-type-child-p'"))
+  (not (eq (eieio-object-class other) 'elsa-type-unbound)))
+
 (defun elsa-type-assignable-p (this other)
   "Check if THIS accepts OTHER.
 
@@ -353,51 +398,6 @@ type and none of the negative types.")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-bool))
   "bool")
-
-;; Mixed type is special in that it is always created nullable.  Mixed
-;; can also serve as bool type in Emacs Lisp.
-(defclass elsa-type-mixed (elsa-type) ()
-  :documentation "Type of anything.
-
-Mixed is a special type in a way that it serves as an opt-out
-from type analysis.
-
-Mixed accepts any other type except unbound.  This is
-type-theoretically sound because mixed is the union of all types.
-
-However, mixed is also accepted by any other type.  This is
-unsafe and works as an implicit type-casting.
-
-Typically, if some function returns mixed, such as reading a
-property from a symbol with `get', we can wrap this call in a
-function and provide a more narrow type signature for the return
-type provided we know that the property is always of a certain
-type.
-
-  ;; (set-property :: (function (symbol int) int))
-  (defun set-property (name value)
-    (set name value))
-
-  ;; (get-property :: (function (symbol) int))
-  (defun get-property (name)
-    ;; Even though `get' returns mixed, we know that if we only set it
-    ;; with `set-property' it will always be int and so we can provide
-    ;; more specific return type.
-    (get name value))")
-
-(cl-defmethod elsa-type-describe ((_this elsa-type-mixed))
-  "mixed")
-
-(cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other)
-  ;; Since the specialization on the first argument runs first, the
-  ;; (type form) signature from elsa-reader.el is never invoked.  We
-  ;; will therefore "manually" dispatch, or rather resolve, the second
-  ;; argument from a form to a type here.
-  (when (elsa-form-child-p other)
-    (setq other (elsa-get-type other)))
-  (unless (elsa-type-child-p other)
-    (error "Other must be `elsa-type-child-p'"))
-  (not (eq (eieio-object-class other) 'elsa-type-unbound)))
 
 (defclass elsa-type-sequence (elsa-type) ())
 
