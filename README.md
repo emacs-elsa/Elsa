@@ -22,7 +22,7 @@ up before you even try to run the code.
     - [makem.sh](#makemsh)
     - [Cask](#cask)
     - [Eask](#eask)
-    - [Flycheck integration](#flycheck-integration)
+    - [Flycheck/Flymake integration](#flycheckflymake-integration)
 - [Configuration](#configuration)
     - [Analysis extension](#analysis-extension)
     - [Rulesets](#rulesets)
@@ -192,11 +192,14 @@ and use the `eask link` feature to use the code from the clone.
 3. Run `eask link elsa <path-to-elsa-repo>`.
 4. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
-## Flycheck integration
+## Flycheck/Flymake integration
 
 If you use [flycheck](https://github.com/flycheck/flycheck) you can
 use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa)
 package which integrates Elsa with Flycheck.
+
+For [flymake](https://www.gnu.org/software/emacs/manual/html_node/emacs/Flymake.html)
+, you can use [flymake-elsa](https://github.com/flymake/flymake-elsa).
 
 # Configuration
 
