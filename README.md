@@ -114,6 +114,12 @@ Everything you see here actually works, this is not just for show!
 
 ![](./images/type-inference-3.png)
 
+### Understand type narrowing from type guards and predicates
+
+![](./images/useless-narrowing-1.png)
+
+![](./images/useless-narrowing-2.png)
+
 ## Understand functional overloads
 
 `downcase` can take a string and return a string or take an int and
