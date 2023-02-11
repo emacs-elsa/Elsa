@@ -23,9 +23,10 @@
 (defmacro elsa-test-with-analysed-form (initial form-var &rest body)
   (declare (indent 2))
   (let ((state (or (plist-get body :state-var) (make-symbol "state")))
-        (errors (or (plist-get body :errors-var) (make-symbol "errors"))))
+        (errors (or (plist-get body :errors-var) (make-symbol "errors")))
+        (state-value (or (plist-get body :state) '(elsa-state)) ))
     `(elsa-test-with-buffer ,initial
-       (let* ((,state (elsa-state))
+       (let* ((,state ,state-value)
               (,form-var (elsa-read-form ,state)))
          (elsa--analyse-form ,form-var (oref ,state scope) ,state)
          (let ((,errors (oref ,state errors)))
