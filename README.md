@@ -132,8 +132,27 @@ didn't match.
 
 # How do I run it
 
-Elsa can be run with [makem.sh](https://github.com/alphapapa/makem.sh)
-or with [Cask](https://github.com/cask/cask).
+Elsa can be run with [Eask][Eask], [makem.sh][makem] or [Cask][Cask].
+
+## Eask
+
+### [RECOMMENDED] Using packaged version
+
+This method uses [Eask][Eask] and installs Elsa from [MELPA][MELPA].
+
+1. Add `(depends-on "elsa")` to `Eask` file of your project.
+2. Run `eask install-deps`.
+3. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
+
+### Using development version
+
+To use the development version of Elsa, you can clone the repository
+and use the `eask link` feature to use the code from the clone.
+
+1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
+2. Add `(depends-on "elsa")` to `Eask` file of your project.
+3. Run `eask link elsa <path-to-elsa-repo>`.
+4. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
 ## makem.sh
 
@@ -154,8 +173,7 @@ See `makem.sh`'s documentation for more information.
 
 ### [RECOMMENDED] Using packaged version
 
-This method uses [Cask](https://github.com/cask/cask) and installs
-Elsa from [MELPA](http://melpa.org/#/).
+This method uses [Cask][Cask] and installs Elsa from [MELPA][MELPA].
 
 1. Add `(depends-on "elsa")` to `Cask` file of your project.
 2. Run `cask install`.
@@ -171,35 +189,15 @@ and use the `cask link` feature to use the code from the clone.
 3. Run `cask link elsa <path-to-elsa-repo>`.
 4. `cask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
-## Eask
-
-### [RECOMMENDED] Using packaged version
-
-This method uses [Eask](https://github.com/emacs-eask/cli) and installs
-Elsa from [MELPA](http://melpa.org/#/).
-
-1. Add `(depends-on "elsa")` to `Eask` file of your project.
-2. Run `eask install-deps`.
-3. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
-
-### Using development version
-
-To use the development version of Elsa, you can clone the repository
-and use the `eask link` feature to use the code from the clone.
-
-1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
-2. Add `(depends-on "elsa")` to `Eask` file of your project.
-3. Run `eask link elsa <path-to-elsa-repo>`.
-4. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
-
 ## Flycheck/Flymake integration
 
 If you use [flycheck](https://github.com/flycheck/flycheck) you can
 use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa)
 package which integrates Elsa with Flycheck.
 
-For [flymake](https://www.gnu.org/software/emacs/manual/html_node/emacs/Flymake.html)
-, you can use [flymake-elsa](https://github.com/flymake/flymake-elsa).
+For
+[flymake](https://www.gnu.org/software/emacs/manual/html_node/emacs/Flymake.html),
+you can use [flymake-elsa](https://github.com/flymake/flymake-elsa).
 
 # Configuration
 
@@ -310,13 +308,18 @@ to set up some additional font-locking for Elsa types.
 # Acknowledgments
 
 The biggest inspiration has been the
-[PHPStan][https://github.com/phpstan/phpstan] project, which provided
+[PHPStan](https://github.com/phpstan/phpstan) project, which provided
 me the initial impetus to start this project.  I have went through
 their sources many times finding inspiration and picking out features.
 
 The second inspiration is
-[TypeScript][https://www.typescriptlang.org/], which turned a rather
+[TypeScript](https://www.typescriptlang.org/), which turned a rather
 uninteresting language into a powerhouse of the (not only) web.
 
 I borrow heavily from both of these projects and extend my gratitude
 and admiration.
+
+[Cask]: https://github.com/cask/cask
+[Eask]: https://github.com/emacs-eask/cli
+[makem]: https://github.com/alphapapa/makem.sh
+[MELPA]: https://melpa.org
