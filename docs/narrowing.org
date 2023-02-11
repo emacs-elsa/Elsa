@@ -11,8 +11,14 @@ The general type narrowing analysis works as follows:
    branch, we can use the diff type (anything except the narrowed
    type).
 
-Narrowing can be set on a function statically by setting
-=elsa-narrow-types= on the function symbol as a positional list
-(i.e. type after narrowing of nth input variable) or dynamically
-during analysis by setting the form's =narrow-types= to a list of
-=elsa-variable= items.
+Narrowing can be set on a function statically by using a type
+predicate (guard) on the return type.  Only unary functions returning
+a boolean can be type predicates.  To mark a function as type
+predicate, use the return type =(is TYPE)=, for example:
+
+#+begin_src elisp
+(put 'stringp 'elsa-type (elsa-make-type (function (mixed) (is string))))
+#+end_src
+
+Narrowing can also be set dynamically during analysis by setting the
+form's =narrow-types= to a list of =elsa-variable= items (see step 2).

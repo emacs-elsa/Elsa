@@ -3,9 +3,12 @@
 (provide 'elsa-functions)
 
 ;; (elsa-function-get-narrow-types :: (function (symbol) (list mixed)))
-(defun elsa-function-get-narrow-types (name)
+(defun elsa-function-get-narrow-type (name)
   "Get position narrow types of function NAME."
-  (get name 'elsa-narrow-types))
+  (let* ((type (elsa-function-get-type name))
+         (return-type (elsa-type-get-return type)))
+    (when (elsa-type-is-type-predicate-p return-type)
+      (oref return-type predicates))))
 
 ;; (elsa-function-get-type :: (function (symbol) mixed))
 (defun elsa-function-get-type (name)

@@ -5,6 +5,7 @@
 (require 'elsa-error)
 (require 'elsa-types)
 (require 'elsa-type-helpers)
+(require 'elsa-type-algebra)
 (require 'elsa-english)
 (require 'elsa-state)
 (require 'elsa-scope)
@@ -717,7 +718,7 @@ SCOPE and STATE are the scope and state objects."
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((name (elsa-get-name head))
          (type (elsa-get-type head))
-         (narrow-types (get name 'elsa-narrow-types)))
+         (narrow-type (elsa-function-get-narrow-type name)))
     (-each (-zip args spec)
       (-lambda ((arg . analysep))
         (when analysep
@@ -835,15 +836,16 @@ SCOPE and STATE are the scope and state objects."
           (oset form type (elsa-type-get-return type)))))
 
     ;; compute narrowed types of variables in this function if possible
-    (when narrow-types
-      (let ((form-narrow-types nil))
-        (-each-indexed narrow-types
-          (lambda (index narrow-type)
-            (let ((arg (nth index args)))
-              (-when-let (varname (elsa--analyse-arg-variable-p arg))
-                (push (elsa-variable :name varname :type narrow-type)
-                      form-narrow-types)))))
-        (oset form narrow-types form-narrow-types)))))
+    (when narrow-type
+      (-when-let (varname (elsa--analyse-arg-variable-p (car args)))
+        (oset form narrow-types (list (elsa-variable :name varname :type narrow-type)))
+        (let* ((arg-type (oref (car args) type))
+               (could-accept (elsa-type-could-accept narrow-type arg-type)))
+          (cond
+           ((trinary-true-p could-accept)
+            (oset form type (elsa-type-t)))
+           ((trinary-false-p could-accept)
+            (oset form type (elsa-type-nil)))))))))
 
 ;; (elsa--analyse-macro :: (function (mixed (or bool (or (list bool))) mixed mixed) mixed))
 (defun elsa--analyse-macro (form spec scope state)

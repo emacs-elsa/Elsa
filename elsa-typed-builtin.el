@@ -6,22 +6,14 @@
 (put 'eq 'elsa-type (elsa-make-type (function (mixed mixed) bool)))
 (put 'null 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'type-of 'elsa-type (elsa-make-type (function (mixed) symbol)))
-(progn
-  (put 'consp 'elsa-type (elsa-make-type (function (mixed) bool)))
-  (put 'consp 'elsa-narrow-types (list (elsa-make-type (cons mixed mixed)))))
+(put 'consp 'elsa-type (elsa-make-type (function (mixed) (is (cons mixed mixed)))))
 (put 'atom 'elsa-type (elsa-make-type (function (mixed) bool)))
-(progn
-  (put 'listp 'elsa-type (elsa-make-type (function (mixed) bool)))
-  (put 'listp 'elsa-narrow-types (list (elsa-make-type (list mixed)))))
+(put 'listp 'elsa-type (elsa-make-type (function (mixed) (is (list mixed)))))
 (put 'nlistp 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'symbolp 'elsa-type (elsa-make-type (function (mixed) bool)))
-(progn
-  (put 'keywordp 'elsa-type (elsa-make-type (function (mixed) bool)))
-  (put 'keywordp 'elsa-narrow-types (list (elsa-make-type keyword))))
+(put 'keywordp 'elsa-type (elsa-make-type (function (mixed) (is keyword))))
 (put 'vectorp 'elsa-type (elsa-make-type (function (mixed) bool)))
-(progn
-  (put 'stringp 'elsa-type (elsa-make-type (function (mixed) bool)))
-  (put 'stringp 'elsa-narrow-types (list (elsa-make-type string))))
+(put 'stringp 'elsa-type (elsa-make-type (function (mixed) (is string))))
 (put 'multibyte-string-p 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'char-table-p 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'vector-or-char-table-p 'elsa-type (elsa-make-type (function (mixed) bool)))
@@ -34,9 +26,7 @@
 (put 'subrp 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'byte-code-function-p 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'char-or-string-p 'elsa-type (elsa-make-type (function (mixed) bool)))
-(progn
-  (put 'integerp 'elsa-type (elsa-make-type (function (mixed) bool)))
-  (put 'integerp 'elsa-narrow-types (list (elsa-make-type int))))
+(put 'integerp 'elsa-type (elsa-make-type (function (mixed) (is int))))
 (put 'integer-or-marker-p 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'natnump 'elsa-type (elsa-make-type (function (mixed) bool)))
 (put 'numberp 'elsa-type (elsa-make-type (function (mixed) bool)))

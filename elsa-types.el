@@ -404,7 +404,14 @@ type and none of the negative types.")
 (cl-defmethod elsa-type-describe ((_this elsa-type-symbol))
   "symbol")
 
-(defclass elsa-type-bool (elsa-type elsa-type-symbol) ())
+(defclass elsa-type-bool (elsa-type elsa-type-symbol)
+  ((predicates
+    :initarg :predicates
+    :documentation "Type to which the function's argument will be narrowed.
+
+Any time a function is called with some variable, Elsa will narrow
+that variable to this specific type if the original type is
+compatible.")))
 
 (cl-defmethod elsa-type-accept ((_this elsa-type-bool) other)
   (or (elsa-type-bool-p other)
@@ -413,8 +420,18 @@ type and none of the negative types.")
         :types (list (elsa-type-t) (elsa-type-nil)))
        other)))
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-bool))
-  "bool")
+(cl-defmethod elsa-type-describe ((this elsa-type-bool))
+  (if (slot-boundp this 'predicates)
+      (format "(is %s)" (elsa-type-describe (oref this predicates)))
+    "bool"))
+
+(defun elsa-type-is-type-predicate-p (this)
+  "Return non-nil if THIS is a type predicate.
+
+A type predicate is always of type bool and additionally narrows
+the type of its argument to the predicated type."
+  (and (elsa-type-bool-p this)
+       (slot-boundp this 'predicates)))
 
 (defclass elsa-type-sequence (elsa-type) ())
 
