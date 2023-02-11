@@ -43,7 +43,7 @@ modifies their behaviour.")
 
 This means OTHER is assignable to THIS.
 
-This method only performs sound analysis.  To account for the
+This method only performs soundness analysis.  To account for the
 special handling of `elsa-type-mixed', use
 `elsa-type-assignable-p'.")
 
