@@ -207,8 +207,8 @@ Regular type normalizes to itself."
 
 A readonly of readonly can be squashed to just readonly."
   (if (elsa-readonly-type-p (oref this type))
-      (oref this type)
-    this))
+      (elsa-type-normalize (oref this type))
+    (elsa-readonly-type :type (elsa-type-normalize (oref this type)))))
 
 (cl-defmethod elsa-type-normalize ((this elsa-sum-type))
   "Normalize a sum type."
