@@ -432,6 +432,16 @@ nullables and the &rest argument into a variadic."
       (-repeat max (elsa-make-type mixed)))))
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
+  "Analyse function or macro definition.
+
+A definition is a form like `defun' or `cl-defun' or a `lambda'
+form.
+
+This function tries to infer and validate the return type and the
+argument types.
+
+This function does not perform the call-site analysis, that is
+handled by `elsa--analyse-function-like-invocation'."
   (let* (;; TODO: there should be an api for `(get name
          ;; 'elsa-type)'... probably on `scope', but for now scope is
          ;; separate for each processed file which is not great.
