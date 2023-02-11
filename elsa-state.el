@@ -32,6 +32,7 @@
 
 ;; TODO: take defvar directly? For consistency
 (cl-defmethod elsa-state-add-defvar ((this elsa-state) name type)
+  (put name 'elsa-type-var type)
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar :name name :type type) defvars)))
 (declare-function elsa-defvar "elsa" (&rest slots))
