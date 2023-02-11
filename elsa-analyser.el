@@ -632,13 +632,15 @@ If no type annotation is provided, find the value type through
         (allowed-codes "[abBcCdDefFGikKmMnNpPrsSUvxXzZ]")
         (case-fold-search nil))
     (with-temp-buffer
-      (save-excursion (insert str))
+      (insert str)
+      (goto-char (point-min))
       (skip-chars-forward "@^*")
       (unless (eolp)
         (insert "\n")
         (backward-char 1)
         (while (search-forward "\n" nil t)
-          (unless (looking-at-p allowed-codes)
+          (unless (or (looking-at-p allowed-codes)
+                      (looking-at-p "^$"))
             (elsa-state-add-message state
               (elsa-make-error
                   arg

@@ -46,4 +46,11 @@
   :expect-match-phrase "Expected %A to print as %B, was %a."
   :expect-mismatch-phrase "Expected %A not to print as %B, was %a")
 
+(defun elsa-test--match-error-message (err pattern)
+  (string-match-p pattern (oref err message)))
+
+(buttercup-define-matcher-for-binary-function :message-to-match elsa-test--match-error-message
+  :expect-match-phrase "Expected error message of %A to match pattern %B, was %a."
+  :expect-mismatch-phrase "Expected error message of %A not to match pattern %B, was %a")
+
 (provide 'elsa-test-helpers)
