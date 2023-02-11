@@ -31,7 +31,6 @@
 (require 'trinary)
 
 (require 'elsa-variable)
-(require 'elsa-reader)
 
 (require 'subr-x)
 
@@ -158,10 +157,6 @@ do that."
   "Remove VARIABLE from current scope."
   (--each variables (elsa-scope-remove-var this it)))
 
-(cl-defmethod elsa-scope-remove-var ((this elsa-scope) (form elsa-form-symbol))
-  "Remove VARIABLE from current scope."
-  (elsa-scope--remove-var this (elsa-get-name form)))
-
 (defun elsa-scope--get-var (scope var-name)
   (let* ((vars (oref scope vars))
          (var-stack (gethash var-name vars)))
@@ -179,10 +174,6 @@ do that."
 (cl-defmethod elsa-scope-get-var ((this elsa-scope) (var elsa-variable))
   "Get binding of VAR in THIS scope."
   (elsa-scope--get-var this (oref var name)))
-
-(cl-defmethod elsa-scope-get-var ((this elsa-scope) (form elsa-form-symbol))
-  "Get binding of FORM in THIS scope."
-  (elsa-scope--get-var this (elsa-get-name form)))
 
 (cl-defmethod elsa-scope-assign-var ((scope elsa-scope) (var elsa-variable))
   (let* ((vars (oref scope vars))
@@ -207,9 +198,6 @@ do that."
                                         :type (elsa-get-type b))))
                                  scope-var var)))
       (puthash name (cons (cons 'narrow-by-return narrowed-var) var-stack) vars))))
-
-(cl-defmethod elsa-scope-narrow-var ((scope elsa-scope) (form elsa-form) &optional updater)
-  (elsa-scope-narrow-var scope (oref form narrow-types) updater))
 
 (cl-defmethod elsa-scope-narrow-var ((scope elsa-scope) (var list) &optional updater)
   (--each var (elsa-scope-narrow-var scope it updater)))

@@ -8,6 +8,7 @@
 (require 'trinary)
 
 (require 'elsa-error)
+(require 'elsa-state)
 (require 'elsa-types)
 (require 'elsa-type-helpers)
 
@@ -74,6 +75,9 @@ Nil if FORM is not a quoted symbol."
 ;; (elsa-form-sequence :: (function (mixed) (list mixed)))
 (cl-defgeneric elsa-form-sequence (form)
   "Return the sequence of things contained in FORM.")
+
+(cl-defmethod elsa-scope-narrow-var ((scope elsa-scope) (form elsa-form) &optional updater)
+  (elsa-scope-narrow-var scope (oref form narrow-types) updater))
 
 (cl-defmethod elsa-get-type ((this elsa-form))
   (oref this type))
@@ -173,6 +177,14 @@ This only makes sense for the sequence forms:
 
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-symbol))
   (eq (elsa-get-name this) 'nil))
+
+(cl-defmethod elsa-scope-remove-var ((this elsa-scope) (form elsa-form-symbol))
+  "Remove VARIABLE from current scope."
+  (elsa-scope--remove-var this (elsa-get-name form)))
+
+(cl-defmethod elsa-scope-get-var ((this elsa-scope) (form elsa-form-symbol))
+  "Get binding of FORM in THIS scope."
+  (elsa-scope--get-var this (elsa-get-name form)))
 
 (defsubst elsa--read-symbol (form)
   (elsa--skip-whitespace-forward)
