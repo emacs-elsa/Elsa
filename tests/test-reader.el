@@ -156,6 +156,13 @@
           (expect (elsa-form-print form) :to-equal "(foo quote quote (bar baz))")))))
 
 
+  (describe "functions"
+
+    (it "should read byte-compiled function"
+      (elsa-test-with-read-form "#[(a) \"\\300\\207\" [nil] 1]" form
+        (expect (elsa-form-function-p form) :to-be-truthy)
+        (expect (elsa-form-print form) :to-equal "#[(a) \"\\300\\207\" [nil] 1]"))))
+
   (describe "quotes"
 
     (it "should read a quoted symbol"

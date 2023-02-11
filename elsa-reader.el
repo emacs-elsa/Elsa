@@ -117,7 +117,15 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-type-is-non-nil ((condition elsa-form))
   (elsa-type-is-non-nil (oref condition type)))
 
-(cl-defmethod elsa-form-print ((_this elsa-form)) "")
+(cl-defgeneric elsa-form-print ((this elsa-form))
+  "Print THIS form in a way that can be read back in.
+
+This function does not prettyprint.
+
+Each class should implement more efficient print method if
+possible since format has some overhead parsing the specification
+and so on."
+  (format "%s" this))
 
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
@@ -438,6 +446,20 @@ This only makes sense for the sequence forms:
         (nreverse items))
       :end (progn (up-list) (point)))))
 
+(defclass elsa-form-function (elsa-form)
+  ((function :type function :initarg :function)))
+
+(cl-defmethod elsa-form-print ((this elsa-form-function))
+  (format "%S" (oref this function)))
+
+(defun elsa--read-function (form state)
+  (elsa--skip-whitespace-forward)
+  (elsa-form-function
+   :type (elsa-make-type (function (&rest mixed) mixed))
+   :start (point)
+   :function form
+   :end (progn (forward-sexp) (point))))
+
 (defun elsa--read-quote (form state)
   (elsa--skip-whitespace-forward)
   (let* ((expanded-form nil)
@@ -536,16 +558,8 @@ and produces an object of type `elsa-form' which serves as input
 for the analysis."
   (let ((reader-form
          (cond
-          ((floatp form) (elsa--read-float form))
-          ((integerp form) (elsa--read-integer form))
           ((keywordp form) (elsa--read-keyword form))
           ((symbolp form) (elsa--read-symbol form))
-          ((vectorp form)
-           (let ((vector-form (elsa--read-vector form state)))
-             (elsa-form-foreach vector-form
-               (lambda (f) (oset f parent vector-form)))
-             vector-form))
-          ((stringp form) (elsa--read-string form))
           ((consp form)
            ;; special care needs to be taken about the "reader macros" '`,
            (let ((cons-form (cond
@@ -555,6 +569,15 @@ for the analysis."
              (elsa-form-foreach cons-form
                (lambda (f) (oset f parent cons-form)))
              cons-form))
+          ((integerp form) (elsa--read-integer form))
+          ((floatp form) (elsa--read-float form))
+          ((stringp form) (elsa--read-string form))
+          ((vectorp form)
+           (let ((vector-form (elsa--read-vector form state)))
+             (elsa-form-foreach vector-form
+               (lambda (f) (oset f parent vector-form)))
+             vector-form))
+          ((functionp form) (elsa--read-function form state))
           (t (error "Invalid form")))))
     (elsa--set-line-and-column reader-form)
     ;; check if there is a comment atached to this form
