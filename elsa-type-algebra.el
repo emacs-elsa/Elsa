@@ -3,6 +3,11 @@
 (require 'eieio)
 (require 'elsa-types)
 
+(defconst elsa-type-debug nil)
+
+(defmacro elsa-type-debug (&rest args)
+  (when elsa-type-debug `(message ,@args)))
+
 (cl-defgeneric elsa-type-sum (this other)
   "Return the sum of THIS and OTHER type.
 
@@ -21,6 +26,7 @@ associative."
 
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
   "Basic primitive type sum."
+  (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (cond
    ((or (and (elsa-type-nil-p this) (elsa-type-t-p other))
         (and (elsa-type-t-p this) (elsa-type-nil-p other)))
@@ -38,6 +44,7 @@ associative."
         (elsa-type-sum sum other)))))
 
 (cl-defmethod elsa-type-sum ((this elsa-readonly-type) (other elsa-readonly-type))
+  (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-readonly-type :type (elsa-type-sum (oref this type) (oref other type))))
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
@@ -46,6 +53,7 @@ associative."
 This is only for performance reasons, because we know we are
 combining two unions, we don't have to unpack each argument of
 first union against each of the second."
+  (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    (let ((new-other nil)
          (new-this nil))
@@ -64,6 +72,7 @@ first union against each of the second."
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-type))
   "(A ∪ B) ∪ C = (A ∪ C) ∪ (B ∪ C)"
+  (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    (if (elsa-type-composite-p other)
        (-reduce
@@ -79,6 +88,7 @@ first union against each of the second."
 When B and C are unrelated, the rule simplifies to:
 
   (A \ B) ∪ C = (A ∪ C) \ (B)"
+  (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (let* ((pos (oref this positive))
          (neg (oref this negative)))
     (elsa-type-normalize
@@ -94,6 +104,7 @@ When B and C are unrelated, the rule simplifies to:
 
 (cl-defmethod elsa-type-sum ((this elsa-intersection-type) (other elsa-type))
   "(A ∩ B) ∪ C = (A ∪ C) ∩ (B ∪ C)"
+  (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (cond
    ((-all? #'elsa-function-type-p (oref this types))
     (elsa-sum-type :types (list this other)))
@@ -110,6 +121,7 @@ not accepted by OTHER.")
 
 (cl-defmethod elsa-type-diff ((this elsa-type) other)
   "Any base type without another is the same type, there is no intersection."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (if (elsa-type-accept other this)
       (elsa-type-empty)
     (if (and (elsa-const-type-p other)
@@ -120,6 +132,7 @@ not accepted by OTHER.")
 
 (cl-defmethod elsa-type-diff ((_this elsa-type-mixed) other)
   "Mixed is one with everything, so we need to subtract OTHER from the world."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize (elsa-diff-type :negative (clone other))))
 
 (cl-defmethod elsa-type-diff ((this elsa-type-mixed) (other elsa-diff-type))
@@ -127,6 +140,7 @@ not accepted by OTHER.")
 
 This uses the rule that A \ (A \ B) = A ∩ B where A is
 everything (Mixed)."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (let ((pos (oref other positive))
         (neg (oref other negative)))
     (if (elsa-type-equivalent-p this pos)
@@ -135,6 +149,7 @@ everything (Mixed)."
 
 (cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-number))
   "Numbers are handled in special way, see `elsa-type-int'."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (cond
    ((and (elsa-type-number-p this) (elsa-type-int-p other))
     (elsa-type-float))
@@ -144,14 +159,17 @@ everything (Mixed)."
 
 (cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-t))
   "Bool without T is Nil."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-nil))
 
 (cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-nil))
   "Bool without NIL is T."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-t))
 
 (cl-defmethod elsa-type-diff ((this elsa-type) (other elsa-sum-type))
   "A difference of a type and sum is THIS minus all the summed types."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (let ((new (clone this)))
     (-reduce-from 'elsa-type-diff new (oref other types))))
 
@@ -159,6 +177,7 @@ everything (Mixed)."
 ;; probably become (or int (diff string (const "foo")))
 (cl-defmethod elsa-type-diff ((this elsa-sum-type) (other elsa-type))
   "(A ∪ B) \ C = (A \ C) ∪ (B \ C)."
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    (-reduce
     #'elsa-type-sum
@@ -175,6 +194,7 @@ everything (Mixed)."
 
 (cl-defmethod elsa-type-diff ((this elsa-diff-type) other)
   "This uses the rule that (A \ B) \ C = A \ (B ∪ C)"
+  (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    (elsa-diff-type :positive (clone (oref this positive))
                    :negative (elsa-type-sum (oref this negative) other))))
@@ -187,6 +207,7 @@ THIS and OTHER at the same time.")
 
 (cl-defmethod elsa-type-intersect ((this elsa-type) (other elsa-type))
   "Basic primitive type intersection."
+  (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (cond
    ((elsa-readonly-type-p this)
     (elsa-type-normalize
@@ -212,12 +233,14 @@ because that only implies we are not certain which implementation
 it is, but once determined it collapses to only one possible
 signature.  A function with overloads is always all of the
 possible signatures."
+  (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (if (elsa-type-equivalent-p this other)
       (clone this)
     (elsa-intersection-type :types (list this other))))
 
 (cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-type))
   "(A ∪ B) ∩ C = (A ∩ C) ∪ (B ∩ C)"
+  (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    (-reduce
     #'elsa-type-sum
@@ -228,6 +251,7 @@ possible signatures."
 
 This is not recursively resolved because it leads to infinite
 recursive call between sum and intersect."
+  (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    (elsa-sum-type :types
      (-map (lambda (type) (elsa-type-intersect type other))
@@ -235,6 +259,7 @@ recursive call between sum and intersect."
 
 (cl-defmethod elsa-type-intersect ((this elsa-diff-type) (other elsa-type))
   "(B \ A) ∩ C = (B ∩ C) \ A"
+  (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (let ((pos (oref this positive))
         (neg (oref this negative)))
     (elsa-type-normalize
@@ -242,6 +267,7 @@ recursive call between sum and intersect."
 
 (cl-defmethod elsa-type-intersect ((this elsa-intersection-type) (other elsa-type))
   "(A ∩ B) ∩ C = (A ∩ C) ∩ (B ∩ C)"
+  (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    (-reduce
     #'elsa-type-intersect
@@ -251,6 +277,7 @@ recursive call between sum and intersect."
   "(A ∩ B ∩ ...) ∩ (C ∩ D ∩ ...) = A ∩ B ∩ C ∩ D ∩ ...
 
 Intersection of two intersections in intersection of all types."
+  (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-type-normalize
    ;; TODO: just as with sum, here we need to filter out repeated types.
    (elsa-intersection-type :types (-concat (oref this types) (oref other types)))))
