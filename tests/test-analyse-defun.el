@@ -1,8 +1,7 @@
 ;; -*- lexical-binding: t -*-
+(require 'elsa-test-helpers)
 
 (require 'elsa-analyser)
-
-(require 'elsa-test-helpers)
 
 (describe "Elsa analyser - defun"
 

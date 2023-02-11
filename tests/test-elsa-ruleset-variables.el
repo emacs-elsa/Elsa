@@ -1,11 +1,10 @@
 ;; -*- lexical-binding: t -*-
+(require 'elsa-test-helpers)
 
 (require 'elsa-reader)
 (require 'elsa-types)
 (require 'elsa-extension-builtin)
 (require 'elsa-ruleset)
-
-(require 'elsa-test-helpers)
 
 (describe "Ruleset"
 

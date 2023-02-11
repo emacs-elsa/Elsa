@@ -1,0 +1,46 @@
+name: test
+on: [ push, pull_request ]
+
+env:
+  UNDERCOVER_CONFIG: "(\"elsa.el\" \"elsa-*.el\" (:report-format lcov) (:send-report nil))"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emacs_version:
+          - 27.1
+          - 27.2
+          - 28.1
+          - 28.2
+          - snapshot
+        include:
+          - emacs_version: 'snapshot'
+            allow_failure: true
+    steps:
+    - uses: purcell/setup-emacs@master
+      with:
+        version: ${{ matrix.emacs_version }}
+    - uses: conao3/setup-cask@master
+    - uses: actions/checkout@v2
+    - name: Test
+      run: |
+        cask install
+        cask exec buttercup -L . -L tests
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: emacs-${{ matrix.emacs_version }}
+        parallel: true
+
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        parallel-finished: true

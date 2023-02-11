@@ -84,6 +84,8 @@ Return trinary logic value.")
 
 (defun elsa--make-type (definition)
   (pcase definition
+    (`(edebug-after ,_ ,_ ,form)
+     (elsa--make-type form))
     (`(readonly . ,type)
      (elsa-readonly-type :type (elsa--make-type type)))
     ((or `(const ,value) `(quote ,value))
@@ -137,7 +139,7 @@ Return trinary logic value.")
        (cond
         ((functionp constructor)
          (funcall constructor))
-        (t (error "Unknown type %s" type-name)))))
+        (t (error "Unknown Elsa type %s" type-name)))))
     ((and `,arg (guard (or (keywordp arg)
                            (stringp arg)
                            (integerp arg)

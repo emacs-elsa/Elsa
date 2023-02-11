@@ -1,4 +1,7 @@
-;; (when (require 'undercover nil t)
-;;   (undercover "*.el"))
+;; -*- lexical-binding: t -*-
 
-(provide 'elsa-undercover)
+;; (when (require 'undercover nil t)
+;;   (undercover "elsa.el" "elsa-*.el"
+;;               (:report-format 'coveralls)
+;;               (:report-file "report.json")
+;;               (:send-report t)))

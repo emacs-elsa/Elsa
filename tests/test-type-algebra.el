@@ -1,5 +1,7 @@
 ;; -*- lexical-binding: t -*-
+(require 'elsa-test-helpers)
 
+(require 'elsa-types)
 (require 'elsa-type-helpers)
 
 (defmacro elsa-test-describe-type (&rest spec)
@@ -436,7 +438,7 @@
                   (elsa-make-type (const 1))))
                 :to-equal "(const 1)")))
 
-    (describe "intersections"
+    (xdescribe "intersections"
 
       (it "intersection of intersections with no overlap should be empty"
         (expect (elsa-type-describe

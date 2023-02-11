@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
+(require 'elsa-test-helpers)
 
-(require 'elsa-undercover)
 (require 'elsa-type-helpers)
 
 (defmacro elsa-test-describe-type (&rest spec)

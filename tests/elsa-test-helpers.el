@@ -1,3 +1,6 @@
+;; -*- lexical-binding: t -*-
+(when (require 'undercover nil t) (undercover))
+
 (require 'elsa-type-helpers)
 (require 'buttercup)
 

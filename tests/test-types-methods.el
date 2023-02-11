@@ -1,9 +1,7 @@
 ;; -*- lexical-binding: t -*-
-
-(require 'elsa-undercover)
-(require 'elsa-types)
-
 (require 'elsa-test-helpers)
+
+(require 'elsa-types)
 
 (describe "Elsa Types Methods"
 

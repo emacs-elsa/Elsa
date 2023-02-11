@@ -1,9 +1,8 @@
 ;; -*- lexical-binding: t -*-
+(require 'elsa-test-helpers)
 
 (require 'elsa-analyser)
 (require 'elsa-extension-builtin)
-
-(require 'elsa-test-helpers)
 
 (describe "Elsa analyser - builtin"
 

@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
-
 (require 'elsa-test-helpers)
+
 (require 'elsa-scope)
 
 (defmacro elsa-test-with-scope (scope vars &rest body)

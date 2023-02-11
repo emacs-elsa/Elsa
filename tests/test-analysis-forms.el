@@ -1,8 +1,7 @@
 ;; -*- lexical-binding: t -*-
+(require 'elsa-test-helpers)
 
-(require 'elsa-undercover)
 (require 'elsa)
-
 
 (xdescribe "let form analysis"
 
