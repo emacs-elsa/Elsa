@@ -94,10 +94,13 @@ When B and C are unrelated, the rule simplifies to:
 
 (cl-defmethod elsa-type-sum ((this elsa-intersection-type) (other elsa-type))
   "(A ∩ B) ∪ C = (A ∪ C) ∩ (B ∪ C)"
-  (elsa-type-normalize
-   (-reduce
-    #'elsa-type-intersect
-    (-map (lambda (type) (elsa-type-sum type other)) (oref this types)))))
+  (cond
+   ((-all? #'elsa-function-type-p (oref this types))
+    (elsa-sum-type :types (list this other)))
+   (t (elsa-type-normalize
+       (-reduce
+        #'elsa-type-intersect
+        (-map (lambda (type) (elsa-type-sum type other)) (oref this types)))))))
 
 (cl-defgeneric elsa-type-diff (this other)
   "Return the difference of THIS without OTHER.
@@ -185,6 +188,9 @@ THIS and OTHER at the same time.")
 (cl-defmethod elsa-type-intersect ((this elsa-type) (other elsa-type))
   "Basic primitive type intersection."
   (cond
+   ((elsa-readonly-type-p this)
+    (elsa-type-normalize
+     (elsa-readonly-type :type (elsa-type-intersect (oref this type) other))))
    ((elsa-type-composite-p other)
     (elsa-type-intersect other this))
    ((elsa-type-accept this other)
@@ -206,7 +212,9 @@ because that only implies we are not certain which implementation
 it is, but once determined it collapses to only one possible
 signature.  A function with overloads is always all of the
 possible signatures."
-  (elsa-intersection-type :types (list this other)))
+  (if (elsa-type-equivalent-p this other)
+      (clone this)
+    (elsa-intersection-type :types (list this other))))
 
 (cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-type))
   "(A ∪ B) ∩ C = (A ∩ C) ∪ (B ∩ C)"
@@ -214,6 +222,16 @@ possible signatures."
    (-reduce
     #'elsa-type-sum
     (-map (lambda (type) (elsa-type-intersect type other)) (oref this types)))))
+
+(cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-function-type))
+  "Intersection of sum and function.
+
+This is not recursively resolved because it leads to infinite
+recursive call between sum and intersect."
+  (elsa-type-normalize
+   (elsa-sum-type :types
+     (-map (lambda (type) (elsa-type-intersect type other))
+           (oref this types)))))
 
 (cl-defmethod elsa-type-intersect ((this elsa-diff-type) (other elsa-type))
   "(B \ A) ∩ C = (B ∩ C) \ A"
