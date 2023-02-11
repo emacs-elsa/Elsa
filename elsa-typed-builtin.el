@@ -1,5 +1,6 @@
 (require 'elsa-types)
 (require 'elsa-type-helpers)
+(require 'elsa-type-algebra)
 
 ;; File: data.c
 (put 'eq 'elsa-type (elsa-make-type (function (mixed mixed) bool)))
@@ -109,8 +110,8 @@
 (put 'logxor 'elsa-type (elsa-make-type (function (&rest (or number marker)) int)))
 (put 'ash 'elsa-type (elsa-make-type (function (int int) int)))
 (put 'lsh 'elsa-type (elsa-make-type (function (int int) int)))
-(put '1+ 'elsa-type (elsa-make-type (and (function (int) int) (function ((or number marker)) number))))
-(put '1- 'elsa-type (elsa-make-type (and (function (int) int) (function ((or number marker)) number))))
+(put '1+ 'elsa-type (elsa-make-type (and (function ((or int marker)) int) (function (float) float))))
+(put '1- 'elsa-type (elsa-make-type (and (function ((or int marker)) int) (function (float) float))))
 (put 'lognot 'elsa-type (elsa-make-type (function (int) int)))
 (put 'byteorder 'elsa-type (elsa-make-type int))
 ;; TODO: Implement bool vectors
@@ -584,10 +585,36 @@
 ;; built-in variables
 (put 'command-line-args-left 'elsa-type-var (elsa-make-type (list string)))
 (put 'major-mode 'elsa-type-var (elsa-make-type symbol))
-(put 'system-type 'elsa-type-var (elsa-make-type symbol))
 (put 'last-command-event 'elsa-type-var (elsa-make-type int))
 (put 'load-file-name 'elsa-type-var (elsa-make-type (or string nil)))
 (put 'buffer-file-name 'elsa-type-var (elsa-make-type (or string nil)))
+
+;; File: emacs.c
+(put 'command-line-args 'elsa-tye-var (elsa-make-type (list string)))
+(put 'system-type 'elsa-tye-var (elsa-make-type symbol))
+(put 'system-configuration 'elsa-tye-var (elsa-make-type string))
+(put 'system-configuration-options 'elsa-tye-var (elsa-make-type string))
+(put 'system-configuration-features 'elsa-tye-var (elsa-make-type string))
+(put 'noninteractive 'elsa-tye-var (elsa-make-type mixed))
+(put 'kill-emacs-hook 'elsa-tye-var (elsa-make-type (list symbol)))
+;; (put 'path-separator 'elsa-tye-var (elsa-make-type nil))
+;; (put 'invocation-name 'elsa-tye-var (elsa-make-type nil))
+;; (put 'invocation-directory 'elsa-tye-var (elsa-make-type nil))
+;; (put 'installation-directory 'elsa-tye-var (elsa-make-type nil))
+;; (put 'system-messages-locale 'elsa-tye-var (elsa-make-type nil))
+;; (put 'previous-system-messages-locale 'elsa-tye-var (elsa-make-type nil))
+;; (put 'system-time-locale 'elsa-tye-var (elsa-make-type nil))
+;; (put 'previous-system-time-locale 'elsa-tye-var (elsa-make-type nil))
+;; (put 'before-init-time 'elsa-tye-var (elsa-make-type nil))
+;; (put 'after-init-time 'elsa-tye-var (elsa-make-type nil))
+;; (put 'inhibit-x-resources 'elsa-tye-var (elsa-make-type nil))
+;; (put 'emacs-copyright 'elsa-tye-var (elsa-make-type nil))
+;; (put 'emacs-version 'elsa-tye-var (elsa-make-type nil))
+;; (put 'report-emacs-bug-address 'elsa-tye-var (elsa-make-type nil))
+;; (put 'dynamic-library-alist 'elsa-tye-var (elsa-make-type nil))
+;; these two seem only to be defined in Emacs 26.3, not 28.1
+;; previous-system-messages-locale
+;; previous-system-time-locale
 
 ;; File: callproc.c
 (put 'shell-file-name 'elsa-type-var (elsa-make-type string))
