@@ -30,6 +30,51 @@
         (expect (elsa-type-accept type (elsa-make-type float)) :not :to-be-truthy))))
 
 
+  (describe "elsa-type-could-accept"
+
+    (it "should return true if the types are the same"
+      (expect (trinary-true-p
+               (elsa-type-could-accept
+                (elsa-make-type int)
+                (elsa-make-type int)))
+              :to-be-truthy))
+
+    (it "should return true if this is sum type accepting other"
+      (expect (trinary-true-p
+               (elsa-type-could-accept
+                (elsa-make-type (or string int))
+                (elsa-make-type int)))
+              :to-be-truthy))
+
+    (it "should return true if this is subtype of other"
+      (expect (trinary-true-p
+               (elsa-type-could-accept
+                (elsa-make-type symbol)
+                (elsa-make-type keyword)))
+              :to-be-truthy))
+
+    (it "should return false if this has no overlap with other"
+      (expect (trinary-false-p
+               (elsa-type-could-accept
+                (elsa-make-type string)
+                (elsa-make-type int)))
+              :to-be-truthy))
+
+    (it "should return maybe if this has overlap with other"
+      (expect (trinary-maybe-p
+               (elsa-type-could-accept
+                (elsa-make-type int)
+                (elsa-make-type (or string int))))
+              :to-be-truthy))
+
+    (it "should return maybe if this is supertype of other"
+      (expect (trinary-maybe-p
+               (elsa-type-could-accept
+                (elsa-make-type keyword)
+                (elsa-make-type symbol)))
+              :to-be-truthy)))
+
+
   (describe "Test type hierarchy"
 
 

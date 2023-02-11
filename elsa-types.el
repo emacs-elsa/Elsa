@@ -26,6 +26,7 @@
 
 (require 'eieio)
 
+(require 'trinary)
 (require 'dash)
 
 (defclass elsa-type nil () :abstract t)
@@ -45,6 +46,22 @@ This means OTHER is assignable to THIS.
 This method only performs sound analysis.  To account for the
 special handling of `elsa-type-mixed', use
 `elsa-type-assignable-p'.")
+
+(defun elsa-type-could-accept (this other)
+  "Check if THIS could accept OTHER.
+
+Return a trinary logical value:
+
+- trinary-true if THIS always accepts OTHER,
+- trinary-maybe if THIS can accept OTHER sometimes and can reject
+  sometimes,
+- trinary-false if THIS never accepts OTHER."
+  (cond
+   ((elsa-type-accept this other)
+    (trinary-true))
+   ((elsa-type-accept other this)
+    (trinary-maybe))
+   (t (trinary-false))))
 
 (cl-defgeneric elsa-type-is-accepted-by (this other)
   "Check if THIS is accepted by OTHER.
