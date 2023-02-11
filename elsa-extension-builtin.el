@@ -132,21 +132,6 @@ CONSTANT-FORM is the value to which the variable is narrowed."
                           item-type)))
         (oset form type item-type)))))
 
-;; * predicates
-(defun elsa--analyse:stringp (form scope state)
-  (elsa--analyse-function-call form scope state)
-  (-when-let (arg (elsa-nth 1 form))
-    (oset form type
-          (cond
-           ((elsa-type-accept (elsa-type-string) arg)
-            (elsa-type-t))
-           ;; if the arg-type has string as a component, for
-           ;; example int | string, then it might evaluate
-           ;; sometimes to true and sometimes to false
-           ((elsa-type-accept arg (elsa-type-string))
-            (elsa-make-type bool))
-           (t (elsa-type-nil))))))
-
 ;; * control flow
 (defun elsa--analyse:when (form scope state)
   (let ((condition (elsa-nth 1 form))

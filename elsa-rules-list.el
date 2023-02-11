@@ -5,6 +5,7 @@
 (require 'elsa-check)
 (require 'elsa-scope)
 (require 'elsa-state)
+(require 'elsa-functions)
 
 (defclass elsa-check-if (elsa-check) ())
 
@@ -190,5 +191,42 @@
     (unless (elsa-form-string-p docstring-maybe)
       (elsa-state-add-message state
         (elsa-make-notice (elsa-car form) "Public functions should have a docstring.")))))
+
+(defclass elsa-check-function-call (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-function-call) form scope state)
+  (elsa-form-function-call-p form))
+
+(defclass elsa-check-useless-predicate (elsa-check-function-call) ())
+
+(cl-defmethod elsa-check-check ((_ elsa-check-useless-predicate) form scope state)
+  "Check if the narrowing predicate is useless.
+
+This can happen when the passed in arguent is of a subtype of the
+returned narrowing."
+  (let* ((name (elsa-get-name form))
+         (arg-type (elsa-get-type (elsa-cadr form)))
+         (narrow-type (elsa-function-get-narrow-type name)))
+    (when narrow-type
+      (let ((could-accept (elsa-type-could-accept narrow-type arg-type)))
+        (cond
+         ((trinary-true-p could-accept)
+          (elsa-state-add-message state
+            (elsa-make-warning (elsa-car form)
+              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to true because the argument %S will always be `%s'."
+              name
+              (elsa-type-describe narrow-type)
+              (elsa-type-describe arg-type)
+              (elsa-form-print (elsa-cadr form))
+              (elsa-type-describe narrow-type))))
+         ((trinary-false-p could-accept)
+          (elsa-state-add-message state
+            (elsa-make-warning (elsa-car form)
+              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to false because the argument %S can never be `%s'."
+              name
+              (elsa-type-describe narrow-type)
+              (elsa-type-describe arg-type)
+              (elsa-form-print (elsa-cadr form))
+              (elsa-type-describe narrow-type)))))))))
 
 (provide 'elsa-rules-list)

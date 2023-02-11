@@ -38,12 +38,19 @@
   (add-to-list 'elsa-checks (elsa-check-unbound-variable))
   )
 
+(defclass elsa-ruleset-functions (elsa-ruleset) ())
+
+(cl-defmethod elsa-ruleset-load ((this elsa-ruleset-functions))
+  (add-to-list 'elsa-checks (elsa-check-useless-predicate))
+  )
+
 (defclass elsa-ruleset-default (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-default))
   (elsa-ruleset-load (elsa-ruleset-dead-code))
   (elsa-ruleset-load (elsa-ruleset-style))
   (elsa-ruleset-load (elsa-ruleset-error))
+  (elsa-ruleset-load (elsa-ruleset-functions))
   (elsa-ruleset-load (elsa-ruleset-variables)))
 
 (provide 'elsa-ruleset)
