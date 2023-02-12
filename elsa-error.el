@@ -48,6 +48,9 @@ In general, we recognize three states: error, warning, notice
 (defclass elsa-warning (elsa-message) ())
 (defclass elsa-notice (elsa-message) ())
 
+(cl-defgeneric elsa-message-type ((this elsa-message))
+  "Retrieve human readable description of THSI message type.")
+
 (cl-defmethod elsa-message-type ((_this elsa-message))
   "message")
 
