@@ -209,4 +209,11 @@ CONSTANT-FORM is the value to which the variable is narrowed."
     (elsa--analyse-function-like-invocation
      form t head args scope state)))
 
+(defun elsa--analyse:error (form scope state)
+  "Analyse `error' form.
+
+Since error stops the flow of the program, the form's type is
+empty, because it has no value."
+  (oset form type (elsa-type-empty)))
+
 (provide 'elsa-extension-builtin)
