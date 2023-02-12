@@ -153,3 +153,30 @@ To run locally in the dev repo
 #+BEGIN_SRC sh
 ./bin/elsa -L . -L /home/matus/.emacs.d/projects/Elsa/.cask/25.2/elpa/dash-20180726.513 <file>
 #+END_SRC
+* Built-in type guards
+- [X]   elsa-type-symbol
+- [X]   elsa-type-sequence
+- [X]   elsa-type-string
+- [X]   elsa-type-buffer
+- [X]   elsa-type-frame
+- [X]   elsa-type-number
+- [X]   elsa-type-float
+- [X]   elsa-type-int
+- [X]   elsa-type-marker
+- [X]   elsa-type-keyword
+- [X]   elsa-type-cons
+- [X]   elsa-type-list
+- [X]   elsa-type-vector
+- [X]   elsa-type-char-table
+- [X]   elsa-type-record
+- [X]   elsa-type-window
+- [ ]   elsa-type-terminal
+- [X]   elsa-type-window-configuration
+- [X]   elsa-type-frame-configuration
+- [X]   elsa-type-thread
+- [X]   elsa-type-mutex
+- [X]   elsa-type-condition-variable
+- [ ]   elsa-type-stream
+- [X]   elsa-type-keymap
+- [X]   elsa-type-overlay
+- [X]   elsa-type-font
