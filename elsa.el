@@ -165,7 +165,7 @@ tokens."
   (let* ((state (elsa-state :project-directory (f-parent (buffer-file-name)))))
     (when-let ((form (elsa-read-form state)))
       (elsa-analyse-form state form)
-      form)))
+      (list :form form :state state))))
 
 (defun elsa-load-config ()
   "Load config and register extensions."
