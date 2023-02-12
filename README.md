@@ -157,7 +157,7 @@ and use the `eask link` feature to use the code from the clone.
 
 1. `git clone https://github.com/emacs-elsa/Elsa.git` somewhere to your computer.
 2. Add `(depends-on "elsa")` to `Eask` file of your project.
-3. Run `eask link elsa <path-to-elsa-repo>`.
+3. Run `eask link add elsa <path-to-elsa-repo>`.
 4. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
 ## makem.sh
