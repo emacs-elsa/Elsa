@@ -82,20 +82,17 @@
       (expect (elsa-instance-of (elsa-make-type int) (elsa-make-type int))))
 
     (it "should recognize proper subtypes"
-      (expect (elsa-instance-of (elsa-make-type int) 'number)))
+      (expect (elsa-instance-of (elsa-make-type float) (elsa-make-type number))))
 
+    (it "should recognize recursive subtypes"
+      (expect (elsa-instance-of (elsa-make-type int) (elsa-make-type number))))
 
-    (describe "Work with instances or types"
+    (it "should reject superclass being instace of subclass"
+      (expect (elsa-instance-of (elsa-make-type number) (elsa-make-type int)) :not :to-be-truthy))
 
+    (it "should reject unrelated classes"
+      (expect (elsa-instance-of (elsa-make-type number) (elsa-make-type vector)) :not :to-be-truthy)))
 
-      (it "should compare two types directly"
-        (expect (elsa-instance-of 'int 'number)))
-
-      (it "should compare an instance and a type"
-        (expect (elsa-instance-of (elsa-make-type int) 'number)))
-
-      (it "should compare two instances"
-        (expect (elsa-instance-of (elsa-make-type int) (elsa-make-type int))))))
 
   (describe "primitive type"
 

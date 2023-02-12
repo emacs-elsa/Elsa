@@ -177,11 +177,7 @@ This means that the domain of the type is empty."
 ;; TODO: what is the relationship of `a' and `a?'
 (defun elsa-instance-of (this other)
   "Non-nil if THIS is instance of OTHER."
-  (let ((this-type
-         (eieio-object-class (if (symbolp this) (elsa--make-type this) this)))
-        (other-type
-         (eieio-object-class (if (symbolp other) (elsa--make-type other) other))))
-    (not (null (memq other-type (elsa--eieio-class-parents-recursive this-type))))))
+  (object-of-class-p this (eieio-object-class other)))
 
 (defun elsa-type-nullable-p (type)
   "Test if TYPE is nullable (i.e. accepts nil)."

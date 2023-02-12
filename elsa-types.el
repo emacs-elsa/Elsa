@@ -463,40 +463,72 @@ the type of its argument to the predicated type."
 (cl-defmethod elsa-type-describe ((_this elsa-type-frame))
   "frame")
 
-(defclass elsa-type-number (elsa-type) ())
+(defclass elsa-type-number (elsa-type)
+  ()
+  :documentation "Type of any number.
+
+Numbers can be integers or floats.  Even though mathematically
+integers are a subset of floats, Elsa considers them two separate
+non-overlapping sets.
+
+The type number is then a set-theoretic union of these.
+
+For convenience, float type accepts int type because that is how Emacs
+operates.  This breaks the assumption that acceptance corresponds to
+the set-theoretic inclusion of values, because int values are not part
+of the float type domain.
+
+The accept rules are as follows:
+
+       number  float  int
+number   ✓       ✓     ✓
+float    x       ✓     ✓
+int      x       x     ✓
+
+The type sum (row + column) resolution is as follows:
+
+         number   float    int
+number   number   number  number
+float    number    float  number
+int      number   number   int
+
+
+The type intersection (and row column) resolution is as follows:
+
+         number   float    int
+number   number   float    int
+float    float    float   empty
+int       int     empty    int
+
+
+The type diff (row - column) resolution is as follows:
+
+        number  float  int
+number  empty    int  float
+float   empty   empty float
+int     empty    int  empty
+
+")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-number))
   "number")
 
-(defclass elsa-type-float (elsa-type-number) ())
+(defclass elsa-type-float (elsa-type-number)
+  ()
+  :documentation "Floating point number.
+
+See `elsa-type-number' for explanation of relationship of types int,
+float and number.")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-float))
   "float")
 
-(defclass elsa-type-int (elsa-type-number elsa-type-float)
+(defclass elsa-type-int (elsa-type-float)
   ()
-  :documentation "Type of whole numbers.
+  :documentation "Integer number.
 
-Int is a subtype of both number and float, but there are some
-special rules involved.
-
-Number as a set is a set of numbers represented either as
-floating point number or integers.  Therefore, we can subtract
-integers from numbers to get floats, even though 1 and 1.0 are
-numerically equivalent, they are not type-equivalent, as can be
-seen with (equal 1 1.0).
-
-However, for pragmatic reasons, we set int as a subtype of float,
-so that integer can be passed anywhere a float can be passed.
-These two notions cause conflict, because:
-
-  number - float = int
-  number - int   = float
-
-but
-
-  float + int    = float (not number)
-  float - int    = float")
+See `elsa-type-number' for explanation of relationship of types int,
+float and number.")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-int))
   "int")

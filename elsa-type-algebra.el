@@ -47,6 +47,16 @@ associative."
   (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (elsa-readonly-type :type (elsa-type-sum (oref this type) (oref other type))))
 
+(cl-defmethod elsa-type-sum ((this elsa-type-number) (other elsa-type-number))
+  "Numbers are handled in special way, see `elsa-type-number'"
+  (elsa-type-debug "(elsa-type-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
+  (cond
+   ((and (elsa-type-float-p this) (elsa-type-int-p other))
+    (elsa-type-number))
+   ((and (elsa-type-int-p this) (elsa-type-float-p other))
+    (elsa-type-number))
+   (t (cl-call-next-method this other))))
+
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
   "(A ∪ B ∪ ...) ∪ (C ∪ D ∪ ...) = A ∪ B ∪ C ∪ D ∪ ...
 
@@ -148,12 +158,14 @@ everything (Mixed)."
       (elsa-diff-type :negative (clone other)))))
 
 (cl-defmethod elsa-type-diff ((this elsa-type-number) (other elsa-type-number))
-  "Numbers are handled in special way, see `elsa-type-int'."
+  "Numbers are handled in special way, see `elsa-type-number'."
   (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
   (cond
    ((and (elsa-type-number-p this) (elsa-type-int-p other))
     (elsa-type-float))
    ((and (elsa-type-number-p this) (elsa-type-float-p other))
+    (elsa-type-int))
+   ((and (elsa-type-int-p this) (elsa-type-float-p other))
     (elsa-type-int))
    (t (cl-call-next-method this other))))
 
@@ -237,6 +249,16 @@ possible signatures."
   (if (elsa-type-equivalent-p this other)
       (clone this)
     (elsa-intersection-type :types (list this other))))
+
+(cl-defmethod elsa-type-intersect ((this elsa-type-number) (other elsa-type-number))
+  "Float and ints intersect to empty, other types use usual definition."
+  (elsa-type-debug "(elsa-type-intersect %s %s)" (elsa-type-describe this) (elsa-type-describe other))
+  (cond
+   ((and (elsa-type-float-p this) (elsa-type-int-p other))
+    (elsa-type-empty))
+   ((and (elsa-type-int-p this) (elsa-type-float-p other))
+    (elsa-type-empty))
+   (t (cl-call-next-method this other))))
 
 (cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-type))
   "(A ∪ B) ∩ C = (A ∩ C) ∪ (B ∩ C)"
