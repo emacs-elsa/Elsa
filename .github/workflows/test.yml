@@ -1,14 +1,25 @@
 name: test
-on: [ push, pull_request ]
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   UNDERCOVER_CONFIG: "(\"elsa.el\" \"elsa-*.el\" (:report-format lcov) (:send-report nil))"
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         emacs_version:
           - 27.1
           - 27.2
@@ -19,21 +30,31 @@ jobs:
           - emacs_version: 'snapshot'
             allow_failure: true
     steps:
-    - uses: purcell/setup-emacs@master
+    - uses: jcs090218/setup-emacs@master
       with:
         version: ${{ matrix.emacs_version }}
-    - uses: conao3/setup-cask@master
+
+    - uses: emacs-eask/setup-eask@master
+      with:
+        version: 'snapshot'
+
     - uses: actions/checkout@v2
+
     - name: Test
       run: |
-        cask install
-        cask exec buttercup -L . -L tests
+        eask install-deps --dev
+        eask exec buttercup -L . -L tests
+
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: emacs-${{ matrix.emacs_version }}
         parallel: true
+
+    - name: Run tests
+      run:
+        make ci
 
   finish:
     needs: test

@@ -1,34 +1,33 @@
-# EMACS_VERSION should be set in your ~/.profile on your development machine
-EMAKE_SHA1            ?= f1a50c20c36a4141ff854c5d62e1a75bb7e9ebe8
-PACKAGE_BASENAME      := elsa
-PACKAGE_FILE          := elsa-pkg.el
+EMACS ?= emacs
+EASK ?= eask
 
-# override defaults
-PACKAGE_ARCHIVES      := gnu melpa
-PACKAGE_TESTS         := $(wildcard tests/*.el)
-PACKAGE_TEST_ARCHIVES := gnu melpa
+.PHONY: clean checkdoc lint package install compile test
 
-include emake.mk
+ci: clean package install compile
 
-.DEFAULT_GOAL: help
-.PHONY: clean clean-elc test setup
+package:
+	@echo "Packaging..."
+	$(EASK) package
 
-setup: emacs emake.mk
+install:
+	@echo "Installing..."
+	$(EASK) install
 
-emake.mk:                       ## download EMake
-	wget 'https://raw.githubusercontent.com/vermiculus/emake.el/$(EMAKE_SHA1)/emake.mk'
+compile:
+	@echo "Compiling..."
+	$(EASK) compile
 
-clean-elc:
-	rm -f $(PACKAGE_LISP:.el=.elc)
+test:
+	@echo "Testing..."
+	$(EASK) test ert ./test/*.el
 
-clean: clean-elc
-	rm -rf $(EMAKE_WORKDIR)
+checkdoc:
+	@echo "Run checkdoc..."
+	$(EASK) lint checkdoc
 
-compile: clean-elc		## override: compile, but do not fail on warnings
-	$(EMAKE) compile
+lint:
+	@echo "Run package-lint..."
+	$(EASK) lint package
 
-test: test-buttercup
-
-emacs: SHELL := /bin/bash
-emacs:
-	bash -e <(curl -fsSkL 'https://raw.githubusercontent.com/vermiculus/emake.el/$(EMAKE_SHA1)/build-emacs')
+clean:
+	$(EASK) clean all
