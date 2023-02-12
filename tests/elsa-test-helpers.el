@@ -16,9 +16,12 @@
 
 (defmacro elsa-test-with-read-form (initial form-var &rest body)
   (declare (indent 2))
-  `(elsa-test-with-buffer ,initial
-     (let ((,form-var (elsa-read-form (elsa-state))))
-       ,@body)))
+  (let ((state (make-symbol "state")))
+    `(elsa-test-with-buffer ,initial
+       (let ((,state (elsa-state)))
+         (elsa--setup-buffer ,state)
+         (let ((,form-var (elsa-read-form ,state)))
+           ,@body)))))
 
 (defmacro elsa-test-with-analysed-form (initial form-var &rest body)
   (declare (indent 2))
@@ -26,11 +29,12 @@
         (errors (or (plist-get body :errors-var) (make-symbol "errors")))
         (state-value (or (plist-get body :state) '(elsa-state)) ))
     `(elsa-test-with-buffer ,initial
-       (let* ((,state ,state-value)
-              (,form-var (elsa-read-form ,state)))
-         (elsa--analyse-form ,form-var (oref ,state scope) ,state)
-         (let ((,errors (oref ,state errors)))
-           ,@body)))))
+       (let* ((,state ,state-value))
+         (elsa--setup-buffer ,state)
+         (let ((,form-var (elsa-read-form ,state)))
+           (elsa--analyse-form ,form-var (oref ,state scope) ,state)
+           (let ((,errors (oref ,state errors)))
+             ,@body))))))
 
 (buttercup-define-matcher-for-binary-function :to-be-type-equivalent elsa-type-equivalent-p
   :expect-match-phrase "Expected %A to be equivalent to %B, was %a."

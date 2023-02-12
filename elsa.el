@@ -81,6 +81,38 @@
               (load (f-no-ext elsa-cache-file) t t))))))
     file-state))
 
+(defun elsa--setup-buffer (state)
+  "Prepare the current buffer for analysis.
+
+STATE is the currently used state holding Elsa's knowledge.
+
+This function annotates lines with line numbers so they can be
+retrieved from text properties (fast!) instead of manually
+recomputed each time by counting newlines.
+
+It also resolves the elsa-disable-line and elsa-disable-next-line
+tokens."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((line 1)
+          (has-more t))
+      (while has-more
+        (put-text-property (point) (min (buffer-size) (1+ (point)))
+                           'elsa-line line)
+        (save-excursion
+          (end-of-line)
+          ;; 12 is comment ender, newline in elisp
+          (when (and (or (eobp)
+                         (eq (syntax-class (syntax-after (point))) 12))
+                     (nth 4 (syntax-ppss)))
+            (cond
+             ((search-backward "elsa-disable-line" (line-beginning-position) t)
+              (elsa-state-ignore-line state line))
+             ((search-backward "elsa-disable-next-line" (line-beginning-position) t)
+              (elsa-state-ignore-line state (1+ line))))))
+        (setq has-more (= (forward-line) 0))
+        (cl-incf line)))))
+
 ;; (elsa-process-file :: (function (string (or mixed nil)) mixed))
 (defun elsa-process-file (file &optional state)
   "Process FILE."
@@ -95,23 +127,7 @@
     (with-temp-buffer
       (insert-file-contents file)
       (emacs-lisp-mode)
-      (goto-char (point-min))
-      (let ((line 1))
-        (put-text-property (point) (1+ (point)) 'elsa-line line)
-        (while (= (forward-line) 0)
-          (cl-incf line)
-          (put-text-property (point) (min
-                                      (buffer-size)
-                                      (1+ (point))) 'elsa-line line)
-          (save-excursion
-            (end-of-line)
-            ;; 12 is comment ender, newline in elisp
-            (when (and (eq (syntax-class (syntax-after (point))) 12)
-                       (search-backward "elsa-disable-line"
-                                        (line-beginning-position)
-                                        t)
-                       (nth 4 (syntax-ppss)))
-              (elsa-state-ignore-line state line)))))
+      (elsa--setup-buffer state)
       (goto-char (point-min))
       (condition-case err
           (while (setq form (elsa-read-form state))
@@ -148,7 +164,7 @@
   (interactive)
   (let* ((state (elsa-state :project-directory (f-parent (buffer-file-name)))))
     (when-let ((form (elsa-read-form state)))
-      (elsa--analyse-form form (oref state scope) state)
+      (elsa-analyse-form state form)
       form)))
 
 (defun elsa-load-config ()
@@ -204,7 +220,8 @@ errors are found."
   "Analyse FORM in STATE.
 
 If TYPE is non-nil, force this type on FORM."
-  (elsa--analyse-form form (oref state scope) state))
+  (let ((scope (oref state scope)))
+    (elsa--analyse-form form scope state)))
 
 (provide 'elsa)
 ;;; elsa.el ends here
