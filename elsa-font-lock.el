@@ -23,8 +23,8 @@
   (font-lock-add-keywords
    nil
    `((,(rx (or
-            (and "(" (group (1+ (or (syntax word) (syntax symbol)))) (1+ space) (group "::") (1+ space))
-            (and "(" (group (and "elsa-make-type" (1+ space))))))
+            (and "(" (group (1+ (or (syntax word) (syntax symbol)))) (1+ space) (group "::") (or (1+ space) eol))
+            (and "(" (group (and "elsa-make-type" (or (1+ space) eol))))))
       ;; the function name in the defun annotation
       (1 font-lock-function-name-face t t)
       ;; the :: token separating the type
