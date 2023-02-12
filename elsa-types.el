@@ -712,10 +712,10 @@ then this is a supertype of other."
   (symbol-name (oref this label)))
 
 ;; One-dimensional sparse arrays indexed by characters
-(defclass elsa-type-chartable (elsa-type) ())
+(defclass elsa-type-char-table (elsa-type) ())
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-chartable))
-  "chartable")
+(cl-defmethod elsa-type-describe ((_this elsa-type-char-table))
+  "char-table")
 
 ;; One-dimensional arrays of t or nil.
 (defclass elsa-type-bool-vector (elsa-type) ())
@@ -748,16 +748,16 @@ then this is a supertype of other."
   "terminal")
 
 ;; Recording the way a frame is subdivided
-(defclass elsa-type-windowconfiguration (elsa-type) ())
+(defclass elsa-type-window-configuration (elsa-type) ())
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-windowconfiguration))
-  "windowconfiguration")
+(cl-defmethod elsa-type-describe ((_this elsa-type-window-configuration))
+  "window-configuration")
 
 ;; Recording the status of all frames
-(defclass elsa-type-frameconfiguration (elsa-type) ())
+(defclass elsa-type-frame-configuration (elsa-type) ())
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-frameconfiguration))
-  "frameconfiguration")
+(cl-defmethod elsa-type-describe ((_this elsa-type-frame-configuration))
+  "frame-configuration")
 
 ;; A subprocess of Emacs running on the underlying OS
 (defclass elsa-type-process (elsa-type) ())
@@ -778,10 +778,10 @@ then this is a supertype of other."
   "mutex")
 
 ;; Condition variable for thread synchronization
-(defclass elsa-type-conditionvariable (elsa-type) ())
+(defclass elsa-type-condition-variable (elsa-type) ())
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-conditionvariable))
-  "conditionvariable")
+(cl-defmethod elsa-type-describe ((_this elsa-type-condition-variable))
+  "condition-variable")
 
 ;; Receive or send characters
 (defclass elsa-type-stream (elsa-type) ())
