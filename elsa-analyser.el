@@ -783,7 +783,16 @@ SCOPE and STATE are the scope and state objects."
                                           (elsa-type-assignable-p
                                            expected-normalized
                                            actual)))
-                                    (unless acceptablep
+                                    (cond
+                                     ((not expected)
+                                      (push (list
+                                             overload
+                                             overload-index
+                                             (format
+                                              "Argument %d is present but the function does not define it.  Missing overload?"
+                                              (1+ index)))
+                                            overloads-errors))
+                                     ((not acceptablep)
                                       (push (list
                                              overload
                                              overload-index
@@ -805,19 +814,34 @@ SCOPE and STATE are the scope and state objects."
                                                (1+ index)
                                                (elsa-type-describe expected-normalized)
                                                (elsa-type-describe actual))))
-                                            overloads-errors))
-                                    (unless expected
-                                      (push (list
-                                             overload
-                                             overload-index
-                                             (format
-                                              "Argument %d is present but the function does not define it.  Missing overload?"
-                                              (1+ index)))
-                                            overloads-errors))
+                                            overloads-errors)))
                                     (and expected acceptablep)))
                                 overloads)))
                          (if good-overloads
-                             (setq overloads good-overloads)
+                             ;; If we have multiple overloads where
+                             ;; the argument is of a concrete type,
+                             ;; that is not a sum or intersection
+                             ;; (where the analysis is a bit more
+                             ;; difficult for now), we can eliminate
+                             ;; all the "less specific" overloads and
+                             ;; only pick the one with the narrowest
+                             ;; domain which still accepts the
+                             ;; argument.  Because the
+                             ;; `good-overloads' are only those which
+                             ;; accept the arguments, we can sort them
+                             ;; by `elsa-type-accept' and pick the
+                             ;; last (smallest) one.
+                             (if (elsa-type-composite-p (oref argument-form type))
+                                 (setq overloads good-overloads)
+                               (setq overloads
+                                     (list
+                                      (car
+                                       (-sort
+                                        (lambda (a b)
+                                          (elsa-type-accept
+                                           (elsa-function-type-nth-arg (car b) index)
+                                           (elsa-function-type-nth-arg (car a) index)))
+                                        good-overloads)))))
                            (elsa-state-add-message state
                              (if (< 1 (length overloads-errors))
                                  (elsa-make-error argument-form
