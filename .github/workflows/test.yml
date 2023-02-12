@@ -19,7 +19,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         emacs_version:
           - 27.1
           - 27.2
@@ -53,8 +56,11 @@ jobs:
         parallel: true
 
     - name: Run tests
-      run:
-        make ci
+      run: |
+        eask clean all
+        eask package
+        eask install
+        eask compile
 
   finish:
     needs: test
