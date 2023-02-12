@@ -848,8 +848,9 @@ SCOPE and STATE are the scope and state objects."
     ;; compute narrowed types of variables in this function if possible
     (when narrow-type
       (-when-let (varname (elsa--analyse-arg-variable-p (car args)))
-        (oset form narrow-types (list (elsa-variable :name varname :type narrow-type)))
-        (let* ((arg-type (oref (car args) type))
+        (oset form narrow-types (list (elsa-variable :name varname :type narrow-type))))
+      (-when-let (arg (car args))
+        (let* ((arg-type (oref arg type))
                (could-accept (elsa-type-could-accept narrow-type arg-type)))
           (cond
            ((trinary-true-p could-accept)
