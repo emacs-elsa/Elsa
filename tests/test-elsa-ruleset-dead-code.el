@@ -1,10 +1,12 @@
 ;; -*- lexical-binding: t -*-
 (require 'elsa-test-helpers)
 
+(require 'elsa)
 (require 'elsa-reader)
 (require 'elsa-types)
 (require 'elsa-extension-builtin)
 (require 'elsa-ruleset)
+(require 'trinary)
 
 (describe "Ruleset"
 
@@ -47,4 +49,12 @@
       (it "should not produce any warning for nullable type"
         (elsa-test-with-analysed-form "|(defun foo (out) (if out 1 2))" form
           :state-var state
-          (expect (oref state errors) :to-be nil))))))
+          (expect (oref state errors) :to-be nil))))
+
+    (describe "unreachable code determined by state"
+
+      (it "should report unreachable state as tracked by the state"
+        (elsa-test-with-analysed-form "|(cond ((integerp 1) \"yes\") ((current-time) \"whatever\"))" form
+          :errors-var errors
+          (expect (trinary-false-p (oref (elsa-car (elsa-nth 2 form)) reachable)) :to-be t)
+          (expect (cadr errors) :message-to-match "Unreachable expression (current-time)"))))))

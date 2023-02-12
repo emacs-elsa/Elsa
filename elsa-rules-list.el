@@ -177,6 +177,18 @@
               (elsa-state-add-message state
                 (elsa-make-warning condition "Condition always evaluates to nil.")))))))))
 
+(defclass elsa-check-unreachable-code (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-unreachable-code) form scope state)
+  t)
+
+(cl-defmethod elsa-check-check ((_ elsa-check-unreachable-code) form scope state)
+  (when (trinary-false-p (oref form reachable))
+    (elsa-state-add-message state
+      (elsa-make-warning form
+        "Unreachable expression %s"
+        (elsa-form-print form)))))
+
 (defclass elsa-check-public-functions-have-docstring (elsa-check) ())
 
 (cl-defmethod elsa-check-should-run ((_ elsa-check-public-functions-have-docstring) form scope state)

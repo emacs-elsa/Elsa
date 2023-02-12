@@ -13,6 +13,7 @@
   (add-to-list 'elsa-checks (elsa-check-if-useless-condition))
   (add-to-list 'elsa-checks (elsa-check-cond-useless-condition))
   (add-to-list 'elsa-checks (elsa-check-or-unreachable-code))
+  (add-to-list 'elsa-checks (elsa-check-unreachable-code))
   )
 
 (defclass elsa-ruleset-style (elsa-ruleset) ())
