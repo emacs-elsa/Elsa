@@ -284,6 +284,7 @@ This only makes sense for the sequence forms:
   (mapc fn (oref this sequence)))
 
 (cl-defmethod elsa-form-visit ((this elsa-form-vector) fn)
+  (funcall fn this)
   (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
 
 (cl-defmethod elsa-form-sequence ((this elsa-form-vector))
@@ -310,6 +311,7 @@ This only makes sense for the sequence forms:
   (mapc fn (oref this sequence)))
 
 (cl-defmethod elsa-form-visit ((this elsa-form-list) fn)
+  (funcall fn this)
   (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
 
 ;; (elsa-car :: (function (mixed) mixed))
@@ -400,6 +402,7 @@ This only makes sense for the sequence forms:
     (mapc fn (-snoc prefix last))))
 
 (cl-defmethod elsa-form-visit ((this elsa-form-improper-list) fn)
+  (funcall fn this)
   (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
 
 (cl-defmethod elsa-car ((this elsa-form-improper-list))
