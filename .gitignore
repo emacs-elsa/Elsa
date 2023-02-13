@@ -1,5 +1,10 @@
 /.cask
+/.eask
 /.elsa
+/tests/.elsa
 *.elc
 /.emake
 /emake.mk
+report.json
+.dir-locals.el
+.env
