@@ -73,28 +73,31 @@ CONSTANT-FORM is the value to which the variable is narrowed."
   (elsa--analyse-function-call form scope state)
   (let* ((args (elsa-cdr form))
          (first (car args))
+         ;; This can be missing if `eq' was found inside a `pcase'
+         ;; pattern.
          (second (cadr args)))
-    ;; If one or the other value are constants, we set-up narrowing
-    ;; for the variable the symbol represents.
-    (cond
-     ((and (elsa-form-symbol-p first)
-           (elsa-scope-get-var scope first))
-      (elsa--analyse--eq form first second))
-     ((and (elsa-form-symbol-p second)
-           (elsa-scope-get-var scope second))
-      (elsa--analyse--eq form second first)))
-    ;; Here we compute the type of the eq form itself.  By default, it
-    ;; has a mixed type, so here we only make the type information
-    ;; more precise.
-    (cond
-     ((elsa-type-equivalent-p
-       (elsa-type-empty)
-       (elsa-type-intersect first second))
-      (oset form type (elsa-type-nil)))
-     ((and (elsa-const-type-p (elsa-get-type first))
-           (elsa-const-type-p (elsa-get-type second))
-           (elsa-type-equivalent-p first second))
-      (oset form type (elsa-type-t))))))
+    (when (and first second)
+      ;; If one or the other value are constants, we set-up narrowing
+      ;; for the variable the symbol represents.
+      (cond
+       ((and (elsa-form-symbol-p first)
+             (elsa-scope-get-var scope first))
+        (elsa--analyse--eq form first second))
+       ((and (elsa-form-symbol-p second)
+             (elsa-scope-get-var scope second))
+        (elsa--analyse--eq form second first)))
+      ;; Here we compute the type of the eq form itself.  By default, it
+      ;; has a mixed type, so here we only make the type information
+      ;; more precise.
+      (cond
+       ((elsa-type-equivalent-p
+         (elsa-type-empty)
+         (elsa-type-intersect first second))
+        (oset form type (elsa-type-nil)))
+       ((and (elsa-const-type-p (elsa-get-type first))
+             (elsa-const-type-p (elsa-get-type second))
+             (elsa-type-equivalent-p first second))
+        (oset form type (elsa-type-t)))))))
 
 ;; * list functions
 (defun elsa--analyse:car (form scope state)
