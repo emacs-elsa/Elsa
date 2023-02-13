@@ -455,18 +455,19 @@ handled by `elsa--analyse-function-like-invocation'."
           (let ((var
                  (elsa-variable
                   :name (elsa-get-name arg)
-                  :type (if function-type
-                            (--if-let (elsa-function-type-nth-arg
-                                       function-type
-                                       index)
-                                it
-                              (elsa-state-add-message state
-                                (elsa-make-warning arg
-                                  "Argument %d `%s' is expected but has no declared type.  Use of top-level implicit mixed is discouraged."
-                                  (1+ index)
-                                  (elsa-get-name arg)))
-                              (elsa-type-mixed))
-                          (elsa-type-mixed)))))
+                  :type (if (not function-type)
+                            (elsa-type-mixed)
+                          (let ((expected-type (elsa-function-type-nth-arg
+                                                function-type
+                                                index)))
+                            (or expected-type
+                                (progn
+                                  (elsa-state-add-message state
+                                    (elsa-make-warning arg
+                                      "Argument no %d. `%s' is present in function declaration but is missing in Elsa type signature.  Use of top-level implicit mixed is discouraged."
+                                      (1+ index)
+                                      (elsa-get-name arg)))
+                                  (elsa-type-mixed))))))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
     (when body (elsa--analyse-body body scope state))
@@ -475,7 +476,7 @@ handled by `elsa--analyse-function-like-invocation'."
     (let* ((body-return-type (if body (oref (-last-item body) type) (elsa-type-nil)))
            (function-return-type (elsa-type-get-return function-type)))
       (if function-return-type
-          (unless (elsa-type-assignable-p function-return-type body-return-type)
+          (unless (elsa-type-equivalent-p function-return-type body-return-type)
             (elsa-state-add-message state
               (elsa-make-error (elsa-car form)
                 "Function is expected to return %s but returns %s."
