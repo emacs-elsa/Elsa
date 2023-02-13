@@ -28,7 +28,7 @@
           :errors-var errors
           (expect (length errors) :to-be-greater-than 0)
           (expect (car errors) :message-to-match
-                  "Function `stringp' narrows type to `string' and the argument type is `(const 1)'.\n  Expression always evaluates to false because the argument \"1\" can never be `string'")))
+                  "Function `stringp' narrows type to `string' and the argument type is `(const 1)'.\n  Expression always evaluates to false because the argument 1 can never be `string'")))
 
       (it "should not warn if the type-testing predicate could return true or false"
         (let ((state (elsa-state)))

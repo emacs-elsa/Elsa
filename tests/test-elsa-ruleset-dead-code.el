@@ -57,4 +57,4 @@
         (elsa-test-with-analysed-form "|(cond ((integerp 1) \"yes\") ((current-time) \"whatever\"))" form
           :errors-var errors
           (expect (trinary-false-p (oref (elsa-car (elsa-nth 2 form)) reachable)) :to-be t)
-          (expect (cadr errors) :message-to-match "Unreachable expression (current-time)"))))))
+          (expect (cadr errors) :message-to-match "Unreachable expression \"(current-time)\""))))))

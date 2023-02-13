@@ -169,7 +169,9 @@
       (lambda (condition)
         (if (not can-be-nil-p)
             (elsa-state-add-message state
-              (elsa-make-warning condition "Unreachable expression"))
+              (elsa-make-warning condition
+                "Unreachable expression %S"
+                (elsa-form-print form)))
           (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
               (when can-be-nil-p (setq can-be-nil-p nil))
             (when (and (elsa-type-accept (elsa-type-nil) (oref condition type))
@@ -186,7 +188,7 @@
   (when (trinary-false-p (oref form reachable))
     (elsa-state-add-message state
       (elsa-make-warning form
-        "Unreachable expression %s"
+        "Unreachable expression %S"
         (elsa-form-print form)))))
 
 (defclass elsa-check-public-functions-have-docstring (elsa-check) ())
@@ -225,7 +227,7 @@ returned narrowing."
          ((trinary-true-p could-accept)
           (elsa-state-add-message state
             (elsa-make-warning (elsa-car form)
-              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to true because the argument %S will always be `%s'."
+              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to true because the argument %s will always be `%s'."
               name
               (elsa-type-describe narrow-type)
               (elsa-type-describe arg-type)
@@ -234,7 +236,7 @@ returned narrowing."
          ((trinary-false-p could-accept)
           (elsa-state-add-message state
             (elsa-make-warning (elsa-car form)
-              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to false because the argument %S can never be `%s'."
+              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to false because the argument %s can never be `%s'."
               name
               (elsa-type-describe narrow-type)
               (elsa-type-describe arg-type)

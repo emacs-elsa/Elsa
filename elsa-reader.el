@@ -276,7 +276,7 @@ prefix and skipped by the sexp scanner.")
   (oref this sequence))
 
 (cl-defmethod elsa-form-print ((this elsa-form-string))
-  (oref this sequence))
+  (format "%S" (oref this sequence)))
 
 (defsubst elsa--read-string (form)
   (elsa--skip-whitespace-forward)
