@@ -5,11 +5,13 @@
 ;; TODO: add some methods for looking up variables/defuns, so we don't
 ;; directly work with the hashtable
 (defclass elsa-state nil
-  ((defuns :initform nil)
+  ((defuns :initform (make-hash-table))
+   (global-defuns :initform (make-hash-table)
+                  :documentation "Already processed defuns from other files.")
    (defvars :initform (make-hash-table))
    (errors :initform nil)
    (provide :initform nil
-            :documentation "Symbol provided by current file")
+            :documentation "Symbols provided by current file")
    (requires :initform nil :type list
              :documentation "Symbols required by current file")
    (ignored-lines :initform nil)
@@ -20,9 +22,22 @@
    (quoted :initform (trinary-false))
    (scope :initform (elsa-scope))))
 
-(defun elsa-state-add-defun (state name type)
-  (put name 'elsa-type type)
-  (push `(defun ,name ,type) (oref state defuns)))
+(defclass elsa-defun nil
+  ((name :initarg :name :documentation "Name of the defun.")
+   (type :initarg :type :documentation "Function type of the defun.")
+   (arglist :initarg :arglist :documentation "Defun arglist."))
+  :documentation "Defun and defun-like definitions discovered during analysis.")
+
+(cl-defgeneric elsa-state-add-defun (this def)
+  (declare (indent 1)))
+
+(cl-defmethod elsa-state-add-defun ((this elsa-state) (def elsa-defun))
+  (put (oref def name) 'elsa-type (oref def type))
+  (puthash (oref def name) def (oref this defuns)))
+
+(cl-defgeneric elsa-state-get-defun ((this elsa-state) name)
+  (or (gethash name (oref this defuns))
+      (gethash name (oref this global-defuns))))
 
 (defun elsa-state-ignore-line (state line)
   (push line (oref state ignored-lines)))

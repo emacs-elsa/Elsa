@@ -69,7 +69,11 @@
                          :documentation "Index of currently processed file.")
    (number-of-files :type integer
                     :initarg :number-of-files
-                    :documentation "Total number of files to analyze."))
+                    :documentation "Total number of files to analyze.")
+   (defuns :type hash-table
+     :initarg :defuns
+     :initform (make-hash-table)
+     :documentation "Defun definitions loaded from cache."))
   :documentation "Initial configuration and state of the entire analysis.
 
 The other state class `elsa-state' state holds state of an analysis of
@@ -85,6 +89,17 @@ a single file, form or set of forms.")
   (let ((max-len (length (number-to-string (oref this number-of-files)))))
     (+ max-len 1 max-len (or extra 0))))
 
+(cl-defmethod elsa-state-add-defun ((this elsa-global-state) (def elsa-defun))
+  (put (oref def name) 'elsa-type (oref def type))
+  (puthash (oref def name) def (oref this defuns)))
+
+(defvar global-state (elsa-global-state))
+
+(defmacro elsa-declare-defun (name arglist type)
+  (declare (indent 2))
+  `(elsa-state-add-defun global-state
+     (elsa-defun :name ',name :type (elsa-make-type ,type) :arglist ',arglist)))
+
 (defun elsa--get-cache-file-name (global-state feature &optional compiled)
   "Return the cache file name for LIBRARY."
   (f-expand (format ".elsa/%s-elsa-cache.el%s"
@@ -94,7 +109,9 @@ a single file, form or set of forms.")
 
 (defun elsa-analyse-file (file)
   (let ((global-state (elsa-global-state :project-directory (f-parent file)))
-        (dependencies (elsa-get-dependencies file))
+        (dependencies (cons
+                       "subr" ; subr is always a dependency
+                       (elsa-get-dependencies file)))
         (visited nil)
         (file-state nil))
     (elsa-log "Processing transitive dependencies: %s" (s-join ", " dependencies))
@@ -108,20 +125,34 @@ a single file, form or set of forms.")
               (elsa-log "[%s] Skipping already processed dependency %s (was circular)"
                         (elsa-global-state-get-counter global-state) dep)
             (push library visited)
-            (when (require (intern (concat "elsa-typed-" dep)) nil t)
+            (when (require (intern (concat "elsa-typed-"
+                                           (replace-regexp-in-string ".el\\'" "" dep)))
+                           nil t)
               (elsa-log "%sAutoloading types for %s"
                         (make-string (elsa-global-state-prefix-length global-state 3) ? )
                         dep))
-            (when (require (intern (concat "elsa-extension-" dep)) nil t)
+            (when (require (intern (concat "elsa-extension-"
+                                           (replace-regexp-in-string ".el\\'" "" dep)))
+                           nil t)
               (elsa-log "%sAutoloading extension for %s"
                         (make-string (elsa-global-state-prefix-length global-state 3) ? )
                         dep))
             (if (file-newer-than-file-p library elsa-cache-file)
                 (let ((state (elsa-process-file library global-state)))
+                  ;; `subr' has no provide for some circular
+                  ;; dependency "bootstrap" issues.  We add it here
+                  ;; artificially.
+                  (when (equal dep "subr")
+                    (oset state provide (list 'subr)))
                   (elsa-save-cache state global-state)
+                  ;; copy new definitions to the global state
+                  (maphash
+                   (lambda (_name def)
+                     (elsa-state-add-defun global-state def))
+                   (oref state defuns))
                   (setq file-state state))
-              (elsa-log "[%s] Loading %s from cache"
-                        (elsa-global-state-get-counter global-state) dep)
+              (elsa-log "[%s] Loading %s from cache %s"
+                        (elsa-global-state-get-counter global-state) dep elsa-cache-file)
               (load (f-no-ext elsa-cache-file) t t)))))
       (cl-incf (oref global-state processed-file-index)))
     file-state))
@@ -158,13 +189,14 @@ tokens."
         (setq has-more (= (forward-line) 0))
         (cl-incf line)))))
 
-;; (elsa-process-file :: (function (string (or mixed nil)) mixed))
-(defun elsa-process-file (file &optional global-state)
+;; (elsa-process-file :: (function (string mixed) mixed))
+(defun elsa-process-file (file global-state)
   "Process FILE."
   (elsa-log "[%s] Processing file %s"
             (elsa-global-state-get-counter global-state) file)
   (let ((state (elsa-state))
         (form))
+    (oset state global-defuns (oref global-state defuns))
     (with-temp-buffer
       (insert-file-contents file)
       (emacs-lisp-mode)
@@ -179,24 +211,32 @@ tokens."
 
 GLOBAL-STATE is the initial configuration."
   (with-temp-buffer
-    (when-let ((feature (oref state provide)))
-      (let ((feature-name (symbol-name feature))
-            (elsa-cache-file (elsa--get-cache-file-name global-state feature)))
-        (unless (string-match-p "^elsa-\\(typed\\|extension\\)-" feature-name)
-          (progn
-            (-each (nreverse (oref state defuns))
-              (lambda (dfn)
-                (insert
-                 (format
-                  "%S\n"
-                  `(put (quote ,(cadr dfn)) 'elsa-type
-                        (elsa-make-type ,(read (elsa-type-describe (nth 2 dfn)))))))))
-            (-each (nreverse (oref state requires))
-              (lambda (req)
-                (insert (format ";; %S\n" `(elsa-load-cache ',req)))))
-            (f-mkdir (f-parent elsa-cache-file))
-            (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
-            (byte-compile-file elsa-cache-file)))))))
+    (when-let ((features (oref state provide)))
+      (dolist (feature features)
+        (let ((feature-name (symbol-name feature))
+              (elsa-cache-file (elsa--get-cache-file-name global-state feature)))
+          (unless (string-match-p "^elsa-\\(typed\\|extension\\)-" feature-name)
+            (progn
+              (maphash
+               (lambda (name def)
+                 (insert
+                  (format
+                   "%S\n"
+                   `(elsa-declare-defun ,name ,(when (slot-boundp def 'arglist) (oref def arglist))
+                      ,(read (elsa-type-describe (oref def type))))
+                   ;; `(elsa-state-add-defun global-state
+                   ;;    (elsa-defun :name ',name
+                   ;;                :type (elsa-make-type ,(read (elsa-type-describe (oref def type))))
+                   ;;                ,@(when (slot-boundp def 'arglist)
+                   ;;                    (list :arglist `',(oref def arglist)))))
+                   )))
+               (oref state defuns))
+              (-each (nreverse (oref state requires))
+                (lambda (req)
+                  (insert (format ";; %S\n" `(elsa-load-cache ',req)))))
+              (f-mkdir (f-parent elsa-cache-file))
+              (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
+              (byte-compile-file elsa-cache-file))))))))
 
 (defun elsa-process-form ()
   "Read and analyse form at point."

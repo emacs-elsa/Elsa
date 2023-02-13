@@ -131,6 +131,10 @@ possible since format has some overhead parsing the specification
 and so on."
   (format "%s" this))
 
+(cl-defgeneric elsa-form-to-lisp ((this elsa-form))
+  "Return this form as lisp form."
+  (error "Not implemented for form: %S" this))
+
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
 
@@ -166,6 +170,9 @@ This only makes sense for the sequence forms:
 
 (cl-defmethod elsa-form-print ((this elsa-form-symbol))
   (symbol-name (oref this name)))
+
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-symbol))
+  (oref this name))
 
 (cl-defmethod elsa-form-sequence ((this elsa-form-symbol))
   (if (eq (elsa-get-name this) 'nil)
@@ -212,6 +219,9 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-form-print ((this elsa-form-keyword))
   (symbol-name (oref this name)))
 
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-keyword))
+  (oref this name))
+
 ;; (elsa-form-function-call-p :: (function (mixed (or symbol nil)) bool))
 (cl-defgeneric elsa-form-function-call-p (_this &optional _name) nil)
 
@@ -233,6 +243,9 @@ prefix and skipped by the sexp scanner.")
 
 (cl-defmethod elsa-form-print ((this elsa-form-number))
   (number-to-string (oref this value)))
+
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-number))
+  (oref this value))
 
 (defclass elsa-form-integer (elsa-form-number)
   ((value :initarg :value)))
@@ -278,6 +291,9 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-form-print ((this elsa-form-string))
   (format "%S" (oref this sequence)))
 
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-string))
+  (oref this sequence))
+
 (defsubst elsa--read-string (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-string
@@ -293,6 +309,9 @@ prefix and skipped by the sexp scanner.")
 
 (cl-defmethod elsa-form-print ((this elsa-form-vector))
   (format "[%s]" (mapconcat 'elsa-form-print (oref this sequence) " ")))
+
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-vector))
+  (apply #'vector (mapcar #'elsa-form-to-lisp (oref this sequence))))
 
 (cl-defmethod elsa-form-foreach ((this elsa-form-vector) fn)
   (mapc fn (oref this sequence)))
@@ -320,6 +339,15 @@ prefix and skipped by the sexp scanner.")
 
 (cl-defmethod elsa-form-print ((this elsa-form-list))
   (format "(%s)" (mapconcat 'elsa-form-print (oref this sequence) " ")))
+
+(cl-defmethod elsa-form-print ((this list))
+  (format "(%s)" (mapconcat 'elsa-form-print this " ")))
+
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-list))
+  (apply #'list (mapcar #'elsa-form-to-lisp (oref this sequence))))
+
+(cl-defmethod elsa-form-to-lisp ((this list))
+  (apply #'list (mapcar #'elsa-form-to-lisp this)))
 
 (cl-defmethod elsa-form-foreach ((this elsa-form-list) fn)
   (mapc fn (oref this sequence)))
@@ -408,6 +436,17 @@ prefix and skipped by the sexp scanner.")
             (mapconcat 'elsa-form-print prefix " ")
             (elsa-form-print last))))
 
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-improper-list))
+  (let* ((seq (oref this conses))
+         (len (safe-length seq))
+         (prefix (seq-take seq len))
+         (last (cdr (last seq))))
+    (-reduce-r-from
+     (lambda (it acc)
+       (cons (elsa-form-to-lisp it) acc))
+     (elsa-form-to-lisp last)
+     prefix)))
+
 (cl-defmethod elsa-form-foreach ((this elsa-form-improper-list) fn)
   (let* ((seq (oref this conses))
          (len (safe-length seq))
@@ -481,6 +520,9 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-form-print ((this elsa-form-function))
   (format "%S" (oref this function)))
 
+(cl-defmethod elsa-form-to-lisp ((this elsa-form-function))
+  (oref this function))
+
 (defun elsa--read-function (form state)
   (elsa--skip-whitespace-forward)
   (elsa-form-function
@@ -544,11 +586,11 @@ prefix and skipped by the sexp scanner.")
               (symbol-name annotation-name))))
         (elsa-state-add-defun
          state
-         (elsa-get-name (cadr (oref reader-form sequence)))
-         (cond
-          ((symbolp (nth 2 comment-form))
-           (eval `(elsa-make-type (function () ,@(cddr comment-form)))))
-          (t (eval `(elsa-make-type ,@(cddr comment-form)))))))
+         (elsa-defun :name (elsa-get-name (cadr (oref reader-form sequence)))
+                     :type (cond
+                            ((symbolp (nth 2 comment-form))
+                             (eval `(elsa-make-type (function () ,@(cddr comment-form)))))
+                            (t (eval `(elsa-make-type ,@(cddr comment-form))))))))
        ((or (elsa-form-function-call-p reader-form 'defvar)
             (elsa-form-function-call-p reader-form 'defcustom)
             (elsa-form-function-call-p reader-form 'defconst))

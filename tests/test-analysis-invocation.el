@@ -9,12 +9,43 @@
 
     (it "should resolve to only one overload based on the matching argument"
       (let ((state (elsa-state)))
-        (elsa-state-add-defun state 'b (elsa-make-type
-                                        (and (function (vector) vector)
-                                             (function (sequence) sequence))))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type
+                             (and (function (vector) vector)
+                                  (function (sequence) sequence)))
+                      :arglist '(x)))
         (elsa-test-with-analysed-form "|(b [asd])" form
           :state state
           (expect form :to-be-type-equivalent (elsa-make-type vector))))))
+
+
+  (describe "number of arguments"
+
+    (it "should report error if not enough arguments are passed"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type (function (int) mixed))
+                      :arglist '(x)))
+        (elsa-test-with-analysed-form "|(b)" form
+          :state state
+          :errors-var errors
+          (expect (car errors)
+                  :message-to-match "Function `b' expects at least 1 argument but received 0"))))
+
+    (it "should report error if more arguments are passed than supported"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type (function (int) mixed))
+                      :arglist '(x)))
+        (elsa-test-with-analysed-form "|(b 1 2)" form
+          :state state
+          :errors-var errors
+          (expect (length errors) :to-equal 2)
+          (expect (cadr errors)
+                  :message-to-match "Function `b' expects at most 1 argument but received 2")))))
 
 
   (describe "resolving expression type of funcall with type guard"

@@ -20,7 +20,7 @@
 (defun elsa--analyse:provide (form scope state)
   (let ((feature (elsa-nth 1 form)))
     (when (elsa--quoted-symbol-p feature)
-      (oset state provide (elsa-get-name (elsa-cadr feature))))))
+      (push (elsa-get-name (elsa-cadr feature)) (oref state provide)))))
 
 (declare-function elsa-process-file "elsa" (file))
 

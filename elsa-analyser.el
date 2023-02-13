@@ -13,20 +13,23 @@
 
 (require 'elsa-typed-builtin)
 
-;; (elsa--arglist-to-arity :: (function ((or (list symbol) t string)) (cons int (or int (const many)))))
+;; (elsa--arglist-to-arity :: (function ((or (list symbol) t string)) (cons int (or int (const many) (const undefined)))))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
 If there is a &rest argument we represent the upper infinite
-number by symbol 'many."
+number by symbol 'many.
+
+If the arglist is `t', use a fallback 0 to infinity and return
+'undefined for max.  This has the same semantics as 'many but
+adds the information that a fallback was used."
   (let ((min 0)
         (max 0))
     (cond
      ;; TODO: this is a dumb fallback to basically mixed... -> mixed
      ;; This should be solved once we do the recursive `require' walks.
-     ((or (eq arglist t)
-          (stringp arglist))
-      (cons 0 'many))
+     ((or (eq arglist t) (stringp arglist))
+      (cons 0 'undefined))
      (t
       (while (and arglist (not (memq (car arglist) '(&optional &rest))))
         (cl-incf min)
@@ -41,9 +44,33 @@ number by symbol 'many."
         (setq max 'many))
       (cons min max)))))
 
-;; (elsa-fn-arity :: (function (symbol) (cons int (or int symbol))))
-(defun elsa-fn-arity (fn)
-  (elsa--arglist-to-arity (help-function-arglist fn)))
+;; (elsa-fn-arity :: (function (mixed (or list symbol)) (cons int (or int (const many) (const unevalled) (const undefined)))))
+(defun elsa-fn-arity (state def)
+  (cond
+   ;; directly provided arglist
+   ((listp def)
+    (elsa--arglist-to-arity def))
+   ;; symbol can point to a lambda, closure or subr
+   ((symbolp def)
+    (cond
+     ((elsa-state-get-defun state def)
+      (let ((dfn (elsa-state-get-defun state def)))
+        (if (slot-boundp dfn 'arglist)
+            (elsa--arglist-to-arity (oref (elsa-state-get-defun state def) arglist))
+          (elsa--arglist-to-arity t))))
+     ((indirect-function def)
+      (let ((fn (indirect-function def)))
+        (cond
+         ((subrp fn) (subr-arity fn))
+         ((and (byte-code-function-p fn) (integerp (aref fn 0)))
+          (func-arity fn))
+         ((eq (car-safe fn) 'lambda)
+          (elsa--arglist-to-arity (nth 1 fn)))
+         ((eq (car-safe fn) 'closure)
+          (elsa--arglist-to-arity (nth 2 fn)))
+         (t (elsa--arglist-to-arity t)))))
+     ;; fallback
+     (t (elsa--arglist-to-arity t))))))
 
 (defun elsa--analyse-float (_form _scope _state)
   nil)
@@ -434,8 +461,8 @@ nullables and the &rest argument into a variadic."
 (defun elsa--analyse-defun-like-form (name args body form scope state)
   "Analyse function or macro definition.
 
-A definition is a form like `defun' or `cl-defun' or a `lambda'
-form.
+A definition is a form like `defun', `cl-defun', `cl-defmethod'
+and similar forms.
 
 This function tries to infer and validate the return type and the
 argument types.
@@ -447,6 +474,10 @@ handled by `elsa--analyse-function-like-invocation'."
          ;; separate for each processed file which is not great.
          (function-type (get name 'elsa-type))
          (vars))
+    ;; update the arg list if it was not already defined
+    (-when-let (def (elsa-state-get-defun state name))
+      (unless (slot-boundp def 'arglist)
+        (oset def arglist (elsa-form-to-lisp args))))
     (when args
       (-each-indexed (--remove
                       (memq (elsa-get-name it) '(&rest &optional))
@@ -483,10 +514,13 @@ handled by `elsa--analyse-function-like-invocation'."
                 (elsa-type-describe function-return-type)
                 (elsa-type-describe body-return-type))))
         ;; infer the type of the function
-        (elsa-state-add-defun state name (elsa-function-type
-                                          :args (elsa--get-default-function-types
-                                                 (-map 'elsa-get-name args))
-                                          :return body-return-type))))
+        (elsa-state-add-defun state
+          (elsa-defun :name name
+                      :type (elsa-function-type
+                             :args (elsa--get-default-function-types
+                                    (-map 'elsa-get-name args))
+                             :return body-return-type)
+                      :arglist (elsa-form-to-lisp args)))))
     (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:defun (form scope state)
@@ -736,23 +770,28 @@ SCOPE and STATE are the scope and state objects."
           (elsa--analyse-form arg scope state))))
     ;; check arity
     (when name
-      (-let (((min . max) (elsa-fn-arity name))
+      (-let (((min . max) (elsa-fn-arity state name))
              (num-of-args (length args)))
-        (if (< num-of-args min)
-            (elsa-state-add-message state
-              (elsa-make-error head
-                "Function `%s' expects at least %d %s but received %d"
-                name min
-                (elsa-pluralize "argument" min)
-                num-of-args)))
-        (if (and (not (eq max 'many))
-                 (> num-of-args max))
-            (elsa-state-add-message state
-              (elsa-make-error head
-                "Function `%s' expects at most %d %s but received %d"
-                name max
-                (elsa-pluralize "argument" max)
-                num-of-args)))))
+        (when (eq max 'undefined)
+          (elsa-state-add-message state
+            (elsa-make-warning head
+              "Function `%s' is missing arglist definition.  Maybe it is called before being declared?"
+              name)))
+        (when (< num-of-args min)
+          (elsa-state-add-message state
+            (elsa-make-error head
+              "Function `%s' expects at least %d %s but received %d"
+              name min
+              (elsa-pluralize "argument" min)
+              num-of-args)))
+        (when (and (not (memq max '(many unevalled undefined)))
+                   (> num-of-args max))
+          (elsa-state-add-message state
+            (elsa-make-error head
+              "Function `%s' expects at most %d %s but received %d"
+              name max
+              (elsa-pluralize "argument" max)
+              num-of-args)))))
     ;; check the types
     (when type
       ;; analyse the arguments

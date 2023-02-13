@@ -56,6 +56,8 @@
       (,(rx "(" symbol-start (group (or "and" "or" "is" "readonly" "const")) symbol-end)
        (save-excursion (up-list) (point))
        nil
-       (1 font-lock-keyword-face t))))))
+       (1 font-lock-keyword-face t)))
+     (,(rx "(" (* space) "elsa-declare-defun" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
+      (1 font-lock-function-name-face)))))
 
 (provide 'elsa-font-lock)

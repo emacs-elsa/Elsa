@@ -131,4 +131,7 @@
           (elsa-make-error ruleset
             "Ruleset %s not found." (symbol-name (elsa-get-name ruleset))))))))
 
+(defun elsa--analyse:elsa-declare-defun (form scope state)
+  nil)
+
 (provide 'elsa-extension-elsa)
