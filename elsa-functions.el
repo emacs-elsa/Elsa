@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
-(provide 'elsa-functions)
+(require 'elsa-types)
 
 ;; (elsa-function-get-narrow-types :: (function (symbol) (list mixed)))
 (defun elsa-function-get-narrow-type (name)
@@ -15,7 +15,7 @@
   "Get type of the function NAME."
   (get name 'elsa-type))
 
-(cl-defgeneric elsa-function-get-overloads (callable)
+(cl-defgeneric elsa-function-get-overloads (_callable)
   "Get all overloads of CALLABLE.
 
 Return a list of all overloads."
@@ -29,3 +29,5 @@ Return a list of all overloads."
 
 (cl-defmethod elsa-function-get-overloads ((callable elsa-intersection-type))
   (-filter #'elsa-type-callable-p (oref callable types)))
+
+(provide 'elsa-functions)
