@@ -5,6 +5,8 @@
 ;; Author: Matúš Goljer <matus.goljer@gmail.com>
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
 ;; Created: 23rd March 2017
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "25.1") (trinary "1.0.0") (f "0") (dash "2.14") (cl-lib "0.3"))
 ;; Keywords: languages, lisp
 
 ;; This program is free software; you can redistribute it and/or
