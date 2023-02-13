@@ -43,6 +43,7 @@ CONSTANT-FORM is the value to which the variable is narrowed."
   (let ((name (elsa-get-name symbol-form))
         (type))
     (setq type
+          ;; TODO: can't we check here that it is `const' type?
           (cond
            ((elsa-form-keyword-p constant-form) (elsa-make-type keyword))
            ((elsa--quoted-symbol-p constant-form) (elsa-make-type symbol))
