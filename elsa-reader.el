@@ -186,12 +186,26 @@ This only makes sense for the sequence forms:
   "Get binding of FORM in THIS scope."
   (elsa-scope--get-var this (elsa-get-name form)))
 
+(defconst elsa--syntax-table-for-symbols
+  (let ((table (make-syntax-table
+                (with-temp-buffer
+                  (emacs-lisp-mode)
+                  (syntax-table)))))
+    (modify-syntax-entry ?# "_" table)
+    table)
+  "Syntax table used to read symbols.
+
+This prevents errors when someone names a symbol #### or some
+other syntax, where the constituents are all in syntax class
+prefix and skipped by the sexp scanner.")
+
 (defsubst elsa--read-symbol (form)
   (elsa--skip-whitespace-forward)
   (elsa-form-symbol
    :start (point)
    :name form
-   :end (elsa--forward-sexp)))
+   :end (with-syntax-table elsa--syntax-table-for-symbols
+          (elsa--forward-sexp))))
 
 (defclass elsa-form-keyword (elsa-form-symbol) ())
 
