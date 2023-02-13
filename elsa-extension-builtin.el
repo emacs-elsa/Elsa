@@ -6,13 +6,6 @@
 (defvar elsa-analyzed nil
   "List of already analyzed files.")
 
-(defun elsa--get-cache-file-name (state feature &optional compiled)
-  "Return the cache file name for LIBRARY."
-  (f-expand (format ".elsa/%s-elsa-cache.el%s"
-                    (if (stringp feature) feature (symbol-name feature))
-                    (if compiled "c" ""))
-            (oref state project-directory)))
-
 (defun elsa--analyse:require (form scope state)
   (let ((feature (elsa-nth 1 form)))
     (when (elsa--quoted-symbol-p feature)
