@@ -153,7 +153,11 @@ tokens."
           (progn
             (-each (nreverse (oref state defuns))
               (lambda (dfn)
-                (insert (format "%S\n" `(put (quote ,(cadr dfn)) 'elsa-type ,(nth 2 dfn))))))
+                (insert
+                 (format
+                  "%S\n"
+                  `(put (quote ,(cadr dfn)) 'elsa-type
+                        (elsa-make-type ,(read (elsa-type-describe (nth 2 dfn)))))))))
             (-each (nreverse (oref state requires))
               (lambda (req)
                 (insert (format ";; %S\n" `(elsa-load-cache ',req)))))
