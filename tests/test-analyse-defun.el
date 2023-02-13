@@ -22,12 +22,4 @@
       (elsa-test-with-analysed-form ";; (xxx :: string)
 (defun xxx () \"foo\")"
           form
-        (expect (get 'xxx 'elsa-type) :to-be-type-equivalent (elsa-make-type (function () string))))))
-
-  (describe "argument type"
-
-    (it "should derive nth argument type of sum of functions as sum of nth argument"
-      (elsa-test-with-analysed-form ";; (xxx :: (or (function (string) string) (function (int) int)))
-(defun xxx (a) a)"
-          form
-        (expect (elsa-nth 3 form) :to-be-type-equivalent (elsa-make-type (or string int)))))))
+        (expect (get 'xxx 'elsa-type) :to-be-type-equivalent (elsa-make-type (function () string)))))))

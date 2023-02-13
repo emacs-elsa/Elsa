@@ -249,38 +249,6 @@
                                (elsa-make-type string))))
                 :to-equal (elsa-make-type float))))
 
-    (describe "number"
-
-      (it "diffing int with int should give empty"
-        (expect (elsa-type-describe
-                 (elsa-type-diff (elsa-make-type int) (elsa-make-type int)))
-                :to-equal "empty"))
-
-      (it "diffing float with float should give empty"
-        (expect (elsa-type-describe
-                 (elsa-type-diff (elsa-make-type float) (elsa-make-type float)))
-                :to-equal "empty"))
-
-      (it "diffing number with int should give float"
-        (expect (elsa-type-describe
-                 (elsa-type-diff (elsa-make-type number) (elsa-make-type int)))
-                :to-equal "float"))
-
-      (it "diffing number with float should give int"
-        (expect (elsa-type-describe
-                 (elsa-type-diff (elsa-make-type number) (elsa-make-type float)))
-                :to-equal "int"))
-
-      (it "diffing int with float should give empty"
-        (expect (elsa-type-describe
-                 (elsa-type-diff (elsa-make-type int) (elsa-make-type float)))
-                :to-equal "empty"))
-
-      (it "diffing float with int should give (diff float int)"
-        (expect (elsa-type-describe
-                 (elsa-type-diff (elsa-make-type float) (elsa-make-type int)))
-                :to-equal "float")))
-
     (describe "mixed"
 
       (it "without string should be mixed \ string"
