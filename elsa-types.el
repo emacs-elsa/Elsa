@@ -277,15 +277,12 @@ In case of primitive types the return type is the type it self.
 In case of functions, it is the return type of the function."
   (-reduce 'elsa-type-sum (-map 'elsa-type-get-return (oref this types))))
 
-;; TODO: this is exactly the same implementation as for elsa-sum-type.
-;; It's weird, because they should be "anti-symmetric", but they both
-;; return sums for arguments and also return types.  Will need to
-;; investigate further what are the exact semantics.
 (cl-defmethod elsa-function-type-nth-arg ((this elsa-intersection-type) n)
   (let ((types (oref this types)))
     (cond
      ((= 0 (length types)) nil)
-     (t (-reduce #'elsa-type-sum (--keep (elsa-function-type-nth-arg it n) types))))))
+     (t (-when-let (summands (--keep (elsa-function-type-nth-arg it n) types))
+          (elsa-type-sum-all summands))))))
 
 (defclass elsa-sum-type (elsa-type elsa-composite-type)
   ((types :type list
@@ -340,7 +337,8 @@ because the actual type can be any of them.")
   (let ((types (oref this types)))
     (cond
      ((= 0 (length types)) nil)
-     (t (-reduce #'elsa-type-sum (--keep (elsa-function-type-nth-arg it n) types))))))
+     (t (-when-let (summands (--keep (elsa-function-type-nth-arg it n) types))
+          (elsa-type-intersect-all summands))))))
 
 ;; TODO: is this true?  It seems that return type of intersection of
 ;; functions is also a sum of their return types... and this kind of

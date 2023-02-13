@@ -37,10 +37,18 @@
                (elsa-make-type (or string (function (int) int))) 0)
               :to-be-type-equivalent (elsa-make-type int)))
 
-    (it "for sum type with two functions return the sum of function arguments"
+    (it "for sum type with two functions return the intersection of function arguments"
       (expect (elsa-function-type-nth-arg
                (elsa-make-type (or (function (string) string)
-                                   (function (int) int))) 0)
+                                   (function (int) int)))
+               0)
+              :to-be-type-equivalent (elsa-make-type (and string int))))
+
+    (it "for intersection type with two functions return the sum of function arguments"
+      (expect (elsa-function-type-nth-arg
+               (elsa-make-type (and (function (string) string)
+                                    (function (int) int)))
+               0)
               :to-be-type-equivalent (elsa-make-type (or string int)))))
 
   (describe "elsa-type-get-return"

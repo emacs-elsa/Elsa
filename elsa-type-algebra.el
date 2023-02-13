@@ -217,6 +217,17 @@ everything (Mixed)."
 The intersection type only accepts those types which are both
 THIS and OTHER at the same time.")
 
+(defun elsa-type-intersect-all (types)
+  "Intersect of all the TYPES.
+
+This will intersect the mixed type with the first type, then the
+result of this with the second type and so on until all types are
+intersected.
+
+Type intersect is similar to set intersection in that it is
+commutative and associative."
+  (-reduce-from #'elsa-type-intersect (elsa-type-mixed) types))
+
 (cl-defmethod elsa-type-intersect ((this elsa-type) (other elsa-type))
   "Basic primitive type intersection."
   (elsa-type-debug "(elsa-intersect-sum %s %s)" (elsa-type-describe this) (elsa-type-describe other))
