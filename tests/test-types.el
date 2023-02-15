@@ -72,8 +72,14 @@
                (elsa-type-could-accept
                 (elsa-make-type keyword)
                 (elsa-make-type symbol)))
-              :to-be-truthy)))
+              :to-be-truthy))
 
+    (it "should return maybe if the intersection with diff type is non-empty"
+      (expect (trinary-maybe-p
+               (elsa-type-could-accept
+                (elsa-make-type (diff mixed keyword))
+                (elsa-make-type symbol)))
+              :to-be-truthy)))
 
   (describe "Test type hierarchy"
 
@@ -281,25 +287,35 @@
 
   (describe "Diff type"
 
-    (it "should not accept types where the positive does not accept the other type"
-      (expect (elsa-diff-type :positive (elsa-type-int))
-              :not :to-accept-type (elsa-type-keyword)))
+    (describe "acceptance rules"
 
-    (it "should not accept types where the negative is accepted by the other type"
-      (expect (elsa-diff-type :negative (elsa-type-int))
-              :not :to-accept-type (elsa-type-number)))
+      (it "should not accept types where the positive does not accept the other type"
+        (expect (elsa-diff-type :positive (elsa-type-int))
+                :not :to-accept-type (elsa-type-keyword)))
 
-    (it "should accept itself"
-      (expect (elsa-make-type (diff int (const 1))) :to-accept-type
-              (elsa-make-type (diff int (const 1)))))
+      (it "should not accept types where the negative is accepted by the other type"
+        (expect (elsa-diff-type :negative (elsa-type-int))
+                :not :to-accept-type (elsa-type-number)))
 
-    (it "should not accept diff type where the other negative have intersection with this"
-      (expect (elsa-make-type (diff int (const 2))) :not :to-accept-type
-              (elsa-make-type (diff int (const 4)))))
+      (it "should accept itself"
+        (expect (elsa-make-type (diff int (const 1))) :to-accept-type
+                (elsa-make-type (diff int (const 1)))))
 
-    (it "should accept a constant which is not excluded"
-      (expect (elsa-make-type (diff int (const 1))) :to-accept-type
-              (elsa-make-type (const 2)))))
+      (it "should not accept diff type where the other negative have intersection with this"
+        (expect (elsa-make-type (diff int (const 2))) :not :to-accept-type
+                (elsa-make-type (diff int (const 4)))))
+
+      (it "should accept a constant which is not excluded"
+        (expect (elsa-make-type (diff int (const 1))) :to-accept-type
+                (elsa-make-type (const 2))))
+
+      (it "should not accept if neg and other type have overlay"
+        (expect (elsa-make-type (diff mixed int))
+                :not :to-accept-type (elsa-make-type number))))
+
+    (it "should not try to simplify overlapping but irreducible types"
+      (expect (elsa-make-type (diff symbol keyword))
+              :to-print-as "(diff symbol keyword)")))
 
   (describe "Intersection type"
 

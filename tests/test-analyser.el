@@ -282,10 +282,10 @@
         (it "should not pollute scope outside of the narrowed body"
           (elsa-test-with-analysed-form "|(if x (setq x :key) x)" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent
-                      ;; TODO: fix this, Unbound is not a type but a
-                      ;; flag.  Type is always Mixed.
-                      (elsa-type-diff (elsa-type-mixed) (elsa-type-unbound))))))
+              (expect test-form
+                      :to-be-type-equivalent
+                      (elsa-type-diff (elsa-type-mixed)
+                                      (elsa-type-diff (elsa-make-type unbound) (elsa-make-type nil)))))))
 
         (it "should sum the type from possibly executed true-branch to the parent scope"
           (elsa-test-with-analysed-form "|(let ((a 1)) (if x (setq a :key) x) a)" form

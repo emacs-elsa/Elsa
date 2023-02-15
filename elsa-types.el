@@ -58,7 +58,7 @@ This method only performs soundness analysis.  To account for the
 special handling of `elsa-type-mixed', use
 `elsa-type-assignable-p'.")
 
-(defun elsa-type-could-accept (this other)
+(cl-defgeneric elsa-type-could-accept ((this elsa-type) (other elsa-type))
   "Check if THIS could accept OTHER.
 
 Return a trinary logical value:
@@ -70,7 +70,7 @@ Return a trinary logical value:
   (cond
    ((elsa-type-accept this other)
     (trinary-true))
-   ((elsa-type-accept other this)
+   ((not (elsa-type-empty-p (elsa-type-intersect this other)))
     (trinary-maybe))
    (t (trinary-false))))
 
@@ -82,7 +82,7 @@ This means THIS is assignable to OTHER.
 This method is used to unpack composite types and perform a
 \"double dispatch\" when testing one composite type accepting
 another, because there is a many-to-many relationship."
-  nil)
+  (elsa-type-accept other this))
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.

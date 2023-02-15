@@ -388,7 +388,19 @@
                  (elsa-type-intersect
                   (elsa-make-type (diff int (const 1)))
                   (elsa-make-type (const 2))))
-                :to-equal "(const 2)")))
+                :to-equal "(const 2)"))
+
+      (it "should not try to simplify overlapping but irreducible types"
+        (expect (elsa-type-diff (elsa-make-type symbol) (elsa-make-type keyword))
+                :to-print-as "(diff symbol keyword)"))
+
+
+      (it "of mixed and basic intersected with basic type should result in diff of other and negative"
+        (expect (elsa-type-intersect
+                 (elsa-make-type (diff mixed keyword))
+                 (elsa-make-type symbol))
+                :to-be-type-equivalent
+                (elsa-make-type (diff symbol keyword)))))
 
     (describe "constants"
 

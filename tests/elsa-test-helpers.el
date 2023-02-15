@@ -2,6 +2,7 @@
 (when (require 'undercover nil t) (undercover))
 
 (require 'elsa-type-helpers)
+(require 'elsa-methods)
 (require 'buttercup)
 
 (defmacro elsa-test-with-buffer (initial &rest body)
@@ -45,7 +46,7 @@
   :expect-mismatch-phrase "Expected %A to not to accept %B, was %a")
 
 (defun elsa-test--compare-form-print (form result)
-  (equal (elsa-form-print form) result))
+  (equal (elsa-tostring form) result))
 
 (buttercup-define-matcher-for-binary-function :to-print-as elsa-test--compare-form-print
   :expect-match-phrase "Expected %A to print as %B, was %a."

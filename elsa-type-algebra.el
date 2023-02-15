@@ -132,13 +132,22 @@ not accepted by OTHER.")
 (cl-defmethod elsa-type-diff ((this elsa-type) other)
   "Any base type without another is the same type, there is no intersection."
   (elsa-type-debug "(elsa-type-diff %s %s)" (elsa-type-describe this) (elsa-type-describe other))
-  (if (elsa-type-accept other this)
-      (elsa-type-empty)
-    (if (and (elsa-const-type-p other)
-             (elsa-type-accept this (oref other type)))
-        (elsa-diff-type :positive (clone this)
-                        :negative (clone other))
-      (clone this))))
+  (elsa-type-normalize
+   (cond
+    ;; If this is contained in other, we are left with nothing.
+    ((elsa-type-accept other this)
+     (elsa-type-empty))
+    ((and (elsa-const-type-p other)
+          (elsa-type-accept this (oref other type)))
+     (elsa-diff-type :positive (clone this)
+                     :negative (clone other)))
+    ;; If the other is subset of this, there is no way to represent
+    ;; this other than a raw difference.
+    ((elsa-type-accept this other)
+     (elsa-diff-type :positive (clone this)
+                     :negative (clone other)))
+    (t
+     (clone this)))))
 
 (cl-defmethod elsa-type-diff ((_this elsa-type-mixed) other)
   "Mixed is one with everything, so we need to subtract OTHER from the world."
