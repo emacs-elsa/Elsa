@@ -77,8 +77,9 @@ CONSTANT-FORM is the value to which the variable is narrowed."
          ;; pattern.
          (second (cadr args)))
     (when (and first second)
-      ;; If one or the other value are constants, we set-up narrowing
-      ;; for the variable the symbol represents.
+      ;; If one or the other argument is a symbol, we will try to
+      ;; narrow its type after the `eq' check based on the other
+      ;; argument's type.
       (cond
        ((and (elsa-form-symbol-p first)
              (elsa-scope-get-var scope first))
