@@ -1,9 +1,11 @@
 (require 'eieio)
 
 (require 'trinary)
-(require 'elsa-scope)
-(require 'elsa-log)
 
+(require 'elsa-scope)
+(require 'elsa-error)
+
+;; TODO: rename to elsa-structure
 (defclass elsa-cl-structure nil
   ((name :initarg :name
          :documentation "Name of the structure.")
@@ -26,7 +28,43 @@ Does not include slots on parents.")
   ((name :initarg :name)
    (type :initarg :type)))
 
-(defclass elsa-global-state nil
+(defclass elsa-declarations nil
+  ((defuns :type hash-table
+           :initform (make-hash-table)
+           :documentation "Defun-like declarations.")
+   (cl-structures :type hash-table
+                  :initform (make-hash-table)
+                  :documentation "Structure-like declarations."))
+  :documentation "Class holding discovered declarations.
+
+Declarations are of various types:
+
+- `elsa-defun' is any named callable object, such as `defun',
+  `cl-defgeneric' or `defmacro'.
+- `elsa-defvar' is any named variable, such as `defvar', `defconst' or
+  `defcustom'.
+- `elsa-cl-structure' is any named structure, such as `cl-defstruct'
+  or EIEIO `defclass'.")
+
+(cl-defgeneric elsa-state-add-structure ((this elsa-declarations) (str elsa-cl-structure))
+  "Add `elsa-cl-structure' to state object."
+  (declare (indent 1))
+  (put (oref str name) 'elsa-cl-structure str)
+  (puthash (oref str name) str (oref this cl-structures)))
+
+(cl-defgeneric elsa-state-get-structure (this name)
+  "Get from THIS the `elsa-cl-structure' definition called NAME.")
+
+(cl-defgeneric elsa-state-add-defun ((this elsa-declarations) (def elsa-defun))
+  "Add `elsa-defun' to state object."
+  (declare (indent 1))
+  (put (oref def name) 'elsa-type (oref def type))
+  (puthash (oref def name) def (oref this defuns)))
+
+(cl-defgeneric elsa-state-get-defun (this name)
+  "Get from THIS the `elsa-defun' definition called NAME.")
+
+(defclass elsa-global-state (elsa-declarations)
   ((project-directory :type string
                       :initarg :project-directory
                       :documentation "Directory from which the analysis was started.")
@@ -36,28 +74,11 @@ Does not include slots on parents.")
                          :documentation "Index of currently processed file.")
    (number-of-files :type integer
                     :initarg :number-of-files
-                    :documentation "Total number of files to analyze.")
-   (defuns :type hash-table
-     :initform (make-hash-table)
-     :documentation "Defun definitions loaded from cache.")
-   (cl-structures :type hash-table
-                  :initform (make-hash-table)))
+                    :documentation "Total number of files to analyze."))
   :documentation "Initial configuration and state of the entire analysis.
 
 The other state class `elsa-state' state holds state of an analysis of
 a single file, form or set of forms.")
-
-(cl-defgeneric elsa-state-add-structure (this def)
-  (declare (indent 1)))
-
-(cl-defgeneric elsa-state-get-structure (this name)
-  "Get from THIS the `elsa-cl-structure' definition called NAME.")
-
-(cl-defgeneric elsa-state-add-defun (this def)
-  (declare (indent 1)))
-
-(cl-defgeneric elsa-state-get-defun (this name)
-  "Get from THIS the `elsa-defun' definition called NAME.")
 
 (cl-defmethod elsa-state-get-defun ((this elsa-global-state) name)
   (gethash name (oref this defuns)))
@@ -71,24 +92,15 @@ a single file, form or set of forms.")
             (oref this processed-file-index)
             (oref this number-of-files))))
 
+;; (elsa-global-state-prefix-length :: (function ((struct elsa-global-state) (or int nil)) int))
 (cl-defmethod elsa-global-state-prefix-length ((this elsa-global-state) &optional extra)
   (let ((max-len (length (number-to-string (oref this number-of-files)))))
     (+ max-len 1 max-len (or extra 0))))
 
-(cl-defmethod elsa-state-add-defun ((this elsa-global-state) (def elsa-defun))
-  (put (oref def name) 'elsa-type (oref def type))
-  (puthash (oref def name) def (oref this defuns)))
-
-(cl-defmethod elsa-state-add-structure ((this elsa-global-state) (str elsa-cl-structure))
-  (put (oref str name) 'elsa-cl-structure str)
-  (puthash (oref str name) str (oref this cl-structures)))
-
 ;; TODO: add some methods for looking up variables/defuns, so we don't
 ;; directly work with the hashtable
-(defclass elsa-state nil
-  ((defuns :initform (make-hash-table))
-   (defvars :initform (make-hash-table))
-   (cl-structures :initform (make-hash-table))
+(defclass elsa-state (elsa-declarations)
+  ((defvars :initform (make-hash-table))
    (errors :initform nil)
    (provide :initform nil
             :documentation "Symbols provided by current file")
@@ -114,23 +126,15 @@ a single file, form or set of forms.")
              (elsa-state-add-structure global def))
            (oref this cl-structures)))
 
-(cl-defmethod elsa-state-add-defun ((this elsa-state) (def elsa-defun))
-  (put (oref def name) 'elsa-type (oref def type))
-  (puthash (oref def name) def (oref this defuns)))
-
 (cl-defmethod elsa-state-get-defun ((this elsa-state) name)
   (or (gethash name (oref this defuns))
       (elsa-state-get-defun (oref this global-state) name)))
-
-(cl-defmethod elsa-state-add-structure ((this elsa-state) (str elsa-cl-structure))
-  (put (oref str name) 'elsa-cl-structure str)
-  (puthash (oref str name) str (oref this cl-structures)))
 
 (cl-defmethod elsa-state-get-structure ((this elsa-state) name)
   (or (gethash name (oref this cl-structures))
       (elsa-state-get-structure (oref this global-state) name)))
 
-(defun elsa-state-ignore-line (state line)
+(cl-defmethod elsa-state-ignore-line ((state elsa-state) line)
   (push line (oref state ignored-lines)))
 
 ;; TODO: take defvar directly? For consistency
@@ -138,8 +142,8 @@ a single file, form or set of forms.")
   (put name 'elsa-type-var type)
   (let ((defvars (oref this defvars)))
     (puthash name (elsa-defvar :name name :type type) defvars)))
-(declare-function elsa-defvar "elsa" (&rest slots))
 
+;; (elsa-state-add-message :: (function ((struct elsa-state) (struct elsa-message)) nil))
 (defun elsa-state-add-message (state error)
   "In STATE, record an ERROR.
 
@@ -149,6 +153,7 @@ STATE is `elsa-state', ERROR is `elsa-message'."
     (push error (oref state errors))))
 
 
+;; (elsa-state-get-reachability :: (function ((struct elsa-state)) (struct trinary)))
 (defun elsa-state-get-reachability (state)
   "Return the current reachability.
 
@@ -170,7 +175,9 @@ Reachability is tracked on the STATE."
      ,@body
      (pop (oref ,state reachable))))
 
+;; (elsa-state-quoted-p :: (function ((struct elsa-state)) bool))
 (defun elsa-state-quoted-p (state)
+  "Return non-nil if the current form is quoted."
   (trinary-true-p (oref state quoted)))
 
 (provide 'elsa-state)
