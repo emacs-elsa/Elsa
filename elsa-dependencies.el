@@ -1,3 +1,13 @@
+;;    (elsa-get-dep-tree :: (function (string) mixed))
+(defun elsa-get-dep-tree (file)
+  "Recursively crawl require forms starting from FILE.
+
+Only top-level `require' forms are considered."
+  (elsa-fold-tree
+   (plist-get (elsa--get-dep-tree file) :deps)
+   file))
+
+;;    (elsa-get-dependencies :: (function (string (or int nil)) mixed))
 (defun elsa-get-dependencies (file &optional min-depth)
   "Get all recursive dependencies of FILE.
 
@@ -12,15 +22,7 @@ MIN-DEPTH will fold all the dependencies of greater depth only."
                (cdr folded-deps))
       (elsa-topo-sort (elsa-tree-to-deps folded-deps) file))))
 
-(defun elsa-get-dep-tree (file)
-  "Recursively crawl require forms starting from FILE.
-
-Only top-level `require' forms are considered."
-  (elsa-fold-tree
-   (plist-get (elsa--get-dep-tree file) :deps)
-   file))
-
-;; (elsa--find-dependency :: (function (string) (or nil string)))
+;;    (elsa--find-dependency :: (function (string) (or nil string)))
 (defun elsa--find-dependency (library-name)
   "Find the implementation file of dependency LIBRARY-NAME.
 
@@ -73,6 +75,7 @@ LIBRARY-NAME should be the feature name (not symbol)."
             (push dependency candidates)))))
     result))
 
+;;    (elsa-fold-tree :: (function (list string (or (list string) nil) (or (list string) nil) (or int nil)) mixed))
 (defun elsa-fold-tree (deps start &optional visited parents depth)
   "Fold DEPS tree from START.
 
