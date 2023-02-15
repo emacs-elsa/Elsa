@@ -760,6 +760,7 @@ then this is a supertype of other."
   "bool-vector")
 
 ;; Super-fast lookup tables
+;; TODO: add key and value types
 (defclass elsa-type-hash-table (elsa-type) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-hash-table))
