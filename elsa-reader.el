@@ -11,6 +11,7 @@
 (require 'elsa-state)
 (require 'elsa-types)
 (require 'elsa-type-helpers)
+(require 'elsa-methods)
 
 (defun elsa--skip-whitespace-forward ()
   (while (forward-comment 1))
@@ -68,9 +69,6 @@ Nil if FORM is not a quoted symbol."
    (reachable :type trinary :initarg :reachable :initform (trinary-true))
    (parent :type (or elsa-form nil) :initarg :parent))
   :abstract t)
-
-;; (elsa-get-name :: (function (mixed) (or symbol nil)))
-(cl-defgeneric elsa-get-name (_this) nil)
 
 ;; (elsa-form-sequence :: (function (mixed) (list mixed)))
 (cl-defgeneric elsa-form-sequence (form)
@@ -130,6 +128,9 @@ Each class should implement more efficient print method if
 possible since format has some overhead parsing the specification
 and so on."
   (format "%s" this))
+
+(cl-defmethod elsa-tostring ((this elsa-form))
+  (elsa-form-print this))
 
 (cl-defgeneric elsa-form-to-lisp ((this elsa-form))
   "Return this form as lisp form."

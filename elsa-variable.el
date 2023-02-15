@@ -26,6 +26,7 @@
 
 (require 'eieio)
 (require 'trinary)
+(require 'elsa-methods)
 
 ;; TODO: maybe move the acceptance resolution into an expression type?
 (defclass elsa-variable nil

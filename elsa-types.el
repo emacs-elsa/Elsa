@@ -29,7 +29,17 @@
 (require 'trinary)
 (require 'dash)
 
+(require 'elsa-methods)
+
 (defclass elsa-type nil () :abstract t)
+
+;; (elsa-type-describe :: (function (mixed) string))
+(cl-defgeneric elsa-type-describe (type)
+  "Return a string representation of TYPE."
+  (format "%s" type))
+
+(cl-defmethod elsa-tostring ((this elsa-type))
+  (elsa-type-describe this))
 
 (defclass elsa-composite-type nil ()
   :abstract t
@@ -129,11 +139,6 @@ Uses special rules for `elsa-type-mixed'.
            (not (elsa-type-unbound-p other)))
       (elsa-type-mixed-p other)
       (elsa-type-accept this other)))
-
-;; (elsa-type-describe :: (function (mixed) string))
-(cl-defgeneric elsa-type-describe (type)
-  "Return a string representation of TYPE."
-  (format "%s" type))
 
 (cl-defgeneric elsa-get-type (_thing)
   "Return type of THING."
