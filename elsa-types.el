@@ -42,6 +42,9 @@
 (cl-defmethod elsa-tostring ((this elsa-type))
   (elsa-type-describe this))
 
+(cl-defmethod cl-print-object ((this elsa-type) stream)
+  (princ (elsa-tostring this) stream))
+
 (defclass elsa-composite-type nil ()
   :abstract t
   :documentation "Composite type holding other types.

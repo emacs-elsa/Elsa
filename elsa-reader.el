@@ -135,6 +135,9 @@ and so on."
 (cl-defmethod elsa-tostring ((this elsa-form))
   (elsa-form-print this))
 
+(cl-defmethod cl-print-object ((this elsa-form) stream)
+  (princ (elsa-tostring this) stream))
+
 (cl-defgeneric elsa-form-to-lisp ((this elsa-form))
   "Return this form as lisp form."
   (error "Not implemented for form: %S" this))
