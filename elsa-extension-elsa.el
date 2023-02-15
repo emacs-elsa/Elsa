@@ -134,4 +134,7 @@
 (defun elsa--analyse:elsa-declare-defun (form scope state)
   nil)
 
+(defun elsa--analyse:elsa-declare-structure (form scope state)
+  nil)
+
 (provide 'elsa-extension-elsa)

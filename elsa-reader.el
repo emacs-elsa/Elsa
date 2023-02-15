@@ -599,9 +599,18 @@ prefix and skipped by the sexp scanner.")
             (point)))))
 
 (defsubst elsa--process-annotation (reader-form comment-form state)
+  "Process annotation over a form.
+
+READER-FORM is an `elsa-form' instance representing the form
+after the annotation.
+
+COMMENT-FORM is a regular lisp form (returned from `read').
+
+STATE is Elsa local state."
   (cond
    ;; type annotation
-   ((and (eq (cadr comment-form) ::)
+   ((and (or (eq (cadr comment-form) ::)
+             (eq (nth 2 comment-form) ::))
          (elsa-form-sequence-p reader-form))
     (let ((annotation-name (car comment-form))
           (form-name (elsa-get-name (cadr (elsa-form-sequence reader-form)))))
@@ -616,15 +625,18 @@ prefix and skipped by the sexp scanner.")
               (symbol-name form-name)
               (symbol-name annotation-name))))
         (elsa-state-add-defun
-         state
-         (elsa-defun :name (elsa-get-name (cadr (oref reader-form sequence)))
-                     :type (cond
-                            ((symbolp (nth 2 comment-form))
-                             (eval `(elsa-make-type (function () ,@(cddr comment-form)))))
-                            (t (eval `(elsa-make-type ,@(cddr comment-form))))))))
+            state
+          (elsa-defun :name (elsa-get-name (cadr (oref reader-form sequence)))
+                      :type (cond
+                             ((symbolp (nth 2 comment-form))
+                              (eval `(elsa-make-type (function () ,@(cddr comment-form)))))
+                             (t (eval `(elsa-make-type ,@(cddr comment-form))))))))
        ((or (elsa-form-function-call-p reader-form 'defvar)
             (elsa-form-function-call-p reader-form 'defcustom)
-            (elsa-form-function-call-p reader-form 'defconst))
+            (elsa-form-function-call-p reader-form 'defconst)
+            (eq (car comment-form) 'defvar))
+        (when (eq (car comment-form) 'defvar)
+          (!cdr comment-form))
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
             (elsa-make-warning (elsa-nth 1 reader-form)
@@ -633,7 +645,12 @@ prefix and skipped by the sexp scanner.")
               (symbol-name annotation-name))))
         (put (elsa-get-name (cadr (oref reader-form sequence)))
              'elsa-type-var
-             (eval `(elsa-make-type ,@(cddr comment-form))))))))))
+             (eval `(elsa-make-type ,@(cddr comment-form)))))
+       (t
+        ;; annotation which is not on defun or defvar will be assumed
+        ;; to annotate a variable
+        )
+       )))))
 
 (defun elsa--set-line-and-column (form)
   "Set line and column properties of form.
@@ -692,7 +709,7 @@ for the analysis."
       (skip-chars-forward " \t\n\r")
       (let ((line-end (line-end-position)))
         (when (and (re-search-forward
-                    (rx "(" (+? (or word (syntax symbol))) " :: ")
+                    (rx "(" (+ (+? (or (syntax word) (syntax symbol))) (+ space)) ":: ")
                     line-end t)
                    (nth 4 (syntax-ppss)))
           ;; we are inside a comment and inside a form starting with

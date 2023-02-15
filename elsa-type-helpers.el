@@ -45,6 +45,7 @@ Return trinary logic value.")
         (trinary-maybe))
     (trinary-false)))
 
+;; (elsa-type-is-non-nil :: (function (mixed) mixed))
 (cl-defgeneric elsa-type-is-non-nil (type)
   "Test if TYPE is always non-nil.
 
@@ -126,6 +127,8 @@ Return trinary logic value.")
      (let* ((item-type (elsa--make-type a))
             (vector-type (elsa-type-vector :item-type item-type)))
        vector-type))
+    (`(struct ,name)
+     (elsa-struct-type :name name))
     (`(function ,args ,ret)
      (elsa-function-type
       :args (-map 'elsa--make-type

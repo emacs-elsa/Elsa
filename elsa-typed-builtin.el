@@ -188,8 +188,8 @@
 (put 'memq 'elsa-type (elsa-make-type (function (mixed (list mixed)) (list mixed))))
 (put 'memql 'elsa-type (elsa-make-type (function (mixed (list mixed)) (list mixed))))
 ;; TODO: this can be a -> [Mixed] -> Cons a Mixed
-(put 'assq 'elsa-type (elsa-make-type (function (mixed (list mixed)) (cons mixed mixed))))
-(put 'assoc 'elsa-type (elsa-make-type (function (mixed (list mixed)) (cons mixed mixed))))
+(put 'assq 'elsa-type (elsa-make-type (function (mixed (list mixed)) (or nil (cons mixed mixed)))))
+(put 'assoc 'elsa-type (elsa-make-type (function (mixed (list mixed)) (or nil (cons mixed mixed)))))
 ;; (put 'rassq 'elsa-type (elsa-make-type ))
 ;; (put 'rassoc 'elsa-type (elsa-make-type ))
 ;; (put 'delq 'elsa-type (elsa-make-type ))

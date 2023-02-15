@@ -464,6 +464,11 @@ nullables and the &rest argument into a variadic."
 A definition is a form like `defun', `cl-defun', `cl-defmethod'
 and similar forms.
 
+Care needs to be taken to not use the `form' argument to extract
+structural information, such as function name or arglist, because
+this function can be called from different contexts.  The
+required information is instead passed as arguments.
+
 This function tries to infer and validate the return type and the
 argument types.
 
@@ -486,8 +491,12 @@ handled by `elsa--analyse-function-like-invocation'."
           (let ((var
                  (elsa-variable
                   :name (elsa-get-name arg)
-                  :type (if (not function-type)
-                            (elsa-type-mixed)
+                  :type (cond
+                         ((not (elsa-type-mixed-p (elsa-get-type arg)))
+                          (elsa-get-type arg))
+                         ((not function-type)
+                          (elsa-type-mixed))
+                         (t
                           (let ((expected-type (elsa-function-type-nth-arg
                                                 function-type
                                                 index)))
@@ -498,7 +507,7 @@ handled by `elsa--analyse-function-like-invocation'."
                                       "Argument no %d. `%s' is present in function declaration but is missing in Elsa type signature.  Use of top-level implicit mixed is discouraged."
                                       (1+ index)
                                       (elsa-get-name arg)))
-                                  (elsa-type-mixed))))))))
+                                  (elsa-type-mixed)))))))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
     (when body (elsa--analyse-body body scope state))
@@ -507,7 +516,7 @@ handled by `elsa--analyse-function-like-invocation'."
     (let* ((body-return-type (if body (oref (-last-item body) type) (elsa-type-nil)))
            (function-return-type (elsa-type-get-return function-type)))
       (if function-return-type
-          (unless (elsa-type-equivalent-p function-return-type body-return-type)
+          (unless (elsa-type-assignable-p function-return-type body-return-type)
             (elsa-state-add-message state
               (elsa-make-error (elsa-car form)
                 "Function is expected to return %s but returns %s."
@@ -530,9 +539,30 @@ handled by `elsa--analyse-function-like-invocation'."
          (body (nthcdr 3 sequence)))
     (elsa--analyse-defun-like-form name args body form scope state)))
 
+(defun elsa--analyse-register-functionlike-declaration (name args state)
+  "Register functionlike declaration NAME with ARGS to STATE.
+
+The registered object can be a `defun', `defmacro', or
+`cl-defgeneric'."
+  (cond
+   ((elsa-state-get-defun state name)
+    (-when-let (def (elsa-state-get-defun state name))
+      (unless (slot-boundp def 'arglist)
+        (oset def arglist (elsa-form-to-lisp args)))))
+   (t
+    (elsa-state-add-defun state
+      (elsa-defun :name name
+                  :type (elsa-function-type
+                         :args (elsa--get-default-function-types
+                                (elsa-form-map args #'elsa-get-name))
+                         :return (elsa-type-mixed))
+                  :arglist (elsa-form-to-lisp args))))))
+
 (defun elsa--analyse:defmacro (form scope state)
   "just skip for now, it's too complicated."
-  nil)
+  (let ((name (elsa-get-name (elsa-cadr form)))
+        (args (elsa-nth 2 form)))
+    (elsa--analyse-register-functionlike-declaration name args state)))
 
 (defun elsa--analyse:defvar (form scope state)
   "Analyze `defvar'.
@@ -829,7 +859,7 @@ SCOPE and STATE are the scope and state objects."
                                              overload
                                              overload-index
                                              (format
-                                              "Argument %d is present but the function does not define it.  Missing overload?"
+                                              "Argument %d is present but the function signature does not define it.  Missing overload?"
                                               (1+ index)))
                                             overloads-errors))
                                      ((not acceptablep)

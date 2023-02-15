@@ -26,8 +26,9 @@
 
 ;;; Code:
 
-(require 'jka-compr)
 (require 'eieio)
+
+(require 'jka-compr)
 
 (require 'dash)
 (require 'cl-lib)
@@ -55,43 +56,6 @@
 ;; (toggle-debug-on-error)
 
 ;; TODO: unify with `elsa-variable'?
-(defclass elsa-defvar nil
-  ((name :initarg :name)
-   (type :initarg :type)))
-
-(defclass elsa-global-state nil
-  ((project-directory :type string
-                      :initarg :project-directory
-                      :documentation "Directory from which the analysis was started.")
-   (processed-file-index :type integer
-                         :initarg :processed-file-index
-                         :initform 1
-                         :documentation "Index of currently processed file.")
-   (number-of-files :type integer
-                    :initarg :number-of-files
-                    :documentation "Total number of files to analyze.")
-   (defuns :type hash-table
-     :initarg :defuns
-     :initform (make-hash-table)
-     :documentation "Defun definitions loaded from cache."))
-  :documentation "Initial configuration and state of the entire analysis.
-
-The other state class `elsa-state' state holds state of an analysis of
-a single file, form or set of forms.")
-
-(cl-defmethod elsa-global-state-get-counter ((this elsa-global-state))
-  (let ((max-len (length (number-to-string (oref this number-of-files)))))
-    (format (format "%%%dd/%%%dd" max-len max-len)
-            (oref this processed-file-index)
-            (oref this number-of-files))))
-
-(cl-defmethod elsa-global-state-prefix-length ((this elsa-global-state) &optional extra)
-  (let ((max-len (length (number-to-string (oref this number-of-files)))))
-    (+ max-len 1 max-len (or extra 0))))
-
-(cl-defmethod elsa-state-add-defun ((this elsa-global-state) (def elsa-defun))
-  (put (oref def name) 'elsa-type (oref def type))
-  (puthash (oref def name) def (oref this defuns)))
 
 (defvar global-state (elsa-global-state))
 
@@ -99,6 +63,13 @@ a single file, form or set of forms.")
   (declare (indent 2))
   `(elsa-state-add-defun global-state
      (elsa-defun :name ',name :type (elsa-make-type ,type) :arglist ',arglist)))
+
+(defmacro elsa-declare-structure (name parents slots)
+  (declare (indent 2))
+  `(elsa-state-add-structure global-state
+     (elsa-cl-structure :name ',name
+                        :parents ',(or parents `((,name)))
+                        :slots ',slots)))
 
 (defun elsa--get-cache-file-name (global-state feature &optional compiled)
   "Return the cache file name for LIBRARY."
@@ -146,10 +117,7 @@ a single file, form or set of forms.")
                     (oset state provide (list 'subr)))
                   (elsa-save-cache state global-state)
                   ;; copy new definitions to the global state
-                  (maphash
-                   (lambda (_name def)
-                     (elsa-state-add-defun global-state def))
-                   (oref state defuns))
+                  (elsa-state-update-global state global-state)
                   (setq file-state state))
               (elsa-log "[%s] Loading %s from cache %s"
                         (elsa-global-state-get-counter global-state) dep elsa-cache-file)
@@ -196,7 +164,7 @@ tokens."
             (elsa-global-state-get-counter global-state) file)
   (let ((state (elsa-state))
         (form))
-    (oset state global-defuns (oref global-state defuns))
+    (oset state global-state global-state)
     (with-temp-buffer
       (insert-file-contents file)
       (emacs-lisp-mode)
@@ -222,14 +190,15 @@ GLOBAL-STATE is the initial configuration."
                  (insert
                   (format
                    "%S\n"
+                   `(elsa-declare-structure ,name ,(oref def parents) ,(oref def slots)))))
+               (oref state cl-structures))
+              (maphash
+               (lambda (name def)
+                 (insert
+                  (format
+                   "%S\n"
                    `(elsa-declare-defun ,name ,(when (slot-boundp def 'arglist) (oref def arglist))
-                      ,(read (elsa-type-describe (oref def type))))
-                   ;; `(elsa-state-add-defun global-state
-                   ;;    (elsa-defun :name ',name
-                   ;;                :type (elsa-make-type ,(read (elsa-type-describe (oref def type))))
-                   ;;                ,@(when (slot-boundp def 'arglist)
-                   ;;                    (list :arglist `',(oref def arglist)))))
-                   )))
+                      ,(read (elsa-type-describe (oref def type)))))))
                (oref state defuns))
               (-each (nreverse (oref state requires))
                 (lambda (req)
@@ -238,12 +207,13 @@ GLOBAL-STATE is the initial configuration."
               (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
               (byte-compile-file elsa-cache-file))))))))
 
-(defun elsa-process-form ()
+(defun elsa-process-form (&optional state)
   "Read and analyse form at point."
   (interactive)
-  (let* ((state (elsa-state :project-directory (f-parent (buffer-file-name)))))
+  (let* ((state (or state (elsa-state :global-state global-state))))
     (when-let ((form (elsa-read-form state)))
       (elsa-analyse-form state form)
+      (elsa-state-update-global state global-state)
       (list :form form :state state))))
 
 (defun elsa-load-config ()

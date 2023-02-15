@@ -1,14 +1,94 @@
-(require 'trinary)
+(require 'eieio)
 
+(require 'trinary)
 (require 'elsa-scope)
+(require 'elsa-log)
+
+(defclass elsa-cl-structure nil
+  ((name :initarg :name
+         :documentation "Name of the structure.")
+   (slots :initarg :slots
+          :documentation "Slots available on the structure.
+
+Does not include slots on parents.")
+   (parents :type list
+            :initarg :parents
+            :documentation "Tree of parents of this structure."))
+  :documentation "Representation of a `cl-defstruct' or `defclass'.")
+
+(defclass elsa-defun nil
+  ((name :initarg :name :documentation "Name of the defun.")
+   (type :initarg :type :documentation "Function type of the defun.")
+   (arglist :initarg :arglist :documentation "Defun arglist."))
+  :documentation "Defun and defun-like definitions discovered during analysis.")
+
+(defclass elsa-defvar nil
+  ((name :initarg :name)
+   (type :initarg :type)))
+
+(defclass elsa-global-state nil
+  ((project-directory :type string
+                      :initarg :project-directory
+                      :documentation "Directory from which the analysis was started.")
+   (processed-file-index :type integer
+                         :initarg :processed-file-index
+                         :initform 1
+                         :documentation "Index of currently processed file.")
+   (number-of-files :type integer
+                    :initarg :number-of-files
+                    :documentation "Total number of files to analyze.")
+   (defuns :type hash-table
+     :initform (make-hash-table)
+     :documentation "Defun definitions loaded from cache.")
+   (cl-structures :type hash-table
+                  :initform (make-hash-table)))
+  :documentation "Initial configuration and state of the entire analysis.
+
+The other state class `elsa-state' state holds state of an analysis of
+a single file, form or set of forms.")
+
+(cl-defgeneric elsa-state-add-structure (this def)
+  (declare (indent 1)))
+
+(cl-defgeneric elsa-state-get-structure (this name)
+  "Get from THIS the `elsa-cl-structure' definition called NAME.")
+
+(cl-defgeneric elsa-state-add-defun (this def)
+  (declare (indent 1)))
+
+(cl-defgeneric elsa-state-get-defun (this name)
+  "Get from THIS the `elsa-defun' definition called NAME.")
+
+(cl-defmethod elsa-state-get-defun ((this elsa-global-state) name)
+  (gethash name (oref this defuns)))
+
+(cl-defmethod elsa-state-get-structure ((this elsa-global-state) name)
+  (gethash name (oref this cl-structures)))
+
+(cl-defmethod elsa-global-state-get-counter ((this elsa-global-state))
+  (let ((max-len (length (number-to-string (oref this number-of-files)))))
+    (format (format "%%%dd/%%%dd" max-len max-len)
+            (oref this processed-file-index)
+            (oref this number-of-files))))
+
+(cl-defmethod elsa-global-state-prefix-length ((this elsa-global-state) &optional extra)
+  (let ((max-len (length (number-to-string (oref this number-of-files)))))
+    (+ max-len 1 max-len (or extra 0))))
+
+(cl-defmethod elsa-state-add-defun ((this elsa-global-state) (def elsa-defun))
+  (put (oref def name) 'elsa-type (oref def type))
+  (puthash (oref def name) def (oref this defuns)))
+
+(cl-defmethod elsa-state-add-structure ((this elsa-global-state) (str elsa-cl-structure))
+  (put (oref str name) 'elsa-cl-structure str)
+  (puthash (oref str name) str (oref this cl-structures)))
 
 ;; TODO: add some methods for looking up variables/defuns, so we don't
 ;; directly work with the hashtable
 (defclass elsa-state nil
   ((defuns :initform (make-hash-table))
-   (global-defuns :initform (make-hash-table)
-                  :documentation "Already processed defuns from other files.")
    (defvars :initform (make-hash-table))
+   (cl-structures :initform (make-hash-table))
    (errors :initform nil)
    (provide :initform nil
             :documentation "Symbols provided by current file")
@@ -20,24 +100,35 @@
    ;; commit it since I can't see it making any difference.  But it
    ;; probably serves some purpose.
    (quoted :initform (trinary-false))
-   (scope :initform (elsa-scope))))
+   (scope :initform (elsa-scope))
+   (global-state :type elsa-global-state
+                 :initarg :global-state
+                 :initform (elsa-global-state))))
 
-(defclass elsa-defun nil
-  ((name :initarg :name :documentation "Name of the defun.")
-   (type :initarg :type :documentation "Function type of the defun.")
-   (arglist :initarg :arglist :documentation "Defun arglist."))
-  :documentation "Defun and defun-like definitions discovered during analysis.")
-
-(cl-defgeneric elsa-state-add-defun (this def)
-  (declare (indent 1)))
+(cl-defmethod elsa-state-update-global ((this elsa-state) (global elsa-global-state))
+  "Copy declarations from THIS local state to GLOBAL state."
+  (maphash (lambda (_name def)
+             (elsa-state-add-defun global def))
+           (oref this defuns))
+  (maphash (lambda (_name def)
+             (elsa-state-add-structure global def))
+           (oref this cl-structures)))
 
 (cl-defmethod elsa-state-add-defun ((this elsa-state) (def elsa-defun))
   (put (oref def name) 'elsa-type (oref def type))
   (puthash (oref def name) def (oref this defuns)))
 
-(cl-defgeneric elsa-state-get-defun ((this elsa-state) name)
+(cl-defmethod elsa-state-get-defun ((this elsa-state) name)
   (or (gethash name (oref this defuns))
-      (gethash name (oref this global-defuns))))
+      (elsa-state-get-defun (oref this global-state) name)))
+
+(cl-defmethod elsa-state-add-structure ((this elsa-state) (str elsa-cl-structure))
+  (put (oref str name) 'elsa-cl-structure str)
+  (puthash (oref str name) str (oref this cl-structures)))
+
+(cl-defmethod elsa-state-get-structure ((this elsa-state) name)
+  (or (gethash name (oref this cl-structures))
+      (elsa-state-get-structure (oref this global-state) name)))
 
 (defun elsa-state-ignore-line (state line)
   (push line (oref state ignored-lines)))

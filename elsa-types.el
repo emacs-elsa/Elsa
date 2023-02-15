@@ -140,6 +140,7 @@ Uses special rules for `elsa-type-mixed'.
       (elsa-type-mixed-p other)
       (elsa-type-accept this other)))
 
+;; (elsa-get-type :: (function (mixed) (struct elsa-type)))
 (cl-defgeneric elsa-get-type (_thing)
   "Return type of THING."
   nil)
@@ -899,6 +900,24 @@ only a flag which is used during assignability checks (such as
 trying to analyse 'nil, which is not a valid type or form."
   (message "An error happened trying to analyse nil")
   (backtrace))
+
+(defclass elsa-struct-type (elsa-type)
+  ((name :type (or symbol nil) :initarg :name))
+  :documentation "Type representing a `cl-defstruct' or `defclass'.")
+
+(cl-defmethod elsa-type-accept ((this elsa-struct-type) other)
+  (cond
+   ((elsa-type-composite-p other)
+    (elsa-type-is-accepted-by other this))
+   ((elsa-struct-type-p other)
+    (if (not (oref this name))
+        t
+      (-when-let* ((this-struct (get (oref this name) 'elsa-cl-structure))
+                   (other-struct (get (oref other name) 'elsa-cl-structure)))
+        (not (null (assq (oref this-struct name) (oref other-struct parents)))))))))
+
+(cl-defmethod elsa-type-describe ((this elsa-struct-type))
+  (format "(struct %s)" (oref this name)))
 
 (provide 'elsa-types)
 ;;; elsa-types.el ends here
