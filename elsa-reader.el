@@ -164,6 +164,17 @@ This only makes sense for the sequence forms:
   (declare (indent 1))
   nil)
 
+(cl-defgeneric elsa-form-map (_elsa-form _fn)
+  "Map each item of ELSA-FORM through FN with the item as first argument.
+
+This only makes sense for the sequence forms:
+
+- `elsa-form-vector'
+- `elsa-form-list'
+- `elsa-form-improper-list'"
+  (declare (indent 1))
+  nil)
+
 ;;; Atoms
 (defclass elsa-form-atom (elsa-form)
   nil
@@ -320,6 +331,9 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-form-foreach ((this elsa-form-vector) fn)
   (mapc fn (oref this sequence)))
 
+(cl-defmethod elsa-form-map ((this elsa-form-vector) fn)
+  (mapcar fn (oref this sequence)))
+
 (cl-defmethod elsa-form-visit ((this elsa-form-vector) fn)
   (funcall fn this)
   (elsa-form-foreach this (lambda (x) (elsa-form-visit x fn))))
@@ -355,6 +369,9 @@ prefix and skipped by the sexp scanner.")
 
 (cl-defmethod elsa-form-foreach ((this elsa-form-list) fn)
   (mapc fn (oref this sequence)))
+
+(cl-defmethod elsa-form-map ((this elsa-form-list) fn)
+  (mapcar fn (oref this sequence)))
 
 (cl-defmethod elsa-form-visit ((this elsa-form-list) fn)
   (funcall fn this)
@@ -457,6 +474,13 @@ prefix and skipped by the sexp scanner.")
          (prefix (seq-take seq len))
          (last (cdr (last seq))))
     (mapc fn (-snoc prefix last))))
+
+(cl-defmethod elsa-form-map ((this elsa-form-improper-list) fn)
+  (let* ((seq (oref this conses))
+         (len (safe-length seq))
+         (prefix (seq-take seq len))
+         (last (cdr (last seq))))
+    (mapcar fn (-snoc prefix last))))
 
 (cl-defmethod elsa-form-visit ((this elsa-form-improper-list) fn)
   (funcall fn this)
