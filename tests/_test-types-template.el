@@ -28,4 +28,6 @@
 
     (xdescribe "Intersection rules")
 
-    (xdescribe "Diff rules")))
+    (xdescribe "Diff rules")
+
+    (xdescribe "Type normalization rules")))
