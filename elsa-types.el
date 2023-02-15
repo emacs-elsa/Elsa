@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'eieio)
+(require 'cl-macs)
 
 (require 'trinary)
 (require 'dash)
@@ -118,14 +119,10 @@ type.
   "mixed")
 
 (cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other)
-  ;; Since the specialization on the first argument runs first, the
-  ;; (type form) signature from elsa-reader.el is never invoked.  We
-  ;; will therefore "manually" dispatch, or rather resolve, the second
-  ;; argument from a form to a type here.
-  (when (elsa-form-child-p other)
-    (setq other (elsa-get-type other)))
-  (unless (elsa-type-child-p other)
-    (error "Other must be `elsa-type-child-p'"))
+  (unless (cl-typep other 'elsa-type)
+    (cl-call-next-method)
+    ;(error "Other must be subclass of `elsa-type'")
+    )
   (not (eq (eieio-object-class other) 'elsa-type-unbound)))
 
 (defun elsa-type-assignable-p (this other)

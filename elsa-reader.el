@@ -107,6 +107,9 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-type-diff ((this elsa-form) (other elsa-type))
   (elsa-type-diff (oref this type) other))
 
+(cl-defmethod elsa-type-accept ((this elsa-form) (other elsa-form))
+  (elsa-type-accept (elsa-get-type this) (oref other type)))
+
 (cl-defmethod elsa-type-accept ((this elsa-type) (other elsa-form))
   (elsa-type-accept this (oref other type)))
 

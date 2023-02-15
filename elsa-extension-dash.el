@@ -1,3 +1,6 @@
+(require 'cl-macs)
+
+(require 'elsa-reader)
 (require 'elsa-analyser)
 (require 'elsa-type-helpers)
 
@@ -274,8 +277,8 @@
     ;; (eieio-object-class it))
     (when (or (listp binding) (elsa-form-list-p binding))
       (-let [(var source) (elsa-form-sequence binding)]
-        (when (or (elsa-form-seq-child-p var)
-                  (elsa-form-cons-child-p var))
+        (when (or (cl-typep var 'elsa-form-seq)
+                  (cl-typep var 'elsa-form-cons))
           (let (vars)
             (elsa-form-visit var
               (lambda (form)
