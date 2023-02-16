@@ -142,7 +142,17 @@ Elsa can be run with [Eask][Eask], [makem.sh][makem] or [Cask][Cask].
 
 ## Eask
 
-### [RECOMMENDED] Using packaged version
+### [RECOMMENDED] Using packaged version  (via `lint`)
+
+The easiest way to execute Elsa with [Eask][Eask]:
+
+```
+eask lint elsa [PATTERNS]
+```
+
+`[PATTERNS]` is optional; the default will lint all your package files.
+
+### [RECOMMENDED] Using packaged version (via `exec`)
 
 This method uses [Eask][Eask] and installs Elsa from [MELPA][MELPA].
 
@@ -150,7 +160,7 @@ This method uses [Eask][Eask] and installs Elsa from [MELPA][MELPA].
 2. Run `eask install-deps`.
 3. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
-### Using development version
+### Using development version (via `exec`)
 
 To use the development version of Elsa, you can clone the repository
 and use the `eask link` feature to use the code from the clone.
