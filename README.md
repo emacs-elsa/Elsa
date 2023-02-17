@@ -5,8 +5,12 @@
 [![Coverage Status](https://coveralls.io/repos/github/emacs-elsa/Elsa/badge.svg?branch=master)](https://coveralls.io/github/emacs-elsa/Elsa?branch=master) [![Paypal logo](https://img.shields.io/badge/PayPal-Donate-orange.svg?logo=paypal)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A5PMGVKCQBT88) [![Patreon](https://img.shields.io/badge/Patreon-Become%20a%20patron-orange.svg?logo=patreon)](https://www.patreon.com/user?u=3282358)
 
 Elsa is a tool that analyses your code without loading or running it.
-It can track types and provide helpful hints when things don't match
-up before you even try to run the code.
+It is 100% side-effect free and we strive to keep it that way, so you
+can analyse any elisp code from anywhere safely.
+
+Elsa adds a powerful type system on top of Emacs lisp (completely
+optional).  In can track types and provide helpful hints when things
+don't match up before you even try to run the code.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
@@ -36,12 +40,41 @@ up before you even try to run the code.
 
 <!-- markdown-toc end -->
 
+# Motivation
+
+Dynamic programming languages, such as Emacs Lisp, JavaScript and
+Python, have many advantages over statically typed languages like Java
+or C++. They allow for faster development and prototyping due to their
+dynamic nature, which makes it easier to write and test code quickly.
+
+However, dynamic languages lack the type checking and safety features
+that statically typed languages provide. This can lead to errors that
+are difficult to catch during development and can cause issues in
+production. By adding a type system on top of a dynamic language, we
+can enjoy the benefits of both dynamic and static languages.
+
+Elsa is a type system and analyser for Emacs Lisp, which aims to
+provide the benefits of a type system while retaining the flexibility
+and expressiveness of Lisp. It is similar to TypeScript for JavaScript
+or Python Type Hints for Python in that it provides a way to add
+static type checking to a dynamically typed language.
+
+Elsa tries to be idiomatic and use as much available information as
+possible, such as edebug declarations, defmethod specializers or EIEIO
+class slot types, so the amount of code that needs to be annotated is
+minimized.
 
 # State of the project
 
-We are currently in a very early *ALPHA* phase.  API is somewhat
-stable but the type system and annotations are under constant
-development.  Things might break at any point.
+We are currently in a *beta* phase.  API, the type system and
+annotations are quite stable.  We support multiple ways to install and
+run the analyser.
+
+Elsa lacks a lot of type annotations for built-in functions (there is
+about 1500 of them) and variables.  The analysis results are therefore
+still sub optimal.
+
+Things might still break at any point.
 
 # Non-exhaustive list of features
 
@@ -139,6 +172,9 @@ didn't match.
 # How do I run it
 
 Elsa can be run with [Eask][Eask], [makem.sh][makem] or [Cask][Cask].
+Before you can perform analysis, see the
+[Configuration](#configuration) section on how to configure the
+project.
 
 ## Eask
 
@@ -207,23 +243,21 @@ you can use [flymake-elsa](https://github.com/flymake/flymake-elsa).
 
 # Configuration
 
-By default Elsa core comes with very little built-in logic, only
-understanding the elisp [special
-forms](https://www.gnu.org/software/emacs/manual/html_node/elisp/Special-Forms.html).
+For now Elsa supports very little configuration.  To "Elsa-enable"
+your project, you have to add an `Elsafile.el` to the root of your
+project.
 
-However, we ship a large number of extensions for popular packages
-such as `eieio`, `cl`, `dash` or even `elsa` itself.
+Elsa has a concept of extensions and rulesets, which currently exist
+mostly internally and are wrapped in one big "default" ruleset and
+extension.  This system is still work in progress.
 
-You can configure Elsa by adding an `Elsafile.el` to your project.
-The `Elsafile.el` should be located next to the `Cask` file.
-
-There are multiple ways to extend the capabilities of Elsa.
+The following are some ways you can extend Elsa today.
 
 ## Analysis extension
 
-One is by providing special analysis rules for more forms and
-functions where we can exploit the knowledge of how the function
-behaves to narrow the analysis down more.
+One way to extend Elsa is by providing special analysis rules for more
+forms and functions where we can exploit the knowledge of how the
+function behaves to narrow the analysis down more.
 
 For example, we can say that if the input of `not` is `t`, the return
 value is always `nil`.  This encodes our domain knowledge in form of
@@ -247,6 +281,11 @@ your `Elsafile.el` the `register-extensions` form, like so
  )
 ```
 
+Extensions are auto-loaded when Elsa comes upon a require form.  For a
+`(require 'foo)` it will look for `elsa-extension-foo.el` and tries to
+load it.  This means that in practice you will never have to register
+extensions for most of the 3rd party packages.
+
 ## Rulesets
 
 After analysis of the forms is done we have all the type information
@@ -262,7 +301,8 @@ These can be (non-exhaustive list):
   always evaluate to `non-nil` (in which case the `if` form is
   useless).
 
-Elsa provides some built-in rulesets and more can also be used by loading extensions.
+Elsa provides some built-in rulesets and more can also be used by
+loading extensions.
 
 To register a ruleset, add the following form to `Elsafile.el`
 
