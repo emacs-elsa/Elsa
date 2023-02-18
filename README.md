@@ -198,6 +198,19 @@ The following table summarizes the options:
 | Flymake integration            | ✓    | ⨯    | ⨯        |
 | Language Server Protocol (LSP) | ✓    | ✓    | ⨯        |
 
+**Note:** when you run Elsa in a project for the first time, it is
+recommended to start it from the CLI because it will need to crawl all
+the dependencies you use and save the analysis results to cache files.
+This can take a couple of minutes if you have many dependencies (or if
+you include something like `org` which pulls in about 300 other
+packages).
+
+After the results are cached, next time you need them Elsa can load
+them from cache and this is generally very fast.
+
+You can start the LSP right away but it will be unresponsive during
+the time it is doing the initial analysis.
+
 ## Eask
 
 ### [RECOMMENDED] Using packaged version
