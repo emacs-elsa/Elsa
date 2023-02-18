@@ -6,7 +6,7 @@
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
 ;; Created: 23rd March 2017
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "25.1") (trinary "1.0.0") (f "0") (dash "2.14") (cl-lib "0.3"))
+;; Package-Requires: ((emacs "25.1") (trinary "0") (f "0") (dash "2.14") (cl-lib "0.3") (lsp-mode "0"))
 ;; Keywords: languages, lisp
 
 ;; This program is free software; you can redistribute it and/or
@@ -25,6 +25,8 @@
 ;;; Commentary:
 
 ;;; Code:
+
+(defvar elsa-is-language-server nil)
 
 (require 'eieio)
 
@@ -57,16 +59,25 @@
 
 ;; TODO: unify with `elsa-variable'?
 
-(defvar global-state (elsa-global-state))
+(defvar elsa-global-state (elsa-global-state))
+
+(defmacro elsa-in-file (file)
+  "Specify the current file for registering new structures."
+  `(oset elsa-global-state current-file ,file))
 
 (defmacro elsa-declare-defun (name arglist type)
   (declare (indent 2))
-  `(elsa-state-add-defun global-state
+  `(elsa-state-add-defun elsa-global-state
      (elsa-defun :name ',name :type (elsa-make-type ,type) :arglist ',arglist)))
+
+(defmacro elsa-declare-defvar (name type)
+  (declare (indent 1))
+  `(elsa-state-add-defvar elsa-global-state
+     (elsa-defvar :name ',name :type (elsa-make-type ,type))))
 
 (defmacro elsa-declare-structure (name parents slots)
   (declare (indent 2))
-  `(elsa-state-add-structure global-state
+  `(elsa-state-add-structure elsa-global-state
      (elsa-cl-structure :name ',name
                         :parents ',(or parents `((,name)))
                         :slots ',slots)))
@@ -78,21 +89,30 @@
                     (if compiled "c" ""))
             (oref global-state project-directory)))
 
-(defun elsa-analyse-file (file)
-  (let ((global-state (elsa-global-state :project-directory (f-parent file)))
-        (dependencies (cons
+(defun elsa-analyse-file (file global-state &optional already-loaded)
+  "Analyse FILE with GLOBAL-STATE.
+
+Optional argument ALREADY-LOADED is used to skip dependencies which
+are already loaded in the currently running Emacs process.  This is
+used by the LSP server to not reload already processed files."
+  (let ((dependencies (cons
                        "subr" ; subr is always a dependency
                        (elsa-get-dependencies file)))
         (visited nil)
         (file-state nil))
-    (elsa-log "Processing transitive dependencies: %s" (s-join ", " dependencies))
+    (oset global-state project-directory (f-parent file))
+    ;; (elsa-log "Processing transitive dependencies: %s" (s-join ", " dependencies))
+    (oset global-state processed-file-index 1)
     (oset global-state number-of-files (length dependencies))
     (dolist (dep dependencies)
       (let* ((dep (replace-regexp-in-string "-CIRCULAR\\'" "" dep))
              (elsa-cache-file (elsa--get-cache-file-name global-state dep)))
-        (when-let* ((library (if (f-exists? dep) dep
-                               (elsa--find-dependency dep))))
-          (if (member library visited)
+        (when-let* ((library (file-truename
+                              (if (f-exists? dep) dep
+                                (elsa--find-dependency dep)))))
+          (if (and (or (member library visited)
+                       (member library already-loaded))
+                   (not (file-newer-than-file-p library elsa-cache-file)))
               (elsa-log "[%s] Skipping already processed dependency %s (was circular)"
                         (elsa-global-state-get-counter global-state) dep)
             (push library visited)
@@ -123,6 +143,7 @@
                         (elsa-global-state-get-counter global-state) dep elsa-cache-file)
               (load (f-no-ext elsa-cache-file) t t)))))
       (cl-incf (oref global-state processed-file-index)))
+    (oset file-state dependencies visited)
     file-state))
 
 (defun elsa--setup-buffer (state)
@@ -157,21 +178,56 @@ tokens."
         (setq has-more (= (forward-line) 0))
         (cl-incf line)))))
 
-;; (elsa-process-file :: (function (string mixed) mixed))
-(defun elsa-process-file (file global-state)
+;; (elsa-process-file :: (function (string (or (struct elsa-global-state) nil)) mixed))
+(defun elsa-process-file (file &optional global-state)
   "Process FILE."
+  (setq global-state (or global-state elsa-global-state))
   (elsa-log "[%s] Processing file %s"
             (elsa-global-state-get-counter global-state) file)
   (let ((state (elsa-state))
         (form))
+    (elsa-state-clear-file-state global-state file)
+    (oset global-state current-file file)
     (oset state global-state global-state)
     (with-temp-buffer
       (insert-file-contents file)
       (emacs-lisp-mode)
       (elsa--setup-buffer state)
       (goto-char (point-min))
-      (while (setq form (elsa-read-form state))
-        (elsa-analyse-form state form)))
+      (if elsa-is-language-server
+          ;; TODO: during the initial load/analyse of all
+          ;; dependencies, we should somehow track which files
+          ;; produced errors, because this can impact the analysis
+          ;; correctness.
+          (while (setq form
+                       (condition-case err
+                           (elsa-read-form state)
+                         (error
+                          (elsa-state-add-message state
+                            (let ((err-form
+                                   (save-excursion
+                                     (beginning-of-defun)
+                                     (forward-symbol 1)
+                                     (forward-symbol -1)
+                                     (elsa--read-symbol (symbol-at-point)))))
+                              (elsa--set-line-and-column err-form)
+                              (elsa-make-error err-form
+                                "Elsa could not read form %s: %s"
+                                (elsa-tostring err-form)
+                                (error-message-string err))))
+                          (end-of-defun)
+                          :skip)))
+            (condition-case err
+                (unless (eq form :skip)
+                  (elsa-analyse-form state form))
+              (error (elsa-state-add-message state
+                       (elsa-make-error form
+                         "Elsa could not analyse form %s: %s"
+                         (elsa-tostring form)
+                         (error-message-string err))))))
+        ;; When not running as language server, just crash on errors.
+        (while (setq form (elsa-read-form state))
+          (elsa-analyse-form state form))))
     state))
 
 (defun elsa-save-cache (state global-state)
@@ -185,6 +241,7 @@ GLOBAL-STATE is the initial configuration."
               (elsa-cache-file (elsa--get-cache-file-name global-state feature)))
           (unless (string-match-p "^elsa-\\(typed\\|extension\\)-" feature-name)
             (progn
+              (insert (format "%S\n" `(elsa-in-file ,(oref global-state current-file))))
               (maphash
                (lambda (name def)
                  (insert
@@ -192,6 +249,13 @@ GLOBAL-STATE is the initial configuration."
                    "%S\n"
                    `(elsa-declare-structure ,name ,(oref def parents) ,(oref def slots)))))
                (oref state cl-structures))
+              (maphash
+               (lambda (name def)
+                 (insert
+                  (format
+                   "%S\n"
+                   `(elsa-declare-defvar ,name ,(read (elsa-type-describe (oref def type)))))))
+               (oref state defvars))
               (maphash
                (lambda (name def)
                  (insert
@@ -210,10 +274,11 @@ GLOBAL-STATE is the initial configuration."
 (defun elsa-process-form (&optional state)
   "Read and analyse form at point."
   (interactive)
-  (let* ((state (or state (elsa-state :global-state global-state))))
+  (let* ((state (or state (elsa-state :global-state elsa-global-state))))
     (when-let ((form (elsa-read-form state)))
+      (oset (oref state global-state) current-file (buffer-file-name))
       (elsa-analyse-form state form)
-      (elsa-state-update-global state global-state)
+      (elsa-state-update-global state (oref state global-state))
       (list :form form :state state))))
 
 (defun elsa-load-config ()
@@ -249,7 +314,7 @@ GLOBAL-STATE is the initial configuration."
   "Run `elsa-analyse-file' and output errors to stdout for flycheck."
   (elsa-load-config)
   (dolist (file command-line-args-left)
-    (--each (reverse (oref (elsa-analyse-file file) errors))
+    (--each (reverse (oref (elsa-analyse-file file elsa-global-state) errors))
       (princ (concat file ":" (elsa-message-format it))))))
 
 (defun elsa-run-files-and-exit ()
@@ -259,7 +324,7 @@ errors are found."
   (elsa-load-config)
   (let (exit-code)
     (dolist (file command-line-args-left)
-      (when-let* ((errors (oref (elsa-analyse-file file) errors)))
+      (when-let* ((errors (oref (elsa-analyse-file file elsa-global-state) errors)))
         (setf exit-code 1)
         (--each (reverse errors)
           (princ (concat file ":" (elsa-message-format it))))))

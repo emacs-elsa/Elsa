@@ -203,9 +203,10 @@ CONSTANT-FORM is the value to which the variable is narrowed."
         (args (elsa-nthcdr 2 form)))
     ;; In case head is a variable, this should set its type to the
     ;; callable type it represents indirectly.
-    (elsa--analyse-form head scope state)
-    (elsa--analyse-function-like-invocation
-     form t head args scope state)))
+    (when head
+      (elsa--analyse-form head scope state)
+      (elsa--analyse-function-like-invocation
+       form t head args scope state))))
 
 (defun elsa--analyse:error (form scope state)
   "Analyse `error' form.

@@ -60,7 +60,7 @@
 
     (it "should resolve the type of expression to bool if we don't know"
       (let ((state (elsa-state)))
-        (elsa-state-add-defvar state 'a (elsa-make-type mixed))
+        (elsa-state-add-defvar state (elsa-defvar :name 'a :type (elsa-make-type mixed)))
         (elsa-test-with-analysed-form "|(integerp a)" form
           :state state
           (expect form :to-be-type-equivalent (elsa-make-type bool))))))
@@ -69,7 +69,7 @@
 
     (it "should narrow the type of a variable to the predicated type"
       (let ((state (elsa-state)))
-        (elsa-state-add-defvar state 'a (elsa-make-type mixed))
+        (elsa-state-add-defvar state (elsa-defvar :name 'a :type (elsa-make-type mixed)))
         (elsa-test-with-analysed-form "|(and (integerp a) a)" form
           :state state
           (expect (elsa-nth 2 form) :to-be-type-equivalent (elsa-make-type int)))))))

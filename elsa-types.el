@@ -140,11 +140,6 @@ Uses special rules for `elsa-type-mixed'.
       (elsa-type-mixed-p other)
       (elsa-type-accept this other)))
 
-;; (elsa-get-type :: (function (mixed) (struct elsa-type)))
-(cl-defgeneric elsa-get-type (_thing)
-  "Return type of THING."
-  nil)
-
 (cl-defmethod elsa-get-type ((this null))
   (elsa-type-unbound))
 

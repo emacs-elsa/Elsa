@@ -64,6 +64,8 @@ Nil if FORM is not a quoted symbol."
    (quote-type :type symbol :initarg :quote-type :initform nil)
    (line :type integer :initarg :line)
    (column :type integer :initarg :column)
+   (end-line :type integer :initarg :end-line)
+   (end-column :type integer :initarg :end-column)
    (type :type elsa-type :initarg :type :initform (elsa-make-type mixed))
    (narrow-types :initarg :narrow-type :initform nil)
    (reachable :type trinary :initarg :reachable :initform (trinary-true))
@@ -373,6 +375,9 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-form-foreach ((this elsa-form-list) fn)
   (mapc fn (oref this sequence)))
 
+(cl-defmethod elsa-form-foreach ((this list) fn)
+  (mapc fn this))
+
 (cl-defmethod elsa-form-map ((this elsa-form-list) fn)
   (mapcar fn (oref this sequence)))
 
@@ -617,6 +622,7 @@ STATE is Elsa local state."
       (cond
        ((or (elsa-form-function-call-p reader-form 'defun)
             (elsa-form-function-call-p reader-form 'defsubst)
+            (elsa-form-function-call-p reader-form 'cl-defmethod)
             (elsa-form-function-call-p reader-form 'cl-defgeneric))
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
@@ -624,8 +630,7 @@ STATE is Elsa local state."
               "The function name `%s' and the annotation name `%s' do not match"
               (symbol-name form-name)
               (symbol-name annotation-name))))
-        (elsa-state-add-defun
-            state
+        (elsa-state-add-defun state
           (elsa-defun :name (elsa-get-name (cadr (oref reader-form sequence)))
                       :type (cond
                              ((symbolp (nth 2 comment-form))
@@ -643,9 +648,9 @@ STATE is Elsa local state."
               "The variable name `%s' and the annotation name `%s' do not match"
               (symbol-name form-name)
               (symbol-name annotation-name))))
-        (put (elsa-get-name (cadr (oref reader-form sequence)))
-             'elsa-type-var
-             (eval `(elsa-make-type ,@(cddr comment-form)))))
+        (elsa-state-add-defvar state
+          (elsa-defvar :name (elsa-get-name (cadr (oref reader-form sequence)))
+                       :type (eval `(elsa-make-type ,@(cddr comment-form))))))
        (t
         ;; annotation which is not on defun or defvar will be assumed
         ;; to annotate a variable
@@ -663,9 +668,18 @@ constructor.  These are used to derive line and column."
                                  (line-beginning-position))
                                'elsa-line)
             (line-number-at-pos (oref form start))))
+  (oset form end-line
+        (or (get-text-property (save-excursion
+                                 (goto-char (oref form end))
+                                 (line-beginning-position))
+                               'elsa-line)
+            (line-number-at-pos (oref form start))))
   (oset form column (save-excursion
                       (goto-char (oref form start))
                       (current-column)))
+  (oset form end-column (save-excursion
+                          (goto-char (oref form end))
+                          (current-column)))
   form)
 
 (defun elsa--read-form (form state)

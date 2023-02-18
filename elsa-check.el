@@ -1,5 +1,9 @@
-(require 'dash)
 (require 'eieio)
+
+(require 'dash)
+
+(require 'elsa-reader)
+(require 'elsa-scope)
 
 (defclass elsa-check () () :abstract t
   :documentation
@@ -14,11 +18,11 @@ A check has to implement two methods:
 ;; (elsa-checks :: (list (struct elsa-check)))
 (defvar elsa-checks nil)
 
-(cl-defgeneric elsa-check-should-run ((this elsa-check) form scope state)
+(cl-defgeneric elsa-check-should-run ((this elsa-check) (form elsa-form) (scope elsa-scope) (state elsa-state))
   "Decide if the check should run on FORM."
   nil)
 
-(cl-defgeneric elsa-check-check ((this elsa-check) form scope state)
+(cl-defgeneric elsa-check-check ((this elsa-check) (form elsa-form) (scope elsa-scope) (state elsa-state))
   "Run THIS check on FORM in SCOPE."
   nil)
 

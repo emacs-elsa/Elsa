@@ -32,7 +32,7 @@
 
       (it "should not warn if the type-testing predicate could return true or false"
         (let ((state (elsa-state)))
-          (elsa-state-add-defvar state 'a (elsa-make-type (or string int)))
+          (elsa-state-add-defvar state (elsa-defvar :name 'a :type (elsa-make-type (or string int))))
           (elsa-test-with-analysed-form "|(when (stringp a) :yay)" form
             :state state
             :errors-var errors

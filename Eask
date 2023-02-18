@@ -7,7 +7,7 @@
 
 (package-file "elsa.el")
 
-(files "elsa-*.el" "bin/elsa*")
+(files "elsa.el" "elsa-*.el" "bin/elsa*")
 
 (script "test" "echo \"Error: no test specified\" && exit 1")
 
@@ -16,9 +16,10 @@
 
 (depends-on "emacs" "26.1")
 (depends-on "dash" "2.14")
-(depends-on "seq" "0")
-(depends-on "f" "0")
-(depends-on "trinary" "1.0.0")
+(depends-on "seq")
+(depends-on "f")
+(depends-on "trinary")
+(depends-on "lsp-mode")
 
 (development
  (depends-on "elsa")

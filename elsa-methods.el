@@ -33,6 +33,11 @@
   "Retrieve name from an Elsa object."
   nil)
 
+;; (elsa-get-type :: (function (mixed) (or (struct elsa-type) nil)))
+(cl-defgeneric elsa-get-type (this)
+  "Return type of THIS."
+  nil)
+
 ;; (elsa-tostring :: (function (mixed) string))
 (cl-defgeneric elsa-tostring (this)
   "Convert THIS to string."

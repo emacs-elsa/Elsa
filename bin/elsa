@@ -50,5 +50,5 @@ done
 # configuration:
 exec "$EMACS_BIN" --batch --no-init-file --no-site-file --no-splash \
      "${EMACS_ARGS[@]}" \
-     --eval "(setq enable-dir-local-variables nil)" \
+     --eval "(setq enable-dir-local-variables nil eieio-backward-compatibility nil)" \
      --load=elsa --funcall=elsa-run "${ELSA_ARGS[@]}"

@@ -171,10 +171,31 @@ didn't match.
 
 # How do I run it
 
-Elsa can be run with [Eask][Eask], [makem.sh][makem] or [Cask][Cask].
+Elsa can be run with [Eask][Eask], [Cask][Cask] or [makem.sh][makem].
 Before you can perform analysis, see the
 [Configuration](#configuration) section on how to configure the
 project.
+
+If you use Eask or Cask, you can use Flycheck and Flymake integrations
+(see below).
+
+In addition, Elsa also implements Language Server Protocol (LSP) and
+can be used with [lsp-mode][lsp-mode].  This is the best option
+because all the state is cached in the server and all the operations
+are very fast.  LSP also exposes features of Elsa otherwise not
+available, such as completion (via `lsp-completion-mode`) or
+contextual hover type information.
+
+The following table summarizes the options:
+
+|--------------------------------|------|------|----------|
+| Feature                        | Eask | Cask | makem.sh |
+|--------------------------------|------|------|----------|
+| Stand-alone analysis from CLI  | ✓    | ✓    | ✓        |
+| Flycheck integration           | ✓    | ✓    | ⨯        |
+| Flymake integration            | ✓    | ⨯    | ⨯        |
+| Language Server Protocol (LSP) | ✓    | ✓    | ⨯        |
+|--------------------------------|------|------|----------|
 
 ## Eask
 
@@ -240,6 +261,30 @@ package which integrates Elsa with Flycheck.
 For
 [flymake](https://www.gnu.org/software/emacs/manual/html_node/emacs/Flymake.html),
 you can use [flymake-elsa](https://github.com/flymake/flymake-elsa).
+
+## Language server protocol (LSP)
+
+Elsa's LSP implementation is currently work in progress, but the
+server is stable enough that it is useful to have it on.  It makes the
+linting very fast, because all the state is cached in the server
+instance and we don't have to re-read the entire cache very time from
+scratch (like when running through flycheck or flymake).
+
+Elsa currently supports [lsp-mode][lsp-mode], but it is not yet
+built-in to lsp-mode itself because it (Elsa LSP) is not stable
+enough.  To use Elsa LSP, run `(elsa-lsp-register)` or `M-x
+elsa-lsp-register`to register the client with `lsp-mode`.  After that,
+using `M-x lsp` in an Elisp buffer will start a workspace.
+
+Currently, these LSP capabilities are supported
+
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| Capability         | Implemented                                                                                                                              |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| hoverProvider      | Provides contextual type annotations of forms under point                                                                                |
+| textDocumentSync   | openClose, save                                                                                                                          |
+| completionProvider | <ul><li>functions from workspace</li><li>variables from scope and workspace</li><li>special resolution of oref/oset slot names</li></ul> |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 
 # Configuration
 
@@ -369,3 +414,4 @@ and admiration.
 [Eask]: https://github.com/emacs-eask/cli
 [makem]: https://github.com/alphapapa/makem.sh
 [MELPA]: https://melpa.org
+[lsp-mode]: https://emacs-lsp.github.io/lsp-mode/

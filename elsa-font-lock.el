@@ -59,6 +59,8 @@
        (1 font-lock-keyword-face t)))
      (,(rx "(" (* space) "elsa-declare-defun" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
       (1 font-lock-function-name-face))
+     (,(rx "(" (* space) "elsa-declare-defvar" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
+      (1 font-lock-variable-name-face))
      (,(rx "(" (* space) "elsa-declare-structure" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
       (1 font-lock-type-face)))))
 

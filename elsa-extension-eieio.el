@@ -5,22 +5,23 @@
 (require 'elsa-extension-cl)
 
 (defun elsa--eieio-analyse-obj-slot (instance slot-form state)
-  (let ((slot-name (elsa-get-name slot-form))
-        (inst-type (elsa-get-type instance)))
-    (when (elsa-struct-type-p inst-type)
-      (when-let* ((struct (get (oref inst-type name) 'elsa-cl-structure)))
-        (let ((slots (-mapcat
-                      (lambda (par)
-                        (when-let ((par-struct (get par 'elsa-cl-structure)))
-                          (oref par-struct slots)))
-                      (mapcar #'car (oref struct parents)))))
-          (unless (memq slot-name slots)
-            (elsa-state-add-message state
-              (elsa-make-error slot-form
-                "Type `%s' has no slot `%s', has %s"
-                (elsa-type-describe inst-type)
-                slot-name
-                (or slots "no slots")))))))))
+  (when slot-form
+    (let ((slot-name (elsa-get-name slot-form))
+          (inst-type (elsa-get-type instance)))
+      (when (elsa-struct-type-p inst-type)
+        (when-let* ((struct (get (oref inst-type name) 'elsa-cl-structure)))
+          (let ((slots (-mapcat
+                        (lambda (par)
+                          (when-let ((par-struct (get par 'elsa-cl-structure)))
+                            (oref par-struct slots)))
+                        (mapcar #'car (oref struct parents)))))
+            (unless (memq slot-name slots)
+              (elsa-state-add-message state
+                                      (elsa-make-error slot-form
+                                                       "Type `%s' has no slot `%s', has %s"
+                                                       (elsa-type-describe inst-type)
+                                                       slot-name
+                                                       (or slots "no slots"))))))))))
 
 (defun elsa--eieio-assert-struct-for-obj (instance state)
   (let ((type (elsa-get-type instance)))

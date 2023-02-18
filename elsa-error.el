@@ -26,6 +26,8 @@
 
 (require 'eieio)
 
+(require 'lsp-protocol)
+
 (defclass elsa-message ()
   ((message :initarg :message)
    (line :initarg :line :initform nil)
@@ -63,6 +65,18 @@ In general, we recognize three states: error, warning, notice
 (cl-defmethod elsa-message-type ((_this elsa-notice))
   "notice")
 
+(cl-defgeneric elsa-message-to-lsp-severity ((this elsa-message))
+  "Retrieve LSP severity code FOR this message.")
+
+(cl-defmethod elsa-message-to-lsp-severity ((_this elsa-error))
+  1)
+
+(cl-defmethod elsa-message-to-lsp-severity ((_this elsa-warning))
+  2)
+
+(cl-defmethod elsa-message-to-lsp-severity ((_this elsa-notice))
+  3)
+
 (cl-defmethod elsa-message-format ((this elsa-message))
   "Format an `elsa-message'."
   (format "%s:%s:%s:%s\n"
@@ -70,6 +84,27 @@ In general, we recognize three states: error, warning, notice
           (or (oref this column) "?")
           (elsa-message-type this)
           (oref this message)))
+
+(cl-defmethod elsa-message-to-lsp ((this elsa-message))
+  (lsp-make-diagnostic
+   :code "XYZ"
+   :range (lsp-make-range
+           :start (lsp-make-position
+                   :line (1- (oref this line))
+                   :character (oref this column))
+           :end (lsp-make-position
+                 :line (1- (oref this line))
+                 :character (let ((expr (oref this expression)))
+                              (if (and (elsa-form-sequence-p expr)
+                                       (elsa-car expr))
+                                  (oref (elsa-car expr) end-column)
+                                (+ (oref this column)
+                                   (if (or (elsa-form-symbol-p expr)
+                                           (elsa-get-name expr))
+                                       (length (symbol-name (elsa-get-name expr)))
+                                     1))))))
+   :severity (elsa-message-to-lsp-severity this)
+   :message (oref this message)))
 
 (defun elsa--make-message (constructor expression format args)
   (funcall constructor

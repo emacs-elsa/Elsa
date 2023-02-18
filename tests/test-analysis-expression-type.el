@@ -10,7 +10,7 @@
 
     (it "should recognize defvars"
       (let* ((state (elsa-state)))
-        (elsa-state-add-defvar state 'a (elsa-make-type string))
+        (elsa-state-add-defvar state (elsa-defvar :name 'a :type (elsa-make-type string)))
         (expect (eieio-object-class
                  (elsa--get-expression-type state 'a))
                 :to-equal 'elsa-type-string)))
@@ -18,9 +18,9 @@
     (it "should prefer lexically-bound variables over defvars"
       (let* ((state (elsa-state))
              (scope (oref state scope)))
-        (elsa-scope-add-var
-            scope (elsa-variable :name 'a :type (elsa-make-type string)))
-        (elsa-state-add-defvar state 'a (elsa-make-type int))
+        (elsa-scope-add-var scope
+          (elsa-variable :name 'a :type (elsa-make-type string)))
+        (elsa-state-add-defvar state (elsa-defvar :name 'a :type (elsa-make-type int)))
         (expect (eieio-object-class
                  (elsa--get-expression-type state 'a))
                 :to-equal 'elsa-type-string))))

@@ -40,6 +40,7 @@
          :documentation
      "Hash table of variables available in current (lexical) scope.")))
 
+;; (elsa-scope-get-var :: (function ((struct elsa-scope) mixed) (struct elsa-variable)))
 (cl-defgeneric elsa-scope-get-var (scope var)
   "Get current state of variable."
   (declare (indent 1)))

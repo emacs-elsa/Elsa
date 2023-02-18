@@ -13,7 +13,7 @@
 
 (require 'elsa-typed-builtin)
 
-;; (elsa--arglist-to-arity :: (function ((or (list symbol) t string)) (cons int (or int (const many) (const undefined)))))
+;; (elsa--arglist-to-arity :: (function ((or (list (or symbol (cons symbol mixed))) t string)) (cons int (or int (const many) (const undefined)))))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
 
@@ -44,7 +44,7 @@ adds the information that a fallback was used."
         (setq max 'many))
       (cons min max)))))
 
-;; (elsa-fn-arity :: (function (mixed (or list symbol)) (cons int (or int (const many) (const unevalled) (const undefined)))))
+;; (elsa-fn-arity :: (function ((struct elsa-state) (or (list (or symbol (cons symbol mixed))) symbol)) (cons int (or int (const many) (const unevalled) (const undefined)))))
 (defun elsa-fn-arity (state def)
   (cond
    ;; directly provided arglist
@@ -81,6 +81,7 @@ adds the information that a fallback was used."
 (defun elsa--analyse-keyword (_form _scope _state)
   nil)
 
+;;    (elsa--analyse-symbol :: (function ((struct elsa-form-symbol) mixed (struct elsa-state)) mixed))
 (defun elsa--analyse-symbol (form scope state)
   (let* ((name (oref form name))
          (type (cond
@@ -92,7 +93,8 @@ adds the information that a fallback was used."
                 ((eq name nil) (elsa-make-type nil))
                 ((-when-let (var (elsa-scope-get-var scope form))
                    (clone (oref var type))))
-                ((get name 'elsa-type-var))
+                ((and (elsa-state-get-defvar state name)
+                      (elsa-get-type (elsa-state-get-defvar state name))))
                 (t (elsa-make-type unbound)))))
     (oset form type type)
     (unless (or (memq name '(t nil))
@@ -239,7 +241,8 @@ The BINDING should have one of the following forms:
         (let* ((place (car assignment))
                (val (cadr assignment))
                (var (elsa-scope-get-var scope place))
-               (special-var (get (elsa-get-name place) 'elsa-type-var)))
+               (special-var (elsa-state-get-defvar state (elsa-get-name place)))
+               (special-var-type (and special-var (elsa-get-type special-var))))
           (elsa--analyse-form val scope state)
           (elsa-scope-assign-var scope
             (elsa-variable :name (elsa-get-name place)
@@ -251,7 +254,7 @@ The BINDING should have one of the following forms:
                 (symbol-name (elsa-get-name place)))))
           (-when-let (type (or
                             (and var (elsa-get-type var))
-                            special-var))
+                            special-var-type))
             (if (elsa-readonly-type-p type)
                 (elsa-state-add-message state
                   (elsa-make-error place
@@ -449,14 +452,37 @@ The BINDING should have one of the following forms:
 (defun elsa--get-default-function-types (args)
   "Return a default list of types based on ARGS.
 
+ARGS should be a list of `elsa-form's.
+
 This function skips over special &optional and &rest markers and
 collects all the arguments, turns &optional arguments into
 nullables and the &rest argument into a variadic."
-  (-let (((min . max) (elsa--arglist-to-arity args)))
-    (if (eq max 'many)
-        (-snoc (-repeat min (elsa-make-type mixed))
-               (elsa-make-type (&rest mixed)))
-      (-repeat max (elsa-make-type mixed)))))
+  (-let ((optionalp nil)
+         (restp nil)
+         (types nil))
+    (elsa-form-foreach args
+      (lambda (arg)
+        (cond
+         ((eq (elsa-get-name arg) '&optional)
+          (setq optionalp t))
+         ((eq (elsa-get-name arg) '&rest)
+          (setq restp t)
+          (setq optionalp nil))
+         (t
+          (let ((type (or (elsa-get-type arg)
+                          (elsa-type-mixed))))
+            (cond
+             (optionalp (push (elsa-type-sum
+                               (elsa-make-type nil)
+                               type)
+                              types))
+             (restp (push (elsa-variadic-type
+                           :item-type (elsa-type-sum
+                                       (elsa-make-type nil)
+                                       type))
+                          types))
+             (t (push type types))))))))
+    (nreverse types)))
 
 (defun elsa--analyse-defun-like-form (name args body form scope state)
   "Analyse function or macro definition.
@@ -479,7 +505,9 @@ handled by `elsa--analyse-function-like-invocation'."
          ;; separate for each processed file which is not great.
          (function-type (get name 'elsa-type))
          (vars))
-    ;; update the arg list if it was not already defined
+    ;; Update the arg list if it was not already defined.  This
+    ;; happens when the function was first registered with a reader
+    ;; annotation.
     (-when-let (def (elsa-state-get-defun state name))
       (unless (slot-boundp def 'arglist)
         (oset def arglist (elsa-form-to-lisp args))))
@@ -515,19 +543,19 @@ handled by `elsa--analyse-function-like-invocation'."
     ;; the body
     (let* ((body-return-type (if body (oref (-last-item body) type) (elsa-type-nil)))
            (function-return-type (elsa-type-get-return function-type)))
-      (if function-return-type
-          (unless (elsa-type-assignable-p function-return-type body-return-type)
-            (elsa-state-add-message state
-              (elsa-make-error (elsa-car form)
-                "Function is expected to return %s but returns %s."
-                (elsa-type-describe function-return-type)
-                (elsa-type-describe body-return-type))))
-        ;; infer the type of the function
+      (when  function-return-type
+        (unless (elsa-type-assignable-p function-return-type body-return-type)
+          (elsa-state-add-message state
+            (elsa-make-error (elsa-car form)
+              "Function is expected to return %s but returns %s."
+              (elsa-type-describe function-return-type)
+              (elsa-type-describe body-return-type)))))
+      ;; infer the type of the function
+      (unless (elsa-state-get-defun state name)
         (elsa-state-add-defun state
           (elsa-defun :name name
                       :type (elsa-function-type
-                             :args (elsa--get-default-function-types
-                                    (-map 'elsa-get-name args))
+                             :args (elsa--get-default-function-types args)
                              :return body-return-type)
                       :arglist (elsa-form-to-lisp args)))))
     (--each vars (elsa-scope-remove-var scope it))))
@@ -553,8 +581,7 @@ The registered object can be a `defun', `defmacro', or
     (elsa-state-add-defun state
       (elsa-defun :name name
                   :type (elsa-function-type
-                         :args (elsa--get-default-function-types
-                                (elsa-form-map args #'elsa-get-name))
+                         :args (elsa--get-default-function-types args)
                          :return (elsa-type-mixed))
                   :arglist (elsa-form-to-lisp args))))))
 
@@ -577,7 +604,8 @@ make it explicit and precise."
   (let* ((name (elsa-nth 1 form))
          (value (elsa-nth 2 form))
          (var-name (elsa-get-name name))
-         (var-type (get var-name 'elsa-type-var)))
+         (def (elsa-state-get-defvar state var-name))
+         (var-type (and def (elsa-get-type def))))
     (when value
       (elsa--analyse-form value scope state))
     (if var-type
@@ -590,8 +618,13 @@ make it explicit and precise."
               (elsa-type-describe var-type)
               (elsa-type-describe (elsa-get-type value)))))
       (if value
-          (put var-name 'elsa-type-var (oref value type))
-        (put var-name 'elsa-type-var (elsa-make-type unbound))))))
+          (elsa-state-add-defvar state
+            (elsa-defvar :name var-name :type (oref value type)))
+        (elsa-state-add-defvar state
+          (elsa-defvar :name var-name :type (elsa-make-type unbound)))))))
+
+(defun elsa--analyse:defvar-local (form scope state)
+  (elsa--analyse:defvar form scope state))
 
 (defun elsa--analyse:defcustom (form scope state)
   "Analyze `defcustom'.
@@ -602,7 +635,8 @@ automatically deriving the type."
   (let* ((name (elsa-nth 1 form))
          (value (elsa-nth 2 form))
          (var-name (elsa-get-name name))
-         (var-type (get var-name 'elsa-type-var)))
+         (def (elsa-state-get-defvar state var-name))
+         (var-type (and def (elsa-get-type def))))
     (when value
       (elsa--analyse-form value scope state))
     (if var-type
@@ -617,8 +651,10 @@ automatically deriving the type."
       ;; TODO: check the `:type' form here and also compare if we
       ;; are doing a valid assignment.
       (if value
-          (put var-name 'elsa-type-var (oref value type))
-        (put var-name 'elsa-type-var (elsa-make-type unbound))))))
+          (elsa-state-add-defvar state
+            (elsa-defvar :name var-name :type (oref value type)))
+        (elsa-state-add-defvar state
+          (elsa-defvar :name var-name :type (elsa-make-type unbound)))))))
 
 (defun elsa--analyse:defconst (form scope state)
   "Analyze `defconst'.
@@ -628,11 +664,13 @@ If no type annotation is provided, find the value type through
   (elsa--analyse:defvar form scope state)
   (let* ((name (elsa-nth 1 form))
          (var-name (elsa-get-name name))
-         (var-type (get var-name 'elsa-type-var)))
+         (def (elsa-state-get-defvar state var-name))
+         (var-type (and def (elsa-get-type def))))
     (when var-type
       (unless (elsa-readonly-type-p var-type)
-        (put var-name 'elsa-type-var
-             (elsa-readonly-type :type var-type))))))
+        (oset def type (elsa-readonly-type :type var-type))
+        ;; need to re-add to update the symbol property
+        (elsa-state-add-defvar state def)))))
 
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))
@@ -986,6 +1024,7 @@ SCOPE and STATE are the scope and state objects."
 (defun elsa--analyse-improper-list (_form _scope _state)
   nil)
 
+;; (elsa--analyse-form :: (function ((struct elsa-form) (struct elsa-scope) (struct elsa-state)) mixed))
 (defun elsa--analyse-form (form scope state)
   "Analyse FORM.
 
@@ -1003,7 +1042,90 @@ FORM is a result of `elsa-read-form'."
    (t (error "Invalid form")))
   (--each elsa-checks
     (when (elsa-check-should-run it form scope state)
-      (elsa-check-check it form scope state))))
+      (elsa-check-check it form scope state)))
+  (when-let ((method (oref state lsp-method))
+             (params (oref state lsp-params)))
+    (cond
+     ((equal method "textDocument/hover")
+      (-let* (((&HoverParams :text-document (&TextDocumentIdentifier :uri)
+                             :position (&Position :line :character))
+               params))
+        (when (and (= (oref form line) (1+ line))
+                   (<= (oref form column) character)
+                   (or (< (1+ line) (oref form end-line))
+                       (<= character (oref form end-column))))
+          (throw 'lsp-response
+                 (lsp-make-hover
+                  :contents (lsp-make-markup-content
+                             :kind "plaintext"
+                             :value (format
+                                     "%s: %s"
+                                     (elsa-form-print form)
+                                     (elsa-type-describe (elsa-get-type form))))
+                  :range (lsp-make-range
+                          :start (lsp-make-position
+                                  :line (1- (oref form line))
+                                  :character (oref form column))
+                          :end (lsp-make-position
+                                :line (1- (oref form end-line))
+                                :character  (oref form end-column))))))))
+     ((equal method "textDocument/completion")
+      (-let* (((&CompletionParams :position (&Position :line :character))
+               params))
+        (when (and (= (oref form line) (1+ line))
+                   (<= (oref form column) character)
+                   (or (< (1+ line) (oref form end-line))
+                       (<= character (oref form end-column))))
+          (when form (message "form %s" (elsa-tostring form)))
+          (when-let ((call-form (if (elsa-form-function-call-p form)
+                                    form
+                                  (and (slot-boundp form 'parent)
+                                       (oref form parent)
+                                       (elsa-form-function-call-p (oref form parent))
+                                       (oref form parent)))))
+            ;; special completion inside a function call form
+            (message "call-form %s" (elsa-tostring call-form))
+            (cond
+             ((eq (elsa-get-name call-form) 'oref)
+              (let* ((inst-form (elsa-cadr call-form))
+                     (inst-type (elsa-get-type inst-form)))
+                (when (elsa-struct-type-p inst-type)
+                  (when-let* ((struct (get (oref inst-type name) 'elsa-cl-structure)))
+                    (let ((slots (-mapcat
+                                  (lambda (par)
+                                    (when-let ((par-struct (get par 'elsa-cl-structure)))
+                                      (oref par-struct slots)))
+                                  (mapcar #'car (oref struct parents)))))
+                      (throw 'lsp-response
+                             (lsp-make-completion-list
+                              :is-incomplete json-false
+                              :items (elsa-lsp--list-completion-items
+                                      slots 'symbol-name))))))))))
+
+          ;; could still be a generic function call with point at the
+          ;; first arg
+          (when (or (elsa-form-function-call-p form)
+                    (and (elsa-form-symbol-p form)
+                         (eq (elsa-get-name form) 'nil)))
+            (message "generic call form %s" (elsa-tostring form))
+            (save-excursion
+              (goto-char (1- (oref form end)))
+              (when-let ((candidates (elsa-lsp--completions)))
+                (throw 'lsp-response
+                       (lsp-make-completion-list
+                        :is-incomplete json-false
+                        :items (elsa-lsp--list-completion-items candidates))))))
+
+          ;; regular symbol, we should use defvars and scope
+          ;; variables
+          (message "variable form %s" (elsa-tostring form))
+          (throw 'lsp-response
+                 (lsp-make-completion-list
+                  :is-incomplete json-false
+                  :items (elsa-lsp--list-completion-items
+                          (append (hash-table-keys (oref scope vars))
+                                  (elsa-state-get-var-symbols state))
+                          'symbol-name)))))))))
 
 (defun elsa--analyse-body (body scope state)
   (--each body (elsa--analyse-form it scope state)))
