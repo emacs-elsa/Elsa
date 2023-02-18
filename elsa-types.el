@@ -126,7 +126,7 @@ type.
     (cl-call-next-method)
     ;(error "Other must be subclass of `elsa-type'")
     )
-  (not (eq (eieio-object-class other) 'elsa-type-unbound)))
+  (not (elsa-type-unbound-p other)))
 
 (defun elsa-type-assignable-p (this other)
   "Check if THIS accepts OTHER.
@@ -305,13 +305,7 @@ It is accepted by any type that is all of the summed types
 because the actual type can be any of them.")
 
 (cl-defmethod elsa-type-describe ((this elsa-sum-type))
-  (cond
-   ;; TODO: this should be really handled by the normalization step, a
-   ;; sum type Mixed | <...> => Mixed, possibly without Nil
-   ((elsa-type-accept this (elsa-type-mixed))
-    "mixed")
-   (t
-    (format "(or %s)" (mapconcat 'elsa-type-describe (oref this types) " ")))))
+  (format "(or %s)" (mapconcat 'elsa-type-describe (oref this types) " ")))
 
 (cl-defmethod clone ((this elsa-sum-type))
   "Make a deep copy of a sum type."
@@ -369,7 +363,7 @@ type and none of the negative types.")
   "Make a deep copy of a diff type."
   (let ((positive (clone (oref this positive)))
         (negative (clone (oref this negative)))
-        (new (cl-call-next-method this)))
+        (new (elsa-diff-type)))
     (oset new positive positive)
     (oset new negative negative)
     new))
@@ -569,6 +563,10 @@ That means that iff both arguments of this are supertypes of
 other, then this is a supertype of other."
   (and (elsa-type-accept (oref this car-type) (oref other car-type))
        (elsa-type-accept (oref this cdr-type) (oref other cdr-type))))
+
+(cl-defmethod elsa-type-is-accepted-by ((this elsa-type-cons) (other elsa-type-empty))
+  "A cons type is not accepted by empty."
+  nil)
 
 (cl-defmethod elsa-type-describe ((this elsa-type-cons))
   (format "(cons %s %s)"

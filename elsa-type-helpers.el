@@ -83,6 +83,17 @@ Return trinary logic value.")
        (-map 'elsa--make-type)
        (-reduce 'elsa-type-intersect)))
 
+(defun elsa--create-type-error (definition)
+  (let ((could-be-composite-p
+         (and (symbolp definition)
+              (memq definition '(function and or diff struct const
+                                          vector list cons readonly)))))
+    (error "Unknown Elsa type %s%s"
+           definition
+           (if could-be-composite-p
+               " (maybe there are missing parentheses around the type constructor)"
+             ""))))
+
 (defun elsa--make-type (definition)
   (pcase definition
     (`(edebug-after ,_ ,_ ,form)
@@ -144,7 +155,7 @@ Return trinary logic value.")
        (cond
         ((functionp constructor)
          (funcall constructor))
-        (t (error "Unknown Elsa type %s" type-name)))))
+        (t (elsa--create-type-error arg)))))
     ((and `,arg (guard (or (keywordp arg)
                            (stringp arg)
                            (integerp arg)
@@ -154,7 +165,7 @@ Return trinary logic value.")
     ;; but also can be constructor for `elsa-type-nil'.
     ((and (pred listp) args)
      (elsa-type-tuple :types (-map #'elsa--make-type args)))
-    (_ (error "Unknown type %S" definition))))
+    (_ (elsa--create-type-error definition))))
 
 (defmacro elsa-make-type (&rest definition)
   "Make a type according to DEFINITION."
@@ -175,7 +186,7 @@ Return trinary logic value.")
   "Test if THIS is type-equivalent to `elsa-type-empty'.
 
 This means that the domain of the type is empty."
-  (elsa-type-equivalent-p this (elsa-type-empty)))
+  (elsa-type-accept (elsa-type-empty) this))
 
 ;; TODO: what is the relationship of `a' and `a?'
 (defun elsa-instance-of (this other)
@@ -213,47 +224,60 @@ A readonly of readonly can be squashed to just readonly."
 
 (cl-defmethod elsa-type-normalize ((this elsa-sum-type))
   "Normalize a sum type."
-  (let ((types (--remove (elsa-type-accept (elsa-make-type empty) it)
-                         (oref this types))))
-    (cond
-     ((not types)
-      (elsa-type-empty))
-     ((= 1 (length types))
-      (car types))
-     (t (elsa-sum-type :types types)))))
+  (elsa-type-debug ("(elsa-type-normalize %s) elsa-sum-type" this)
+    (if (--any? (elsa-type-mixed-p it) (oref this types))
+        (elsa-type-mixed)
+      (let ((types (--remove (elsa-type-is-empty-p it) (oref this types))))
+        (cond
+         ((not types)
+          (elsa-type-empty))
+         ((= 1 (length types))
+          (car types))
+         (t (elsa-sum-type :types types)))))))
 
 (cl-defmethod elsa-type-normalize ((this elsa-intersection-type))
   "Normalize an intersection type."
-  (let ((types (--remove (elsa-type-accept it (elsa-make-type mixed))
-                         (oref this types))))
-    (cond
-     ((= 1 (length types))
-      (car types))
-     (t (elsa-intersection-type :types types)))))
+  (elsa-type-debug ("(elsa-type-normalize %s) elsa-intersection-type" this)
+    (let ((types (--remove (elsa-type-accept it (elsa-make-type mixed))
+                           (oref this types))))
+      (cond
+       ((= 1 (length types))
+        (car types))
+       (t (elsa-intersection-type :types types))))))
 
 (cl-defmethod elsa-type-normalize ((this elsa-diff-type))
   "Normalize a diff type."
-  (let ((pos (oref this positive))
-        (neg (oref this negative)))
-    (cond
-     ((elsa-type-equivalent-p pos neg)
-      (elsa-type-empty))
-     ((elsa-type-is-empty-p neg)
-      (clone pos))
-     ((elsa-type-is-empty-p (elsa-type-intersect pos neg))
-      (clone pos))
-     ((and (elsa-type-number-p pos)
-           (elsa-type-float-p neg))
-      (elsa-type-int))
-     ((and (elsa-type-number-p pos)
-           (elsa-type-int-p neg))
-      (elsa-type-float))
-     (t (let ((new-neg (elsa-type-intersect pos neg)))
-          (if (elsa-type-equivalent-p new-neg neg)
-              (clone this)
-            (elsa-type-normalize
-             (elsa-diff-type :positive pos
-                             :negative (elsa-type-intersect pos neg)))))))))
+  (elsa-type-debug ("(elsa-type-normalize %s) elsa-diff-type" this)
+    (let ((pos (oref this positive))
+          (neg (oref this negative)))
+      (cond
+       ((elsa-type-equivalent-p pos neg)
+        (elsa-type-empty))
+       ((elsa-type-is-empty-p neg)
+        (clone pos))
+       ((and (elsa-type-number-p pos)
+             (elsa-type-float-p neg))
+        (elsa-type-int))
+       ((and (elsa-type-number-p pos)
+             (elsa-type-int-p neg))
+        (elsa-type-float))
+       ((and (not (elsa-type-composite-p pos))
+             (elsa-diff-type-p neg))
+        (elsa-type-diff pos neg))
+       ((elsa-type-mixed-p neg)
+        (elsa-type-empty))
+       (t (let ((intersect-pos-neg (elsa-type-intersect pos neg)))
+            (cond
+             ((elsa-type-is-empty-p intersect-pos-neg)
+              (clone pos))
+             (t (cond
+                 ((elsa-type-equivalent-p intersect-pos-neg neg)
+                  (clone this))
+                 ((elsa-type-equivalent-p pos intersect-pos-neg)
+                  (elsa-type-empty))
+                 (t
+                  (elsa-diff-type :positive pos
+                                  :negative intersect-pos-neg)))))))))))
 
 (provide 'elsa-type-helpers)
 ;;; elsa-type-helpers.el ends here

@@ -229,7 +229,7 @@
                  (elsa-type-diff
                   (elsa-make-type (or int string))
                   (elsa-make-type (const "foo"))))
-                :to-equal "(diff (or string int) (const \"foo\"))")))
+                :to-equal "(or int (diff string (const \"foo\")))")))
 
     (describe "subtracting a sum"
 

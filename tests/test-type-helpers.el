@@ -109,7 +109,7 @@
                 :to-equal "int"))
 
       (it "should normalize diff type to empty if negative is super set of positive"
-        (expect (elsa-make-type (diff (const 4) (or int (const 2))))
+        (expect (elsa-type-normalize (elsa-make-type (diff (const 4) (or int (const 2)))))
                 :to-be-type-equivalent (elsa-type-empty)))
 
       (it "should normalize neg to the intersection of pos and neg"
