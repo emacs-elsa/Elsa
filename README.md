@@ -15,6 +15,7 @@ don't match up before you even try to run the code.
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
+- [Motivation](#motivation)
 - [State of the project](#state-of-the-project)
 - [Non-exhaustive list of features](#non-exhaustive-list-of-features)
     - [Detect dead code](#detect-dead-code)
@@ -27,6 +28,7 @@ don't match up before you even try to run the code.
     - [makem.sh](#makemsh)
     - [Cask](#cask)
     - [Flycheck/Flymake integration](#flycheckflymake-integration)
+    - [Language server protocol (LSP)](#language-server-protocol-lsp)
 - [Configuration](#configuration)
     - [Analysis extension](#analysis-extension)
     - [Rulesets](#rulesets)
@@ -37,6 +39,7 @@ don't match up before you even try to run the code.
 - [For developers](#for-developers)
     - [How to write an extension for your-favourite-package](#how-to-write-an-extension-for-your-favourite-package)
     - [How to write a ruleset](#how-to-write-a-ruleset)
+- [Acknowledgments](#acknowledgments)
 
 <!-- markdown-toc end -->
 
@@ -188,14 +191,12 @@ contextual hover type information.
 
 The following table summarizes the options:
 
-|--------------------------------|------|------|----------|
 | Feature                        | Eask | Cask | makem.sh |
 |--------------------------------|------|------|----------|
 | Stand-alone analysis from CLI  | ✓    | ✓    | ✓        |
 | Flycheck integration           | ✓    | ✓    | ⨯        |
 | Flymake integration            | ✓    | ⨯    | ⨯        |
 | Language Server Protocol (LSP) | ✓    | ✓    | ⨯        |
-|--------------------------------|------|------|----------|
 
 ## Eask
 
@@ -278,13 +279,11 @@ using `M-x lsp` in an Elisp buffer will start a workspace.
 
 Currently, these LSP capabilities are supported
 
-|--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 | Capability         | Implemented                                                                                                                              |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 | hoverProvider      | Provides contextual type annotations of forms under point                                                                                |
 | textDocumentSync   | openClose, save                                                                                                                          |
 | completionProvider | <ul><li>functions from workspace</li><li>variables from scope and workspace</li><li>special resolution of oref/oset slot names</li></ul> |
-|--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 
 # Configuration
 
