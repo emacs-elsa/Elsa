@@ -267,6 +267,14 @@
     (--each vars (elsa-scope-remove-var scope it))
     (oset form type (elsa-get-type (-last-item body)))))
 
+(defun elsa-dash--default-variable (name)
+  (elsa-variable
+   :name name
+   ;; because we don't know how the
+   ;; bindings relate to the source we
+   ;; will default to mixed for now.
+   :type (elsa-type-mixed)))
+
 (defun elsa-dash--analyse-variable-from-binding (binding scope state)
   (-if-let (var (elsa--analyse-variable-from-binding binding scope state))
       (list var)
@@ -276,23 +284,43 @@
     ;; asssign a mixed type for now.  (message "%s"
     ;; (eieio-object-class it))
     (when (or (listp binding) (elsa-form-list-p binding))
-      (-let [(var source) (elsa-form-sequence binding)]
-        (when (or (cl-typep var 'elsa-form-seq)
-                  (cl-typep var 'elsa-form-cons))
-          (let (vars)
-            (elsa-form-visit var
-              (lambda (form)
-                "Find all the symbol nodes in the variable declaration section."
-                (when (elsa-form-symbol-p form)
-                  (let ((name (elsa-get-name form)))
-                    (when (not (string-match-p "^[&:]" (symbol-name name)))
-                      (push (elsa-variable
-                             :name name
-                             ;; because we don't know how the
-                             ;; bindings relate to the source we
-                             ;; will default to mixed for now.
-                             :type (elsa-type-mixed))
-                            vars))))))
+      (-let [(pattern source) (elsa-form-sequence binding)]
+        (when (or (cl-typep pattern 'elsa-form-seq)
+                  (cl-typep pattern 'elsa-form-cons))
+          (let (vars
+                (maybe-autobind nil)
+                (previous-form nil))
+            (cl-flet ((create-autobind
+                       ()
+                       "The variable creation logic is extracted to flet binding to
+                        reduce duplication."
+                       (let* ((name (symbol-name
+                                     (or (elsa--quoted-symbol-name previous-form)
+                                         (elsa-get-name previous-form))))
+                              (name-normalized (intern (replace-regexp-in-string "^:" "" name))))
+                         (push (elsa-dash--default-variable name-normalized) vars))))
+              (elsa-form-foreach pattern
+                (lambda (form)
+                  "Find all the symbol nodes in the variable declaration section."
+                  (cond
+                   ((and maybe-autobind
+                         (or (elsa--quoted-symbol-p form)
+                             (elsa-form-keyword-p form)))
+                    (create-autobind))
+                   ((or (elsa--quoted-symbol-p form)
+                        (elsa-form-keyword-p form))
+                    (setq maybe-autobind t))
+                   ((and (elsa-form-symbol-p form)
+                         (not (elsa-form-keyword-p form)))
+                    (let ((name (elsa-get-name form)))
+                      (when (not (string-match-p "^[&]" (symbol-name name)))
+                        (push (elsa-dash--default-variable name) vars)))
+                    (setq maybe-autobind nil)))
+                  (setq previous-form form)))
+              (when (and maybe-autobind
+                         (or (elsa--quoted-symbol-p previous-form)
+                             (elsa-form-keyword-p previous-form)))
+                (create-autobind)))
             vars))))))
 
 (defun elsa--analyse:-let (form scope state)
@@ -329,8 +357,18 @@
     (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:-lambda (form scope state)
-  (let ((body (elsa-nthcdr 2 form)))
+  (let ((args (elsa-cadr form))
+        (body (elsa-nthcdr 2 form))
+        (vars nil))
+    (elsa-form-foreach args
+      (lambda (arg)
+        (-when-let (vars-from-binding
+                    (elsa-dash--analyse-variable-from-binding
+                     (list arg) scope state))
+          (setq vars (-concat vars-from-binding vars)))))
+    (-each vars (lambda (v) (elsa-scope-add-var scope v)))
     (elsa--analyse-body body scope state)
+    (-each vars (lambda (v) (elsa-scope-remove-var scope v)))
     (oset form type
           (elsa-function-type
            :args (list (elsa-make-type mixed))
