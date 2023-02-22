@@ -171,13 +171,16 @@
             (elsa-state-add-message state
               (elsa-make-warning condition
                 "Unreachable expression %S"
+                :code "or-unreachable-code"
                 (elsa-form-print form)))
           (if (not (elsa-type-accept (oref condition type) (elsa-type-nil)))
               (when can-be-nil-p (setq can-be-nil-p nil))
             (when (and (elsa-type-accept (elsa-type-nil) (oref condition type))
                        can-be-nil-p)
               (elsa-state-add-message state
-                (elsa-make-warning condition "Condition always evaluates to nil.")))))))))
+                (elsa-make-warning condition
+                  "Condition always evaluates to nil."
+                  :code "or-unreachable-code")))))))))
 
 (defclass elsa-check-unreachable-code (elsa-check) ())
 
@@ -189,6 +192,7 @@
     (elsa-state-add-message state
       (elsa-make-warning form
         "Unreachable expression %S"
+        :code "unreachable-code"
         (elsa-form-print form)))))
 
 (defclass elsa-check-public-functions-have-docstring (elsa-check) ())
@@ -211,10 +215,10 @@
 (cl-defmethod elsa-check-should-run ((_ elsa-check-function-call) form scope state)
   (elsa-form-function-call-p form))
 
-(defclass elsa-check-useless-predicate (elsa-check-function-call) ())
+(defclass elsa-check-useless-type-guard (elsa-check-function-call) ())
 
-(cl-defmethod elsa-check-check ((_ elsa-check-useless-predicate) form scope state)
-  "Check if the narrowing predicate is useless.
+(cl-defmethod elsa-check-check ((_ elsa-check-useless-type-guard) form scope state)
+  "Check if the type guard is useless.
 
 This can happen when the passed in arguent is of a subtype of the
 returned narrowing."
@@ -228,6 +232,7 @@ returned narrowing."
           (elsa-state-add-message state
             (elsa-make-warning (elsa-car form)
               "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to true because the argument %s will always be `%s'."
+              :code "useless-type-guard"
               name
               (elsa-type-describe narrow-type)
               (elsa-type-describe arg-type)
@@ -237,6 +242,7 @@ returned narrowing."
           (elsa-state-add-message state
             (elsa-make-warning (elsa-car form)
               "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to false because the argument %s can never be `%s'."
+              :code "useless-type-guard"
               name
               (elsa-type-describe narrow-type)
               (elsa-type-describe arg-type)

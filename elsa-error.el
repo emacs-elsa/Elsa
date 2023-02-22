@@ -33,7 +33,8 @@
    (line :initarg :line :initform nil)
    (column :initarg :column
            :initform nil)
-   (expression :initarg :expression))
+   (expression :initarg :expression)
+   (code :type (or string null) :initarg :code :initform nil))
   :abstract t
   :documentation "Base class representing a message: result of the analysis.
 
@@ -87,7 +88,7 @@ In general, we recognize three states: error, warning, notice
 
 (cl-defmethod elsa-message-to-lsp ((this elsa-message))
   (lsp-make-diagnostic
-   :code "XYZ"
+   :code (oref this code)
    :range (lsp-make-range
            :start (lsp-make-position
                    :line (1- (oref this line))
@@ -107,11 +108,16 @@ In general, we recognize three states: error, warning, notice
    :message (oref this message)))
 
 (defun elsa--make-message (constructor expression format args)
-  (funcall constructor
-           :expression expression
-           :message (apply 'format format args)
-           :line (oref expression line)
-           :column (oref expression column)))
+  (let (code)
+    (when (plist-member args :code)
+      (setq code (plist-get args :code))
+      (setq args (map-delete args :code)))
+    (funcall constructor
+             :expression expression
+             :message (apply 'format format args)
+             :line (oref expression line)
+             :column (oref expression column)
+             :code code)))
 
 (defun elsa-make-error (expression format &rest args)
   (declare (indent 1))

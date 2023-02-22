@@ -42,7 +42,7 @@
 (defclass elsa-ruleset-functions (elsa-ruleset) ())
 
 (cl-defmethod elsa-ruleset-load ((this elsa-ruleset-functions))
-  (add-to-list 'elsa-checks (elsa-check-useless-predicate))
+  (add-to-list 'elsa-checks (elsa-check-useless-type-guard))
   )
 
 (defclass elsa-ruleset-default (elsa-ruleset) ())
