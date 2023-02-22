@@ -59,7 +59,8 @@
 
 ;; TODO: unify with `elsa-variable'?
 
-(defvar elsa-global-state (elsa-global-state))
+(defvar elsa-global-state (elsa-global-state)
+  "Global state holding elsa analysis context.")
 
 (defmacro elsa-in-file (file)
   "Specify the current file for registering new structures."

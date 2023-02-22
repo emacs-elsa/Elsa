@@ -630,7 +630,7 @@ The registered object can be a `defun', `defmacro', or
                          :return (elsa-type-mixed))
                   :arglist (elsa-form-to-lisp args))))))
 
-(defun elsa--analyse:defmacro (form scope state)
+(defun elsa--analyse:defmacro (form _scope state)
   "just skip for now, it's too complicated."
   (let ((name (elsa-get-name (elsa-cadr form)))
         (args (elsa-nth 2 form)))
@@ -746,14 +746,14 @@ If no type annotation is provided, find the value type through
                                  (oref (-last-item body) type)
                                (elsa-make-type nil))))))
 
-(defun elsa--analyse:function (form scope state)
+(defun elsa--analyse:function (form _scope _state)
   (let* ((arg (elsa-cadr form))
          (name (elsa-get-name arg))
          (type (elsa-function-get-type name)))
     (when (and type (elsa-form-symbol-p arg))
       (oset form type type))))
 
-(defun elsa--analyse:quote (form scope state)
+(defun elsa--analyse:quote (form _scope state)
   (oset state quoted (trinary-true))
   (let ((arg (cadr (oref form sequence))))
     (cond
@@ -1001,8 +1001,8 @@ SCOPE and STATE are the scope and state objects."
                                    "No overload matches this call.\n%s"
                                    (s-join
                                     "\n"
-                                    (-map-indexed
-                                     (lambda (index err)
+                                    (-map
+                                     (lambda (err)
                                        (format "  Overload %d of %d: '%s'\n    %s"
                                                (1+ (nth 1 err))
                                                (length all-overloads)
@@ -1099,8 +1099,7 @@ FORM is a result of `elsa-read-form'."
              (params (oref state lsp-params)))
     (cond
      ((equal method "textDocument/hover")
-      (-let* (((&HoverParams :text-document (&TextDocumentIdentifier :uri)
-                             :position (&Position :line :character))
+      (-let* (((&HoverParams :position (&Position :line :character))
                params))
         (when (and (= (oref form line) (1+ line))
                    (<= (oref form column) character)

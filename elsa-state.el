@@ -2,6 +2,7 @@
 
 (require 'trinary)
 
+(require 'elsa-types)
 (require 'elsa-scope)
 (require 'elsa-error)
 (require 'elsa-methods)

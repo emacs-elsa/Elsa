@@ -25,23 +25,6 @@
                (not (listp (nthcdr len cell))))
       (nthcdr len cell))))
 
-;; TODO: this will be easier to do later when we properly push quoted
-;; types up.  The check will then be just for a symbol and a quote
-(defun elsa--quoted-symbol-p (form &optional quote-types)
-  "Return non-nil if FORM represents a quoted symbol."
-  (setq quote-types (or quote-types (list 'quote)))
-  (when (memq (oref form quote-type) quote-types)
-    (-when-let (seq (elsa-form-sequence form))
-      (when (= (length seq) 2)
-        (elsa-form-symbol-p (cadr seq))))))
-
-(defun elsa--quoted-symbol-name (form)
-  "Return the name of quoted symbol that FORM represents.
-
-Nil if FORM is not a quoted symbol."
-  (when (elsa--quoted-symbol-p form)
-    (elsa-get-name (cadr (elsa-form-sequence form)))))
-
 (defsubst elsa--quote-p (symbol)
   "Return non-nil if SYMBOL is a type of quote."
   (memq symbol (list
@@ -72,6 +55,23 @@ Nil if FORM is not a quoted symbol."
    (parent :type (or elsa-form nil) :initarg :parent)
    (annotation :type list :initarg :annotation :initform nil))
   :abstract t)
+
+;; TODO: this will be easier to do later when we properly push quoted
+;; types up.  The check will then be just for a symbol and a quote
+(defun elsa--quoted-symbol-p (form &optional quote-types)
+  "Return non-nil if FORM represents a quoted symbol."
+  (setq quote-types (or quote-types (list 'quote)))
+  (when (memq (oref form quote-type) quote-types)
+    (-when-let (seq (elsa-form-sequence form))
+      (when (= (length seq) 2)
+        (elsa-form-symbol-p (cadr seq))))))
+
+(defun elsa--quoted-symbol-name (form)
+  "Return the name of quoted symbol that FORM represents.
+
+Nil if FORM is not a quoted symbol."
+  (when (elsa--quoted-symbol-p form)
+    (elsa-get-name (cadr (elsa-form-sequence form)))))
 
 ;; (elsa-form-sequence :: (function (mixed) (list mixed)))
 (cl-defgeneric elsa-form-sequence (form)
@@ -200,7 +200,7 @@ This only makes sense for the sequence forms:
       nil
     (error "Can not get sequence out of symbol form")))
 
-(cl-defgeneric elsa-form-sequence-p (this)
+(cl-defgeneric elsa-form-sequence-p (_this)
   nil)
 
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-symbol))
@@ -560,7 +560,7 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-form-to-lisp ((this elsa-form-function))
   (oref this function))
 
-(defun elsa--read-function (form state)
+(defun elsa--read-function (form _state)
   (elsa--skip-whitespace-forward)
   (elsa-form-function
    :type (elsa-make-type (function (&rest mixed) mixed))

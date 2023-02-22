@@ -1,5 +1,6 @@
 (require 'f)
 
+(require 'elsa-reader)
 (require 'elsa-analyser)
 (require 'elsa-extension-subr)
 

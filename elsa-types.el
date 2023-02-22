@@ -140,7 +140,7 @@ Uses special rules for `elsa-type-mixed'.
       (elsa-type-mixed-p other)
       (elsa-type-accept this other)))
 
-(cl-defmethod elsa-get-type ((this null))
+(cl-defmethod elsa-get-type ((_this null))
   (elsa-type-unbound))
 
 (cl-defmethod elsa-get-type ((this elsa-type))
@@ -155,7 +155,7 @@ Uses special rules for `elsa-type-mixed'.
   "Get argument types of THING."
   nil)
 
-(cl-defgeneric elsa-type-get-return (this)
+(cl-defgeneric elsa-type-get-return (_this)
   "Get return type of THIS type."
   nil)
 
@@ -178,16 +178,16 @@ THIS."
    (t nil)))
 
 ;; (elsa-type-composite-p :: (function (mixed) bool))
-(cl-defgeneric elsa-type-composite-p (this)
+(cl-defgeneric elsa-type-composite-p (_this)
   "Determine if the type is a composite type.
 
 Composite types have to be wrapped in parens when passed as
 arguments to other constructors."
   nil)
 
-(cl-defmethod elsa-type-composite-p ((this elsa-composite-type)) t)
+(cl-defmethod elsa-type-composite-p ((_this elsa-composite-type)) t)
 
-(cl-defgeneric elsa-type-callable-p (this)
+(cl-defgeneric elsa-type-callable-p (_this)
   "Check if the type is callable.
 
 A callable type can be called either directly as a list form or
@@ -195,7 +195,7 @@ with `funcall' or `apply' (or with other similar functions)."
   nil)
 
 ;; (elsa-function-type-nth-arg :: (function (mixed int) mixed))
-(cl-defgeneric elsa-function-type-nth-arg (this n)
+(cl-defgeneric elsa-function-type-nth-arg (_this _n)
   "Return type of Nth argument.
 
 For non-callable functions, return nil.
@@ -559,7 +559,7 @@ other, then this is a supertype of other."
   (and (elsa-type-accept (oref this car-type) (oref other car-type))
        (elsa-type-accept (oref this cdr-type) (oref other cdr-type))))
 
-(cl-defmethod elsa-type-is-accepted-by ((this elsa-type-cons) (other elsa-type-empty))
+(cl-defmethod elsa-type-is-accepted-by ((_this elsa-type-cons) (_other elsa-type-empty))
   "A cons type is not accepted by empty."
   nil)
 
@@ -706,7 +706,7 @@ then this is a supertype of other."
             (throw 'ok nil)))
         t))))
 
-(cl-defmethod elsa-type-callable-p ((this elsa-function-type)) t)
+(cl-defmethod elsa-type-callable-p ((_this elsa-function-type)) t)
 
 (cl-defmethod elsa-function-type-nth-arg ((this elsa-function-type) n)
   (let* ((args (oref this args))
@@ -889,7 +889,7 @@ only a flag which is used during assignability checks (such as
 (cl-defmethod elsa-type-describe ((this elsa-readonly-type))
   (format "(readonly %s)" (elsa-type-describe (oref this type))))
 
-(cl-defmethod elsa-type-accept ((this null) other)
+(cl-defmethod elsa-type-accept ((_this null) _other)
   "This method catches the impossible situation when we are
 trying to analyse 'nil, which is not a valid type or form."
   (message "An error happened trying to analyse nil")
