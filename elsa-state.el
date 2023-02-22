@@ -88,7 +88,7 @@ Declarations are of various types:
     (dolist (key keys-to-remove)
       (remhash key cl-structures))))
 
-;; (elsa-state-get-defun :: (function ((struct elsa-declarations) symbol) (struct elsa-cl-structure)))
+;; (elsa-state-get-structure :: (function ((struct elsa-declarations) symbol) (struct elsa-cl-structure)))
 (cl-defgeneric elsa-state-get-structure (this name)
   "Get from THIS the `elsa-cl-structure' definition called NAME.")
 
