@@ -184,11 +184,10 @@ tokens."
   (setq global-state (or global-state elsa-global-state))
   (elsa-log "[%s] Processing file %s"
             (elsa-global-state-get-counter global-state) file)
-  (let ((state (elsa-state))
+  (let ((state (elsa-state :global-state global-state))
         (form))
     (elsa-state-clear-file-state global-state file)
     (oset global-state current-file file)
-    (oset state global-state global-state)
     (with-temp-buffer
       (insert-file-contents file)
       (emacs-lisp-mode)
