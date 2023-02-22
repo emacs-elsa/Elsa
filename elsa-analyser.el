@@ -274,7 +274,10 @@ The BINDING should have one of the following forms:
                       (elsa-type-describe var-type)
                       (elsa-type-describe (elsa-get-type val)))))))))))
     (oset form type (oref (-last-item args) type))
-    (oset form narrow-types (oref (-last-item args) narrow-types))))
+    (oset form narrow-types
+          (list (elsa-variable :name (elsa-get-name (car (-last-item assignments)))
+                               :type (elsa-type-make-non-nullable
+                                      (elsa-get-type (cadr (-last-item assignments)))))))))
 
 (defun elsa--analyse:cond (form scope state)
   (let ((branches (cdr (oref form sequence)))
