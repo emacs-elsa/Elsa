@@ -13,6 +13,7 @@
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-form-sequence))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-get-type))
   (add-to-list 'elsa-checks (elsa-check-elsa-prefer-elsa-get-name))
+  (add-to-list 'elsa-checks (elsa-check-elsa-class-slot-has-type))
   )
 
 (defclass elsa-check-elsa-prefer-elsa-car (elsa-check) ())
@@ -111,6 +112,26 @@
           "Prefer (elsa-get-name %s) to (oref %s name)."
           (elsa-form-print (elsa-cadr form))
           (elsa-form-print (elsa-cadr form)))))))
+
+(defclass elsa-check-elsa-class-slot-has-type (elsa-check) ())
+
+(cl-defmethod elsa-check-should-run ((_ elsa-check-elsa-class-slot-has-type) form scope state)
+  (elsa-form-function-call-p form 'defclass))
+
+(cl-defmethod elsa-check-check ((_ elsa-check-elsa-class-slot-has-type) form scope state)
+  (let* ((slots (elsa-nth 3 form)))
+    (elsa-form-foreach slots
+      (lambda (slot)
+        (when (and (elsa-form-list-p slot)
+                   (let ((props (elsa-cdr slot)))
+                     (->> props
+                          (-partition 2)
+                          (mapcar #'car)
+                          (--none? (eq (elsa-get-name it) :type)))))
+          (elsa-state-add-message state
+            (elsa-make-notice (elsa-car slot)
+              "Every class slot should have a type"
+              :code "elsa-class-slot-has-type")))))))
 
 (defun elsa--analyse:elsa-make-type (form scope state)
   (elsa--analyse-macro form nil scope state))
