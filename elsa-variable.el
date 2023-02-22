@@ -30,24 +30,67 @@
 
 ;; TODO: maybe move the acceptance resolution into an expression type?
 (defclass elsa-variable nil
-  ((name :initarg :name)
-   (type :initarg :type
-         :initform (elsa-type-mixed)
-         :documentation "Type of this variable.
+  ((name
+    :type symbol
+    :initarg :name
+    :documentation "Name of the variable, as symbol.")
+   (type
+    :type elsa-type
+    :initarg :type
+    :initform (elsa-type-mixed)
+    :documentation "Type of this variable.
 
 This is the type that the symbol form representing this variable
 will assume during analysis.")
-   (assigned :initarg :assigned
-             :initform (trinary-false)
-             :type trinary
-             :documentation
-     "Non-nil if this variable was assigned in the current scope.")
-   (read :initarg :read
-         :initform (trinary-false)
-         :type trinary
-         :documentation
-     "Non-nil if this variable was read in the current scope."))
-  :documentation "A lexical variable")
+   (certainty
+    :type trinary
+    :initarg :certainty
+    :initform (trinary-true)
+    :documentation "Are we sure this type is what we say it is?
+
+Sometimes during narrowing we might tentatively narrow variable to a
+type, but in the else branch it might not actually be certain that the
+narrowing took place.
+
+for example (if (and (stringp x) (random-function)) x x)
+
+In any case, x is a string in the then body, because both conditions
+must have been simultaneously true.
+
+But for the else body:
+
+(stringp x) (random-function) |  X  must be
+    t               t         |   string
+------------------------------+-------------
+   nil              t         |
+    t              nil        |    mixed
+   nil             nil        |
+
+Only the first row is certain, because we know for a fact that both
+conditions must have been true and the else body never executes.
+
+In the rows two, three and four, in the else body we don't know which
+combination actually happened and so we can't definitely rule out the
+case, where x still could be a string (row three).
+
+However, if the second function always returns non-nil, we can
+eliminate rows three and four and then we can narrow the else body
+type of x to not string.
+
+The example of such a form is (and (string x) (concat \"\" x)).")
+   (assigned
+    :type trinary
+    :initarg :assigned
+    :initform (trinary-false)
+    :documentation
+    "Non-nil if this variable was assigned in the current scope.")
+   (read
+    :type trinary
+    :initarg :read
+    :initform (trinary-false)
+    :documentation
+    "Non-nil if this variable was read in the current scope."))
+  :documentation "A lexical variable.")
 
 (cl-defmethod elsa-get-type ((this elsa-variable))
   (oref this type))
@@ -55,29 +98,36 @@ will assume during analysis.")
 (cl-defmethod elsa-get-name ((this elsa-variable))
   (oref this name))
 
+(cl-defmethod elsa-tostring ((this elsa-variable))
+  (format "(%s %s)"
+          (elsa-get-name this)
+          (elsa-tostring (elsa-get-type this))))
+
+(cl-defmethod cl-print-object ((this elsa-variable) stream)
+  (princ (elsa-tostring this) stream))
+
 (defun elsa-make-variable (name type)
   "Make variable NAME with TYPE."
   (elsa-variable :name name :type type))
 
 ;; TODO: propagate assigned/read
-(cl-defmethod elsa-variable-diff ((this elsa-variable) other)
-  (elsa-variable :name (oref this name)
-                 :type (elsa-type-diff (oref this type) other)))
-
-;; TODO: propagate assigned/read
 (cl-defmethod elsa-variable-diff ((this elsa-variable) (other elsa-variable))
   (elsa-variable :name (oref this name)
-                 :type (elsa-type-diff (oref this type) (oref other type))))
+                 :type (if (trinary-true-p (oref other certainty))
+                           (elsa-type-diff (oref this type) (oref other type))
+                         (oref this type))))
 
 ;; TODO: propagate assigned/read
 (cl-defmethod elsa-variable-intersect ((this elsa-variable) (other elsa-variable))
   (elsa-variable :name (oref this name)
-                 :type (elsa-type-intersect (oref this type) (oref other type))))
+                 :type (elsa-type-intersect (oref this type) (oref other type))
+                 :certainty (trinary-and (oref this certainty) (oref other certainty))))
 
 ;; TODO: propagate assigned/read
 (cl-defmethod elsa-variable-sum ((this elsa-variable) (other elsa-variable))
   (elsa-variable :name (oref this name)
-                 :type (elsa-type-sum (oref this type) (oref other type))))
+                 :type (elsa-type-sum (oref this type) (oref other type))
+                 :certainty (trinary-or (oref this certainty) (oref other certainty))))
 
 (cl-defmethod elsa-type-diff ((this elsa-variable) other)
   (elsa-type-diff (oref this type) other))

@@ -392,22 +392,31 @@ The BINDING should have one of the following forms:
 (defun elsa--analyse:or (form scope state)
   (let* ((body (elsa-cdr form))
          (return-type (elsa-type-nil))
-         ;; (can-be-nil-p :: bool)
-         (can-be-nil-p t))
+         (condition-reachable (trinary-true)))
     (elsa-save-scope scope
       (-each body
         (lambda (arg)
-          (elsa--analyse-form arg scope state)
-          (when can-be-nil-p
-            (setq return-type (elsa-type-sum return-type (oref arg type))))
-          (unless (elsa-type-accept arg (elsa-type-nil))
-            (setq can-be-nil-p nil))
-          (elsa-scope-narrow-var scope (oref arg narrow-types)
-                                 'elsa-variable-diff))))
+          (elsa-with-reachability state condition-reachable
+            (elsa--analyse-form arg scope state)
+            (when (trinary-possible-p condition-reachable)
+              (setq return-type
+                    (elsa-type-sum return-type (oref arg type))))
+            (elsa-scope-narrow-var scope (oref arg narrow-types)
+                                   'elsa-variable-diff)
+            (setq condition-reachable
+                  (trinary-and
+                   condition-reachable
+                   (elsa-type-is-nil arg)))))))
     (-when-let (grouped (elsa-variables-group-and-sum
-                         (-non-nil (--mapcat (oref it narrow-types) body))))
+                         (->> body
+                              (--filter (trinary-possible-p (elsa-form-reachable it)))
+                              (--mapcat (oref it narrow-types))
+                              (-non-nil))))
       (oset form narrow-types grouped))
-    (unless can-be-nil-p
+
+    ;; If the last form is definitely never reachable, the form always
+    ;; succeds and we make it non-nullable.
+    (when (trinary-false-p condition-reachable)
       (setq return-type (elsa-type-make-non-nullable return-type)))
     (oset form type return-type)))
 
@@ -427,6 +436,38 @@ The BINDING should have one of the following forms:
                   (trinary-and
                    condition-reachable
                    (elsa-type-is-non-nil arg)))))))
+
+    (let ((narrowed-vars
+           ;; get a union of all narrowed variables
+           (-uniq
+            (--map
+             (elsa-get-name it)
+             (-non-nil
+              (--mapcat (oref it narrow-types) body))))))
+      ;; update narrowing of all the forms by the variables they don't
+      ;; have assigned to their narrow-types
+      (-each body
+        (lambda (arg)
+          (let ((nil-always-accepts (elsa-type-could-accept
+                                     (elsa-type-nil)
+                                     (elsa-get-type arg)))
+                (narrow-types (oref arg narrow-types)))
+            ;; add uncertainty to narrowing of all narrowed variables
+            ;; if this form can fail.
+            (when (trinary-maybe-p nil-always-accepts)
+              (-each narrowed-vars
+                (lambda (var-name)
+                  (when (--none? (eq var-name (elsa-get-name it)) narrow-types)
+                    (push (elsa-variable
+                           :name var-name
+                           ;; intersect with mixed will keep the
+                           ;; original type, but the (un)certainty
+                           ;; will propagate
+                           :type (elsa-type-mixed)
+                           :certainty (trinary-maybe))
+                          narrow-types))))
+              (oset arg narrow-types narrow-types))))))
+
     ;; Group all the narrowing variables by name and intersect the
     ;; narrowing types, because we require all forms to be
     ;; simultaneously true.  Set the resulting intersections on this
@@ -438,18 +479,19 @@ The BINDING should have one of the following forms:
                       (--mapcat (oref it narrow-types))
                       (-non-nil))))
       (oset form narrow-types grouped))
+
     (cond
      ((trinary-false-p condition-reachable)
       (setq return-type (elsa-type-nil)))
-     ;; If we emptied the domain of any narrowed variable, this
-     ;; condition can never be true, because there is no value that
-     ;; the variable can inhibit to satisfy all conditions.
-     ((-any-p
-       (lambda (var) (elsa-type-equivalent-p (oref var type) (elsa-type-empty)))
-       (oref form narrow-types))
-      (setq return-type (elsa-type-nil)))
      (body
-      (setq return-type (elsa-type-make-nullable (oref (-last-item body) type)))))
+      (setq return-type (oref (-last-item body) type))))
+
+    ;; If the last form is not definitely reachable, it means we
+    ;; could've failed somewhere inside the and form and we need to
+    ;; make the return type nullable.
+    (unless (trinary-necessary-p condition-reachable)
+      (setq return-type (elsa-type-make-nullable return-type)))
+
     (oset form type return-type)))
 
 (defun elsa--get-default-function-types (args)

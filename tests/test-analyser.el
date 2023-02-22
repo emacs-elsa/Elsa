@@ -81,7 +81,14 @@
               (expect x-form :to-be-type-equivalent (elsa-make-type int))
               (expect y-form :to-be-type-equivalent (elsa-make-type int)))))
 
-        (xit "should not narrow the types in else-branch by the reachable expressions where we don't know which may fail"
+        (it "should not narrow the types in else-branch by the reachable expressions where we don't know which may fail"
+          ;;  (integerp x) | (integerp y) | p |
+          ;; --------------+--------------+---+------------
+          ;;       t       |      t       |   |  possible    tt does not propagate
+          ;; --------------+--------------+---+------------
+          ;;       t       |     nil      | p |  possible
+          ;;      nil      |      t       | p |  possible
+          ;;      nil      |     nil      | p |  possible
           (elsa-test-with-analysed-form "|(defun a (x y) (if (and (integerp x) (integerp y)) (progn x y) (progn x y)))" form
             (let* ((progn-form (elsa-nth 3 (elsa-nth 3 form)))
                    (x-form (elsa-nth 1 progn-form))
@@ -93,6 +100,88 @@
           (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) (integerp x) x))" form
             (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
               (expect test-form :to-be-type-equivalent (elsa-type-empty)))))
+
+        (describe "propagation of narrowing to \"else\" branch"
+
+          (it "should propagate diff-narrowing if the narrowing form forces following forms to be necessarily true"
+            ;; Here the (symbolp x) is unnecessary, because at that
+            ;; point the domain of x is keyword.
+            ;;  (keywordp x) | (symbolp x) | p |            |
+            ;; --------------+-------------+---+------------+
+            ;;       t       |      t      |   | necessary  | tt does not propagate
+            ;; --------------+-------------+---+------------+
+            ;;       t       |     nil     |   | impossible |
+            ;; --------------+-------------+---+------------+
+            ;;      nil      |      t      | p |  possible  | keywordp always nil
+            ;;      nil      |     nil     | p |  possible  | keywordp always nil
+            (elsa-test-with-analysed-form "|(defun a (x) (or (and (keywordp x) (symbolp x)) x))" form
+              (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
+                (expect (elsa-get-type test-form) :to-be-type-equivalent
+                        (elsa-type-diff (elsa-type-mixed) (elsa-type-keyword))))))
+
+          (it "should propagate diff-narrowing if the narrowing form is conditionally deciding based on the previous forms"
+            ;; Here, assuming (symbolp x) succeded, keywordp becomes a
+            ;; deciding form.  It can never succeed if (symbolp x)
+            ;; failed.
+            ;;  (symbolp x) | (keywordp x) | p |
+            ;; -------------+--------------+---+------------
+            ;;       t      |      t       |   |  possible    tt does not propagate
+            ;;       t      |     nil      | p |  possible    keywordp always nil
+            ;; -------------+--------------+---+------------
+            ;;      nil     |     nil      | p | necessary    keywordp always nil
+            ;; -------------+--------------+---+------------
+            ;;      nil     |      t       |   | impossible
+            (elsa-test-with-analysed-form "|(defun a (x) (or (and (symbolp x) (keywordp x)) x))" form
+              (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
+                (expect (elsa-get-type test-form) :to-be-type-equivalent
+                        (elsa-type-diff (elsa-type-mixed) (elsa-type-keyword))))))
+
+          (it "should propagate diff-narrowing if the narrowing form is necessarily true if it succeeds"
+            ;; concat always returns non-nil if x is string
+            ;;  (stringp x) | (concat "" x) | p |
+            ;; -------------+---------------+---+------------
+            ;;      t       |       t       |   | necessary    tt does not propagate
+            ;;     nil      |      nil      | p | necessary    stringp always nil
+            ;; -------------+---------------+---+------------
+            ;;      t       |      nil      |   | impossible
+            ;;     nil      |       t       |   | impossible
+            (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) (concat \"\" x)) x))" form
+              (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
+                (expect (elsa-get-type test-form) :to-be-type-equivalent
+                        (elsa-type-diff (elsa-type-mixed) (elsa-type-string))))))
+
+          (it "should not propagate diff-narrowing if the narrowed variable's domain empties"
+            ;; Here x can't be string and integer at the same time, so
+            ;; either form can cause the and to fail.
+            ;;  (stringp x) | (integerp x) | p |
+            ;; -------------+--------------+---+------------
+            ;;      t       |      t       |   | impossible    tt does not propagate
+            ;; -------------+--------------+---+------------
+            ;;      t       |     nil      | p | necessary
+            ;; -------------+--------------+---+------------
+            ;;     nil      |      t       | p |  possible
+            ;;     nil      |     nil      | p |  possible
+            (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) (integerp x)) x))" form
+              (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
+                (expect (elsa-get-type test-form) :to-be-type-equivalent
+                        (elsa-type-mixed)))))
+
+          (it "should not propagate diff-narrowing if the narrowing form can fail"
+            ;; Irrespective of whether x is string or not, the second
+            ;; form can decide the result of the entire and form.
+            ;;  (stringp x) | (mixed) | p |
+            ;; -------------+---------+---+----------
+            ;;      t       |    t    |   | possible   tt does not propagate
+            ;; -------------+---------+---+----------
+            ;;     nil      |    t    | p | possible
+            ;;      t       |   nil   | p | possible   x can be anything in else
+            ;;     nil      |   nil   | p | possible
+            ;; -------------+---------+---+----------
+            (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) (mixed-function)) x))" form
+              (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
+                (message "type %s" (elsa-tostring (elsa-get-type test-form)))
+                (expect (elsa-get-type test-form) :to-be-type-equivalent
+                        (elsa-type-mixed))))))
 
         (it "should return nil if one condition rules out the other"
           (elsa-test-with-analysed-form "|(defun a (x y) (and x (unless x y)))" form
@@ -141,14 +230,15 @@
               (expect or-form :to-be-type-equivalent
                       (elsa-make-type (or string nil))))))
 
-        ;; FIXME: this should be `t' or the diff type.
         (it "should set return type to sum of narrowed types"
           (elsa-test-with-analysed-form "|(defun a (x) (or (stringp x) x))" form
             (let ((or-form (elsa-nth 3 form)))
               (expect or-form :to-be-type-equivalent
-                      (elsa-type-diff
-                       (elsa-type-mixed)
-                       (elsa-type-string))))))
+                      (elsa-type-sum
+                       (elsa-type-t)
+                       (elsa-type-diff
+                        (elsa-type-mixed)
+                        (elsa-type-string)))))))
 
         (it "should set return type to nullable sum if there is no sure branch of multiple branches."
           (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) x) (and (integerp x) x)))" form
@@ -167,7 +257,7 @@
           (elsa-test-with-analysed-form "|(or)" form
             (expect form :to-be-type-equivalent (elsa-type-nil))))
 
-        (it "should set return type to sum of return types for sum of functions"
+        (it "should set return type to sum of return types for function overload"
           (elsa-test-with-analysed-form "|(downcase x)" form
             (expect form :to-be-type-equivalent (elsa-make-type (or string int))))))
 
@@ -178,9 +268,10 @@
             (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
               (expect test-form :to-be-type-equivalent (elsa-type-diff (elsa-type-mixed) (elsa-type-string))))))
 
-        (xit "should not narrow the type by the unreachable expressions"
+        (it "should not narrow the type by the unreachable expressions"
           (elsa-test-with-analysed-form "|(defun a (x) (if (or t x) x x))" form
             (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
+              (message "%s" (elsa-tostring (elsa-get-type test-form)))
               (expect test-form :to-be-type-equivalent (elsa-make-type mixed)))))
 
         (it "should sum the complements of narrowed types in subsequent conditions"
@@ -195,10 +286,16 @@
             (let ((test-form (elsa-nth 4 form)))
               (expect test-form :to-be-type-equivalent (elsa-make-type mixed)))))
 
-        (it "should respect setq overriding the narrowed type inside the form"
+        (it "should respect setq adding the type to the narrowing sum in the then-body"
+          (elsa-test-with-analysed-form "|(defun a (x) (if (or (stringp x) (setq x :key) x) x x) x)" form
+            (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
+              (expect test-form :to-be-type-equivalent
+                      (elsa-type-sum (elsa-make-type string) (elsa-make-type (const :key)))))))
+
+        (it "should empty the domain after setq with assignment of non-nil value"
           (elsa-test-with-analysed-form "|(defun a (x) (or (stringp x) (setq x :key) x) x)" form
             (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
-              (expect test-form :to-be-type-equivalent (elsa-make-type (const :key)))))))
+              (expect test-form :to-be-type-equivalent (elsa-type-empty))))))
 
       (xdescribe "setq propagation"
 
@@ -364,17 +461,22 @@
 
     (describe "setq"
 
-      (describe "narrowing types"
+      (describe "assignment in condition form"
 
         (it "should narrow type of place to the type of assignment in true-branch"
           (elsa-test-with-analysed-form "|(if (setq a :key) a a)" form
             (let ((test-form (elsa-nth 2 form)))
-              (expect test-form :to-be-type-equivalent (elsa-make-type (const :key))))))
+              (expect (elsa-get-type test-form) :to-be-type-equivalent (elsa-make-type (const :key))))))
 
-        (xit "should narrow type of place to the complement type of assignment in the false-branch"
+        (it "should narrow type of place to nil in the else-branch"
+          (elsa-test-with-analysed-form "|(if (setq a (mixed)) a a)" form
+            (let ((test-form (elsa-nth 3 form)))
+              (expect (elsa-get-type test-form) :to-be-type-equivalent (elsa-type-nil)))))
+
+        (it "should empty the domain in the else-branch if assignment was always non-nil"
           (elsa-test-with-analysed-form "|(if (setq a :key) a a)" form
             (let ((test-form (elsa-nth 3 form)))
-              (expect test-form :to-be-type-equivalent (elsa-type-diff (elsa-type-mixed) (elsa-make-type (const :key))))))))
+              (expect (elsa-get-type test-form) :to-be-type-equivalent (elsa-type-empty))))))
 
       (it "should update current scope"
         (elsa-test-with-analysed-form "|(let ((a 1)) (setq a :key) a)" form
