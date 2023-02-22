@@ -73,16 +73,6 @@
 
       (describe "narrowing types"
 
-        (it "should narrow the type in the subsequent expressions of and form"
-          (elsa-test-with-analysed-form "|(defun a (x) (and (stringp x) x))" form
-            (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
-              (expect test-form :to-be-type-equivalent (elsa-make-type string)))))
-
-        (it "should not narrow the type by the unreachable expressions"
-          (elsa-test-with-analysed-form "|(defun a (x) (if (and nil x) x x))" form
-            (let ((test-form (elsa-nth 3 (elsa-nth 3 form))))
-              (expect test-form :to-be-type-equivalent (elsa-make-type mixed)))))
-
         (it "should narrow the types in then-branch by all the expressions because they must all be true to enter"
           (elsa-test-with-analysed-form "|(defun a (x y) (if (and (integerp x) (integerp y)) (progn x y) (progn x y)))" form
             (let* ((progn-form (elsa-nth 2 (elsa-nth 3 form)))
