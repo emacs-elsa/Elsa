@@ -1030,6 +1030,13 @@ SCOPE and STATE are the scope and state objects."
 
 FORM is a result of `elsa-read-form'."
   (oset form reachable (elsa-state-get-reachability state))
+  (when-let ((annotation (oref form annotation)))
+    (cond
+     ((eq (car annotation) 'var)
+      (let ((var (elsa-scope-get-var scope (cadr annotation))))
+        ;; update the type in the current scope
+        (oset var type (eval `(elsa-make-type ,@(nthcdr 3 annotation))))))))
+
   (cond
    ((elsa-form-float-p form) (elsa--analyse-float form scope state))
    ((elsa-form-integer-p form) (elsa--analyse-integer form scope state))

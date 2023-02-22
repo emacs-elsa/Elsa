@@ -5,9 +5,13 @@ code.  While at many places the types can be inferred there are
 places, especially in user-defined functions, where we can not infer
 the correct type.
 
-Therefore Elsa provides users with the option to annotate their
-function definitions.  The annotations are placed in front of the body
-of the function inside a special comment form:
+Therefore Elsa provides users with the option to annotate forms in
+their code to add additional type information.
+
+** def* declarations (defun, defvar, ...)
+
+For function definitions, the annotations are placed in front of the
+body of the function inside a special comment form:
 
 #+BEGIN_SRC elisp
 ;; (add-one :: (function (int) int))
@@ -22,6 +26,24 @@ colons =::= and the type.  The same annotation is used for functions
 The name in the annotation must match the name of the following form.
 This is checked to prevent accidental copy-paste errors when the
 comment form is forgotten or misplaced.
+
+** Local scope variable
+
+To annotate a local scope variable, place the annotation form *after*
+the point where the variable was defined and before the place where
+the variable is used.  This will probably change in later versions so
+that it is also possible to annotate variables at the place of
+definition.
+
+#+begin_src elisp
+(lambda (index arg)
+  ;; (var arg :: (struct elsa-form))
+  (progn
+    ;; arg here is now of type elsa-form
+    (oref arg start)))
+#+end_src
+
+* Elsa type system
 
 Here are general guidelines on how the types are constructed.
 
