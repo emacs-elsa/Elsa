@@ -23,14 +23,22 @@
   (font-lock-add-keywords
    nil
    `((,(rx (or
-            (and "(" (group (1+ (or (syntax word) (syntax symbol)))) (1+ space) (group "::") (or (1+ space) eol))
+            (and "("
+                 (? (group (or "var"))
+                    (1+ space))
+                 (group (1+ (or (syntax word) (syntax symbol))))
+                 (1+ space)
+                 (group "::")
+                 (or (1+ space) eol))
             (and "(" (group (and "elsa-make-type" (or (1+ space) eol))))))
+      ;; optional annotation type
+      (1 font-lock-variable-name-face t t)
       ;; the function name in the defun annotation
-      (1 font-lock-function-name-face t t)
+      (2 font-lock-function-name-face t t)
       ;; the :: token separating the type
-      (2 font-lock-variable-name-face t t)
+      (3 font-lock-variable-name-face t t)
       ;; elsa-make-type for inline macro use
-      (3 font-lock-keyword-face nil t)
+      (4 font-lock-keyword-face nil t)
       ;; highlight the types
       ("\\(\\_<\\(?:\\sw\\|\\s_\\)+\\_>\\)"
        (save-excursion (up-list) (point))
