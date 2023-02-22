@@ -336,6 +336,19 @@
            :args (list (elsa-make-type mixed))
            :return (clone (oref (-last-item body) type))))))
 
+(defun elsa--analyse:->> (form scope state)
+  (let ((initial (elsa-cadr form))
+        (rest (elsa-nthcdr 2 form)))
+    (elsa--analyse-form initial scope state)
+    (elsa-form-foreach rest
+      (lambda (f)
+        (let* ((extended-form (clone f))
+               (new-seq (copy-sequence (elsa-form-sequence extended-form))))
+          (oset extended-form sequence (-snoc new-seq initial))
+          (elsa--analyse-form extended-form scope state)
+          ;;(message "type %s" (elsa-tostring (elsa-get-type extended-form)))
+          (setq initial extended-form))))))
+
 (defun elsa--analyse:--> (form scope state)
   (elsa-dash--analyse-anaphora form scope state))
 
