@@ -123,12 +123,12 @@ CONSTANT-FORM is the value to which the variable is narrowed."
   (-when-let* ((arg (cadr (oref form sequence)))
                (arg-type (oref arg type)))
     (when (elsa-instance-of arg-type (elsa-make-type sequence))
-      (let* ((item-type (elsa-type-get-item-type arg-type))
-             ;; with lists it returns nil when overflowing, otherwise
-             ;; throws an error
-             (item-type (if (elsa-type-list-p arg-type)
-                            (elsa-type-make-nullable item-type)
-                          item-type)))
+      (when-let* ((item-type (elsa-type-get-item-type arg-type))
+                  ;; with lists it returns nil when overflowing, otherwise
+                  ;; throws an error
+                  (item-type (if (elsa-type-list-p arg-type)
+                                 (elsa-type-make-nullable item-type)
+                               item-type)))
         (oset form type item-type)))))
 
 ;; * control flow
