@@ -98,6 +98,35 @@
         (expect (elsa-type-describe (elsa-make-type '"foo"))
                 :to-equal "(const \"foo\")"))))
 
+  (describe "Convert CL type to Elsa type"
+
+    (it "nil to mixed"
+      ;; this means that the type was not provided
+      (expect (elsa--cl-type-to-elsa-type nil) :to-be-type-equivalent (elsa-type-mixed)))
+
+    (it "null to nil"
+      ;; cl uses null for nil
+      (expect (elsa--cl-type-to-elsa-type 'null) :to-be-type-equivalent (elsa-type-nil)))
+
+    (it "string to string"
+      (expect (elsa--cl-type-to-elsa-type 'string) :to-be-type-equivalent (elsa-type-string)))
+
+    (it "list of strings to (list string)"
+      (expect (elsa--cl-type-to-elsa-type '(list-of string))
+              :to-be-type-equivalent (elsa-make-type (list string))))
+
+    (it "process sum type"
+      (expect (elsa--cl-type-to-elsa-type '(or string integer))
+              :to-be-type-equivalent (elsa-make-type (or string int))))
+
+    (it "process intersection type"
+      (expect (elsa--cl-type-to-elsa-type '(and symbol keyword))
+              :to-be-type-equivalent (elsa-type-keyword)))
+
+    (it "process not type to diff"
+      (expect (elsa--cl-type-to-elsa-type '(not string))
+              :to-be-type-equivalent (elsa-make-type (diff mixed string)))))
+
   (describe "elsa-type-normalize"
 
     (describe "diff type"

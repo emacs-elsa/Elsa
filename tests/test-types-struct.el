@@ -15,12 +15,10 @@
       (elsa-state-add-structure state
         (elsa-cl-structure
          :name 'elsa-form-symbol
-         :slots '()
          :parents '((elsa-form-symbol))))
       (elsa-state-add-structure state
         (elsa-cl-structure
          :name 'elsa-form-keyword
-         :slots '()
          :parents '((elsa-form-keyword elsa-form-symbol)
                     (elsa-form-symbol)))))
 

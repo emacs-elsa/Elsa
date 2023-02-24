@@ -7,12 +7,25 @@
 (require 'elsa-error)
 (require 'elsa-methods)
 
+(defclass elsa-structure-slot nil
+  ((name
+    :type symbol
+    :initarg :name
+    :documentation "Slot name.")
+   (type
+    :type elsa-type
+    :initarg :type
+    :documentation "Slot type.")))
+
 ;; TODO: rename to elsa-structure
 (defclass elsa-cl-structure nil
   ((name :initarg :name
          :documentation "Name of the structure.")
-   (slots :initarg :slots
-          :documentation "Slots available on the structure.
+   (slots
+    :type hash-table
+    :initarg :slots
+    :initform (make-hash-table)
+    :documentation "Slots available on the structure.
 
 Does not include slots on parents.")
    (parents :type list
@@ -20,6 +33,14 @@ Does not include slots on parents.")
             :documentation "Tree of parents of this structure.")
    (file :initarg :file :documentation "File where the structure was declared."))
   :documentation "Representation of a `cl-defstruct' or `defclass'.")
+
+(cl-defgeneric elsa-structure-get-all-slots ((this elsa-cl-structure))
+  "Return all slots from THIS structure and parents."
+  (-mapcat
+   (lambda (par)
+     (when-let ((par-struct (get par 'elsa-cl-structure)))
+       (hash-table-values (oref par-struct slots))))
+   (mapcar #'car (oref this parents))))
 
 (defclass elsa-defun nil
   ((name :initarg :name :documentation "Name of the defun.")

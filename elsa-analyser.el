@@ -1142,11 +1142,9 @@ FORM is a result of `elsa-read-form'."
                      (inst-type (elsa-get-type inst-form)))
                 (when (elsa-struct-type-p inst-type)
                   (when-let* ((struct (get (oref inst-type name) 'elsa-cl-structure)))
-                    (let ((slots (-mapcat
-                                  (lambda (par)
-                                    (when-let ((par-struct (get par 'elsa-cl-structure)))
-                                      (oref par-struct slots)))
-                                  (mapcar #'car (oref struct parents)))))
+                    (let ((slots (--map
+                                  (oref it name)
+                                  (elsa-structure-get-all-slots struct))))
                       (throw 'lsp-response
                              (lsp-make-completion-list
                               :is-incomplete json-false

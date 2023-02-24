@@ -1,6 +1,8 @@
 (require 'elsa-analyser)
 (require 'elsa-typed-cl)
 
+(require 'elsa-extension-eieio)
+
 (defun elsa--cl-analyse-specifiers (args-raw)
   "Analyse the cl-style specifiers to extract type information.
 
@@ -49,7 +51,11 @@ keyword-sexp pairs."
     (elsa-state-add-structure state
       (elsa-cl-structure
        :name name
-       :slots slot-names
+       :slots (elsa-eieio--create-slots
+               (mapcar
+                (lambda (name)
+                  (list name :type (elsa-type-mixed)))
+                slot-names))
        :parents (list (list name))))))
 
 (provide 'elsa-extension-cl)

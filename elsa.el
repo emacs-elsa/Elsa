@@ -81,7 +81,12 @@
   `(elsa-state-add-structure elsa-global-state
      (elsa-cl-structure :name ',name
                         :parents ',(or parents `((,name)))
-                        :slots ',slots)))
+                        :slots (elsa-eieio--create-slots
+                                (list ,@(mapcar
+                                         (lambda (slot)
+                                           `(list ',(car slot)
+                                                  :type (elsa--make-type ',(plist-get (cdr slot) :type))))
+                                         slots))))))
 
 (defun elsa--get-cache-file-name (global-state feature &optional compiled)
   "Return the cache file name for LIBRARY."
@@ -247,7 +252,11 @@ GLOBAL-STATE is the initial configuration."
                  (insert
                   (format
                    "%S\n"
-                   `(elsa-declare-structure ,name ,(oref def parents) ,(oref def slots)))))
+                   `(elsa-declare-structure ,name ,(oref def parents)
+                      ,(mapcar (lambda (slot)
+                                 (list (oref slot name)
+                                       :type (read (elsa-type-describe (oref slot type)))))
+                               (hash-table-values (oref def slots)))))))
                (oref state cl-structures))
               (maphash
                (lambda (name def)

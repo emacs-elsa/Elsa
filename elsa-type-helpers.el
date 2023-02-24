@@ -38,6 +38,7 @@
 
 Return trinary logic value.")
 
+;; TODO: use elsa-type-could-accept or non-nil and trinary-not
 (cl-defmethod elsa-type-is-nil ((type elsa-type))
   (if (elsa-type-accept type (elsa-type-nil))
       (if (elsa-type-equivalent-p type (elsa-type-nil))
@@ -51,6 +52,7 @@ Return trinary logic value.")
 
 Return trinary logic value.")
 
+;; TODO: use elsa-type-could-accept
 (cl-defmethod elsa-type-is-non-nil ((type elsa-type))
   (if (elsa-type-accept type (elsa-type-nil))
       (if (elsa-type-equivalent-p type (elsa-type-nil))
@@ -170,6 +172,37 @@ Return trinary logic value.")
 (defmacro elsa-make-type (&rest definition)
   "Make a type according to DEFINITION."
   `(elsa--make-type ',@definition))
+
+(defun elsa--cl-type-to-elsa-type (definition)
+  (pcase definition
+    (`nil
+     (elsa-type-mixed))
+    (`t
+     (elsa-type-mixed))
+    (`null
+     (elsa-type-nil))
+    (`integer
+     (elsa-type-int))
+    ((pred symbolp)
+     (or
+      ;; It can be a primitive type, which should be represented as an
+      ;; elsa type with "elsa-type" prefix.
+      (ignore-errors (elsa--make-type definition))
+      ;; It can also be a cl-struct name.  So we try to construct an
+      ;; elsa struct type from it.
+      (and (get definition 'elsa-cl-structure)
+           (elsa--make-type
+            `(struct ,definition)))))
+    ;; list of "cl-type"
+    (`(list-of ,type)
+     (elsa-type-list :item-type (elsa--cl-type-to-elsa-type type)))
+    (`(or . ,type)
+     (elsa-sum-type :types (--map (elsa--cl-type-to-elsa-type it) type)))
+    (`(and . ,type)
+     (elsa-intersection-type :types (--map (elsa--cl-type-to-elsa-type it) type)))
+    (`(not ,type)
+     (elsa-diff-type :positive (elsa-type-mixed)
+                     :negative (elsa--cl-type-to-elsa-type type)))))
 
 (defun elsa--eieio-class-parents-recursive (type)
   "Return all parents of TYPE."
