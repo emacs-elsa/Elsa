@@ -32,6 +32,112 @@
 
 (require 'elsa-methods)
 
+(defclass elsa-type-explainer-message ()
+  ((message
+    :type string
+    :initarg :message)
+   (depth
+    :type integer
+    :initarg :depth)))
+
+(cl-defmethod elsa-tostring ((this elsa-type-explainer-message))
+  (format "%s%s"
+          (make-string (* 2 (oref this depth)) ? )
+          (oref this message)))
+
+(cl-defmethod cl-print-object ((this elsa-type-explainer-message) stream)
+  (princ (format "#<elsa-type-explainer-message %s %s>"
+                 (oref this depth)
+                 (oref this message))
+         stream))
+
+(defclass elsa-type-explainer ()
+  ((messages
+    :type (list-of elsa-type-explainer-message)
+    :initform nil
+    :accessor elsa-get-messages)
+   (depth
+    :type integer
+    :initform 0
+    :accessor elsa-get-depth)))
+
+(defun elsa--flat-to-tree (lst &optional depth)
+  "Convert a flat list LST into a tree.
+
+LST is a list of items (depth message) which are converted to a
+tree structure.  All the messages on the same depth are also
+inverted (relative to their parent).
+
+This way we can properly reorder items which were pushed in
+\"reverse order\" to a list of messages."
+  (setq depth (or depth 0))
+  (let ((layer nil)
+        (block nil))
+    (while lst
+      (push (pop lst) block)
+      (while (and lst (> (caar lst) depth))
+        (push (pop lst) block))
+      (push (reverse block) layer)
+      (setq block nil))
+    (setq layer (reverse layer))
+    (mapcar (lambda (l)
+              (append
+               (car l)
+               (reverse (elsa--flat-to-tree (cdr l) (1+ depth)))))
+            layer)))
+
+(cl-defmethod elsa-tostring ((this elsa-type-explainer))
+  (->> (elsa-get-messages this)
+       (--map (list (oref it depth) (oref it message)) )
+       (elsa--flat-to-tree)
+       (-flatten)
+       (-partition 2)
+       (--map (elsa-type-explainer-message :depth (car it) :message (cadr it)))
+       (-map #'elsa-tostring)
+       (funcall (-flip #'string-join) "\n")))
+
+(defconst elsa--fmt-explain-type-0-can-not-accept-type-1
+  "Type `%s' can not accept type `%s'")
+
+(defconst elsa--fmt-explain-0-is-not-a-1
+  "`%s' is not a `%s'")
+
+(defconst elsa--fmt-explain-type-0-only-accepts-type-1-was-2
+  "Type `%s' only accepts type `%s', was `%s'")
+
+(defconst elsa--fmt-explain-sequence-item-types-of-this-0-do-not-match
+  "Sequence item types of this %s do not match.")
+
+(defmacro elsa-explain (explainer fmt &rest args)
+  (declare (indent 1)
+           (debug (form form body)))
+  (let ((exp (make-symbol "exp")))
+    `(let ((,exp, explainer))
+       (when ,exp
+         (push (elsa-type-explainer-message
+                :message (format ,fmt ,@args)
+                :depth (elsa-get-depth ,exp))
+               (elsa-get-messages ,exp)))
+       ,exp)))
+
+(defmacro elsa-with-explainer (explainer fmt &rest forms)
+  "Use EXPLAINER with format FMT to explain FORMS.
+
+FMT is a list with `car' being the format string and `cdr'
+optional arguments to the format string."
+  (declare (indent 1)
+           (debug (form listp body)))
+  (let ((exp (make-symbol "exp")))
+    `(let ((,exp ,explainer))
+       (if (progn
+             (when ,exp (cl-incf (elsa-get-depth ,exp)))
+             (prog1 (progn
+                      ,@forms)
+               (when ,exp (cl-decf (elsa-get-depth ,exp)))))
+           t
+         (elsa-explain ,exp ,@fmt)
+         nil))))
+
 (defclass elsa-type nil () :abstract t)
 
 ;; (elsa-type-describe :: (function (mixed) string))
@@ -52,10 +158,13 @@
 This type is a wrapper around one or more other types and
 modifies their behaviour.")
 
-(cl-defgeneric elsa-type-accept (this other)
+(cl-defgeneric elsa-type-accept (this other &optional explainer)
   "Check if THIS accepts OTHER.
 
 This means OTHER is assignable to THIS.
+
+If EXPLAINER is non-nil, return instead a recursive explanation why
+one type can not accept another.
 
 This method only performs soundness analysis.  To account for the
 special handling of `elsa-type-mixed', use
@@ -77,7 +186,7 @@ Return a trinary logical value:
     (trinary-maybe))
    (t (trinary-false))))
 
-(cl-defgeneric elsa-type-is-accepted-by (this other)
+(cl-defgeneric elsa-type-is-accepted-by (this other &optional explainer)
   "Check if THIS is accepted by OTHER.
 
 This means THIS is assignable to OTHER.
@@ -85,7 +194,7 @@ This means THIS is assignable to OTHER.
 This method is used to unpack composite types and perform a
 \"double dispatch\" when testing one composite type accepting
 another, because there is a many-to-many relationship."
-  (elsa-type-accept other this))
+  (elsa-type-accept other this explainer))
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
@@ -121,12 +230,15 @@ type.
 (cl-defmethod elsa-type-describe ((_this elsa-type-mixed))
   "mixed")
 
-(cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other)
+(cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other &optional explainer)
   (unless (cl-typep other 'elsa-type)
     (cl-call-next-method)
-    ;(error "Other must be subclass of `elsa-type'")
+    ;; (error "Other must be subclass of `elsa-type'")
     )
-  (not (elsa-type-unbound-p other)))
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     "mixed" (elsa-tostring other))
+    (not (elsa-type-unbound-p other))))
 
 (defun elsa-type-assignable-p (this other)
   "Check if THIS accepts OTHER.
@@ -162,7 +274,7 @@ Uses special rules for `elsa-type-mixed'.
 (cl-defmethod elsa-type-get-return ((this elsa-type))
   this)
 
-(cl-defmethod elsa-type-accept ((this elsa-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-type) other &optional explainer)
   "Test if THIS type accepts OTHER.
 
 Accepting in this context means that OTHER can be assigned to
@@ -170,12 +282,19 @@ THIS."
   (cond
    ((elsa-instance-of other this))
    ((and (elsa-const-type-p other)
-         (elsa-type-accept this (oref other type))))
+         (elsa-with-explainer explainer
+           (elsa--fmt-explain-type-0-can-not-accept-type-1
+            (elsa-tostring this) (elsa-tostring other))
+           (elsa-type-accept this (oref other type) explainer))))
    ((and (elsa-type-list-p this)
          (elsa-type-nil-p other)))
    ((elsa-type-composite-p other)
-    (elsa-type-is-accepted-by other this))
-   (t nil)))
+    (elsa-type-is-accepted-by other this explainer))
+   (t
+    (elsa-explain explainer
+      elsa--fmt-explain-type-0-can-not-accept-type-1
+      (elsa-tostring this) (elsa-tostring other))
+    nil)))
 
 ;; (elsa-type-composite-p :: (function (mixed) bool))
 (cl-defgeneric elsa-type-composite-p (_this)
@@ -218,15 +337,18 @@ empty.")
 (cl-defmethod elsa-type-describe ((_this elsa-type-empty))
   "empty")
 
-(cl-defmethod elsa-type-accept ((this elsa-type-empty) other)
+(cl-defmethod elsa-type-accept ((this elsa-type-empty) other &optional explainer)
   (if (elsa-type-composite-p other)
-      (elsa-type-is-accepted-by other this)
-    (elsa-type-empty-p other)))
+      (elsa-type-is-accepted-by other this explainer)
+    (elsa-with-explainer explainer
+      (elsa--fmt-explain-type-0-only-accepts-type-1-was-2
+       "empty" "empty" (elsa-tostring other))
+      (elsa-type-empty-p other))))
 
-(cl-defmethod elsa-type-accept ((_this elsa-type) (_this2 elsa-type-empty))
+(cl-defmethod elsa-type-accept ((_this elsa-type) (_this2 elsa-type-empty) &optional _explainer)
   t)
 
-(cl-defmethod elsa-type-accept ((_this elsa-type-unbound) _other)
+(cl-defmethod elsa-type-accept ((_this elsa-type-unbound) _other &optional _explainer)
   "Unbound type accepts anything.
 
 The only thing that can be of an unbound type is a symbol
@@ -255,11 +377,14 @@ of them.")
     (oset new types types)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-intersection-type) other)
-  (-all? (lambda (type) (elsa-type-accept type other)) (oref this types)))
+(cl-defmethod elsa-type-accept ((this elsa-intersection-type) other &optional explainer)
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     (elsa-tostring this) (elsa-tostring other))
+    (-all? (lambda (type) (elsa-type-accept type other explainer)) (oref this types))))
 
-(cl-defmethod elsa-type-is-accepted-by ((this elsa-intersection-type) other)
-  (-any? (lambda (type) (elsa-type-accept other type)) (oref this types)))
+(cl-defmethod elsa-type-is-accepted-by ((this elsa-intersection-type) other &optional explainer)
+  (-any? (lambda (type) (elsa-type-accept other type explainer)) (oref this types)))
 
 (cl-defmethod elsa-type-describe ((this elsa-intersection-type))
   (format "(and %s)" (mapconcat 'elsa-type-describe (oref this types) " ")))
@@ -309,17 +434,20 @@ because the actual type can be any of them.")
     (oset new types types)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-sum-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-sum-type) other &optional explainer)
   (cond
    ((elsa-type-composite-p other)
-    (elsa-type-is-accepted-by other this))
+    (elsa-type-is-accepted-by other this explainer))
    ((and (null (oref this types))
          (elsa-type-empty-p other)))
    (t
-    (-any? (lambda (ot) (elsa-type-accept ot other)) (oref this types)))))
+    (elsa-with-explainer explainer
+      (elsa--fmt-explain-type-0-can-not-accept-type-1
+       (elsa-tostring this) (elsa-tostring other))
+      (-any? (lambda (ot) (elsa-type-accept ot other explainer)) (oref this types))))))
 
-(cl-defmethod elsa-type-is-accepted-by ((this elsa-sum-type) other)
-  (-all? (lambda (type) (elsa-type-accept other type)) (oref this types)))
+(cl-defmethod elsa-type-is-accepted-by ((this elsa-sum-type) other &optional explainer)
+  (-all? (lambda (type) (elsa-type-accept other type explainer)) (oref this types)))
 
 (cl-defmethod elsa-type-callable-p ((this elsa-sum-type))
   "A sum type is callable only if all the summands are callable."
@@ -363,13 +491,19 @@ type and none of the negative types.")
     (oset new negative negative)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-diff-type) other)
-  (and (elsa-type-accept (oref this positive) other)
-       (elsa-type-empty-p
-        (elsa-type-intersect (oref this negative) other))))
+(cl-defmethod elsa-type-accept ((this elsa-diff-type) other &optional explainer)
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     (elsa-tostring this) (elsa-tostring other))
+    (and (elsa-type-accept (oref this positive) other explainer)
+         (elsa-with-explainer explainer
+           ("Intersection of subtracted type `%s' and tested type `%s' is not empty"
+            (elsa-tostring (oref this negative)) (elsa-tostring other))
+           (elsa-type-empty-p
+            (elsa-type-intersect (oref this negative) other))))))
 
-(cl-defmethod elsa-type-is-accepted-by ((this elsa-diff-type) other)
-  (elsa-type-accept other (oref this positive)))
+(cl-defmethod elsa-type-is-accepted-by ((this elsa-diff-type) other &optional explainer)
+  (elsa-type-accept other (oref this positive) explainer))
 
 (cl-defmethod elsa-type-describe ((this elsa-diff-type))
   (if (oref this negative)
@@ -385,8 +519,11 @@ type and none of the negative types.")
 
 (defclass elsa-type-nil (elsa-type) ())
 
-(cl-defmethod elsa-type-accept ((_this elsa-type-nil) (other elsa-type))
-  (elsa-type-nil-p other))
+(cl-defmethod elsa-type-accept ((_this elsa-type-nil) (other elsa-type) &optional explainer)
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-only-accepts-type-1-was-2
+     "nil" "nil" (elsa-tostring other))
+    (elsa-type-nil-p other)))
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-nil))
   "nil")
@@ -406,12 +543,15 @@ Any time a function is called with some variable, Elsa will narrow
 that variable to this specific type if the original type is
 compatible.")))
 
-(cl-defmethod elsa-type-accept ((_this elsa-type-bool) other)
-  (or (elsa-type-bool-p other)
-      (elsa-type-accept
-       (elsa-sum-type
-        :types (list (elsa-type-t) (elsa-type-nil)))
-       other)))
+(cl-defmethod elsa-type-accept ((_this elsa-type-bool) other &optional explainer)
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     "bool" (elsa-tostring other))
+    (or (elsa-type-bool-p other)
+        (elsa-type-accept
+         (elsa-sum-type
+          :types (list (elsa-type-t) (elsa-type-nil)))
+         other explainer))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-bool))
   (if (slot-boundp this 'predicates)
@@ -551,15 +691,24 @@ float and number.")
     (oset new cdr-type cdr-type)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-type-cons) (other elsa-type-cons))
+(cl-defmethod elsa-type-accept ((this elsa-type-cons) (other elsa-type-cons) &optional explainer)
   "A cons type accepts another cons type covariantly.
 
 That means that iff both arguments of this are supertypes of
 other, then this is a supertype of other."
-  (and (elsa-type-accept (oref this car-type) (oref other car-type))
-       (elsa-type-accept (oref this cdr-type) (oref other cdr-type))))
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     (elsa-tostring this) (elsa-tostring other))
+    (and (elsa-with-explainer explainer
+           ("Car of `%s' does not accept `%s'"
+            (elsa-tostring this) (elsa-tostring other))
+           (elsa-type-accept (oref this car-type) (oref other car-type) explainer))
+         (elsa-with-explainer explainer
+           ("Cdr of `%s' does not accept `%s'"
+            (elsa-tostring this) (elsa-tostring other))
+           (elsa-type-accept (oref this cdr-type) (oref other cdr-type) explainer)))))
 
-(cl-defmethod elsa-type-is-accepted-by ((_this elsa-type-cons) (_other elsa-type-empty))
+(cl-defmethod elsa-type-is-accepted-by ((_this elsa-type-cons) (_other elsa-type-empty) &optional explainer)
   "A cons type is not accepted by empty."
   nil)
 
@@ -578,19 +727,29 @@ other, then this is a supertype of other."
     (oset new types types)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-type-tuple) (other elsa-type-tuple))
-  (catch 'ok
-    ;; types are accepted co-variantly
-    (let ((this-types (oref this types))
-          (other-types (oref other types)))
-      (unless (= (length this-types) (length other-types))
-        (throw 'ok nil))
-      (cl-mapc
-       (lambda (this-type other-type)
-         (unless (elsa-type-accept this-type other-type)
-           (throw 'ok nil)))
-       this-types other-types))
-    t))
+(cl-defmethod elsa-type-accept ((this elsa-type-tuple) (other elsa-type-tuple) &optional explainer)
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     (elsa-tostring this) (elsa-tostring other))
+    (catch 'ok
+      ;; types are accepted co-variantly
+      (let ((this-types (oref this types))
+            (other-types (oref other types))
+            (i 0))
+        (unless (= (length this-types) (length other-types))
+          (elsa-explain explainer
+            "Different number of elements in tuple, this has %d, other has %d"
+            (length this-types) (length other-types))
+          (throw 'ok nil))
+        (cl-mapc
+         (lambda (this-type other-type)
+           (cl-incf i)
+           (unless (elsa-with-explainer explainer
+                     ("Elements %d. is not assignable" i)
+                     (elsa-type-accept this-type other-type explainer))
+             (throw 'ok nil)))
+         this-types other-types))
+      t)))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-tuple))
   (format "(%s)" (mapconcat 'elsa-type-describe (oref this types) " ")))
@@ -607,7 +766,7 @@ other, then this is a supertype of other."
     (oset new item-type item-type)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-type-list) (other elsa-type))
+(cl-defmethod elsa-type-accept ((this elsa-type-list) (other elsa-type) &optional explainer)
   "A list type accepts another list type covariantly.
 
 That means that iff the item type of this is supertype of other,
@@ -618,15 +777,22 @@ unknown length where elements are all of the same type.
 
 For a list of fixed length with heterogeneous types, see
 `elsa-type-tuple'."
-  (cond
-   ((elsa-type-tuple-p other)
-    ;; we can accept a tuple if all of its types are accepted by this
-    (-all?
-     (lambda (ot) (elsa-type-accept (oref this item-type) ot))
-     (oref other types)))
-   ((elsa-type-list-p other)
-    (elsa-type-accept (oref this item-type) (oref other item-type)))
-   (t (cl-call-next-method this other))))
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     (elsa-tostring this) (elsa-tostring other))
+    (cond
+     ((elsa-type-tuple-p other)
+      ;; we can accept a tuple if all of its types are accepted by this
+      (elsa-with-explainer explainer
+        ("Some element of tuple does not match this list's item type")
+        (-all?
+         (lambda (ot) (elsa-type-accept (oref this item-type) ot explainer))
+         (oref other types))))
+     ((elsa-type-list-p other)
+      (elsa-with-explainer explainer
+        (elsa--fmt-explain-sequence-item-types-of-this-0-do-not-match "list")
+        (elsa-type-accept (oref this item-type) (oref other item-type) explainer)))
+     (t (cl-call-next-method)))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-list))
   (format "(list %s)" (elsa-type-describe (oref this item-type))))
@@ -647,12 +813,14 @@ For a list of fixed length with heterogeneous types, see
     (oset new item-type item-type)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-type-vector) (other elsa-type-vector))
+(cl-defmethod elsa-type-accept ((this elsa-type-vector) (other elsa-type-vector) &optional explainer)
   "A vector type accepts another vector type covariantly.
 
 That means that iff the item type of this is supertype of other,
 then this is a supertype of other."
-  (elsa-type-accept (oref this item-type) (oref other item-type)))
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-sequence-item-types-of-this-0-do-not-match "vector")
+    (elsa-type-accept (oref this item-type) (oref other item-type) explainer)))
 
 (cl-defmethod elsa-type-describe ((this elsa-type-vector))
   (format "(vector %s)" (elsa-type-describe (oref this item-type))))
@@ -684,27 +852,42 @@ then this is a supertype of other."
           (mapconcat 'elsa-type-describe (oref this args) " ")
           (elsa-type-describe (oref this return))))
 
-(cl-defmethod elsa-type-accept ((this elsa-function-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-function-type) other &optional explainer)
   (if (elsa-type-composite-p other)
-      (elsa-type-is-accepted-by other this)
-    (when (elsa-function-type-p other)
-      ;; Argument types must be contra-variant, return types must be
-      ;; co-variant.
-      (catch 'ok
-        (let ((this-args (oref this args))
-              (other-args (oref other args)))
-          (unless (= (length this-args) (length other-args))
-            (throw 'ok nil))
-          (cl-mapc
-           (lambda (this-arg other-arg)
-             (unless (elsa-type-accept other-arg this-arg)
-               (throw 'ok nil)))
-           this-args other-args)
-          (unless (elsa-type-accept
-                   (elsa-type-get-return this)
-                   (elsa-type-get-return other))
-            (throw 'ok nil)))
-        t))))
+      (elsa-type-is-accepted-by other this explainer)
+    (if (elsa-function-type-p other)
+        ;; Argument types must be contra-variant, return types must be
+        ;; co-variant.
+        (elsa-with-explainer explainer
+          (elsa--fmt-explain-type-0-can-not-accept-type-1
+           (elsa-tostring this) (elsa-tostring other))
+          (catch 'ok
+            (let ((this-args (oref this args))
+                  (other-args (oref other args))
+                  (i 0))
+              (unless (= (length this-args) (length other-args))
+                (elsa-explain explainer "Different number of arguments")
+                (throw 'ok nil))
+              (cl-mapc
+               (lambda (this-arg other-arg)
+                 (cl-incf i)
+                 (unless (elsa-with-explainer explainer
+                           ("Argument %d not compatible" i)
+                           (elsa-type-accept other-arg this-arg explainer))
+                   (throw 'ok nil)))
+               this-args other-args)
+              (unless (elsa-with-explainer explainer
+                        ("Return types not compatible")
+                        (elsa-type-accept
+                         (elsa-type-get-return this)
+                         (elsa-type-get-return other)
+                         explainer))
+                (throw 'ok nil)))
+            t))
+      (elsa-with-explainer explainer
+        ("Function type `%s' can only accept function types, was `%s'"
+         (elsa-tostring this) (elsa-tostring other))
+        nil))))
 
 (cl-defmethod elsa-type-callable-p ((_this elsa-function-type)) t)
 
@@ -856,13 +1039,28 @@ predefined value.")
 (cl-defmethod elsa-type-describe ((this elsa-const-type))
   (format "(const %S)" (oref this value)))
 
-(cl-defmethod elsa-type-accept ((this elsa-const-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-const-type) other &optional explainer)
   "The const type is different from readonly in that a readonly
 type can never be assigned to but a const type is only a
-narrowing of a type to a concrete value from the type's domain."
-  (and (elsa-const-type-p other)
-       (elsa-type-accept (oref this type) (oref other type))
-       (equal (oref this value) (oref other value))))
+narrowing of a type to a concrete value from the type's domain.
+
+Const type only accepts other const type whose value is `equal'
+to this value."
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-can-not-accept-type-1
+     (elsa-tostring this) (elsa-tostring other))
+    (and (elsa-with-explainer explainer
+           (elsa--fmt-explain-0-is-not-a-1
+            (elsa-tostring other) "const type")
+           (elsa-const-type-p other))
+         (elsa-with-explainer explainer
+           (elsa--fmt-explain-type-0-can-not-accept-type-1
+            (elsa-tostring (oref this type)) (elsa-tostring (oref other type)))
+           (elsa-type-accept (oref this type) (oref other type) explainer))
+         (elsa-with-explainer explainer
+           ("Values `%s' and `%s' are not equal"
+            (oref this value) (oref other value))
+           (equal (oref this value) (oref other value))))))
 
 ;; Readonly type for defconst
 (defclass elsa-readonly-type (elsa-type elsa-composite-type)
@@ -872,7 +1070,7 @@ narrowing of a type to a concrete value from the type's domain."
 It wraps any other type and makes the form or variable
 unassignable.")
 
-(cl-defmethod elsa-type-accept ((this elsa-readonly-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-readonly-type) other &optional explainer)
   "Check if this readonly type accept other type.
 
 The acceptance does not depend on the readonly status.  Here we
@@ -880,16 +1078,16 @@ simply work with the wrapped types.  The readonly type wrapper is
 only a flag which is used during assignability checks (such as
 `setq'), not as a type check!"
   (if (elsa-type-composite-p other)
-      (elsa-type-is-accepted-by other (oref this type))
-    (elsa-type-accept (oref this type) other)))
+      (elsa-type-is-accepted-by other (oref this type) explainer)
+    (elsa-type-accept (oref this type) other explainer)))
 
-(cl-defmethod elsa-type-is-accepted-by ((this elsa-readonly-type) other)
-  (elsa-type-accept other (oref this type)))
+(cl-defmethod elsa-type-is-accepted-by ((this elsa-readonly-type) other &optional explainer)
+  (elsa-type-accept other (oref this type) explainer))
 
 (cl-defmethod elsa-type-describe ((this elsa-readonly-type))
   (format "(readonly %s)" (elsa-type-describe (oref this type))))
 
-(cl-defmethod elsa-type-accept ((_this null) _other)
+(cl-defmethod elsa-type-accept ((_this null) _other &optional explainer)
   "This method catches the impossible situation when we are
 trying to analyse 'nil, which is not a valid type or form."
   (message "An error happened trying to analyse nil")
@@ -899,7 +1097,7 @@ trying to analyse 'nil, which is not a valid type or form."
   ((name :type (or symbol nil) :initarg :name))
   :documentation "Type representing a `cl-defstruct' or `defclass'.")
 
-(cl-defmethod elsa-type-accept ((this elsa-struct-type) other)
+(cl-defmethod elsa-type-accept ((this elsa-struct-type) other &optional explainer)
   (cond
    ((elsa-type-composite-p other)
     (elsa-type-is-accepted-by other this))
