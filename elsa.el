@@ -191,6 +191,7 @@ tokens."
   (elsa-log "[%s] Processing file %s"
             (elsa-global-state-get-counter global-state) file)
   (let ((state (elsa-state :global-state global-state))
+        (current-time (current-time))
         (form))
     (elsa-state-clear-file-state global-state file)
     (oset global-state current-file file)
@@ -233,6 +234,10 @@ tokens."
         ;; When not running as language server, just crash on errors.
         (while (setq form (elsa-read-form state))
           (elsa-analyse-form state form))))
+    (elsa-log "[%s] Processing file %s ... done after %.3fs"
+              (elsa-global-state-get-counter global-state)
+              file
+              (float-time (time-subtract (current-time) current-time)))
     state))
 
 (defun elsa-save-cache (state global-state)
