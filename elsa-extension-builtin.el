@@ -216,4 +216,7 @@ Since error stops the flow of the program, the form's type is
 empty, because it has no value."
   (oset form type (elsa-type-empty)))
 
+(defun elsa--analyse:eval-when-compile (form scope state)
+  (elsa--analyse:progn form scope state))
+
 (provide 'elsa-extension-builtin)
