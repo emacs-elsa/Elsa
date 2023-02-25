@@ -29,13 +29,17 @@
 (defun elsa--analyse:not (form scope state)
   (elsa--analyse-function-call form scope state)
   (let* ((args (cdr (oref form sequence)))
-         (arg-type (oref (car args) type)))
+         (arg-type (oref (car args) type))
+         (nullable (elsa-type-is-nil arg-type)))
     (cond
-     ((elsa-type-accept (elsa-type-nil) arg-type) ;; definitely false
+     ((trinary-true-p nullable) ;; definitely is nil
       (oset form type (elsa-type-t)))
-     ((not (elsa-type-accept arg-type (elsa-type-nil))) ;; definitely true
+     ((trinary-false-p nullable) ;; definitely is non-nil
       (oset form type (elsa-type-nil)))
      (t (oset form type (elsa-make-type bool))))))
+
+(defun elsa--analyse:null (form scope state)
+  (elsa--analyse:not form scope state))
 
 (defun elsa--analyse--eq (eq-form symbol-form constant-form)
   "Setup narrowing for the EQ-FORM based on the SYMBOL-FORM variable.

@@ -793,7 +793,7 @@
 (put 'downcase 'elsa-type (elsa-make-type (and (function (string) string) (function (int) int))))
 
 ;; boolean functions
-(put 'not 'elsa-type (elsa-make-type (function (mixed) bool)))
+(put 'not 'elsa-type (elsa-make-type (function (mixed) (is nil))))
 
 ;; string functions
 (put 'split-string 'elsa-type (elsa-make-type (function (string string) (list string))))
