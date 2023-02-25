@@ -156,7 +156,7 @@ be re-analysed during textDocument/didOpen handler.")))
   (let ((state (progn
                  (oset elsa-global-state number-of-files 1)
                  (oset elsa-global-state processed-file-index 1)
-                 (elsa-process-file file))))
+                 (elsa-process-file file elsa-global-state))))
     (elsa-state-update-global state elsa-global-state)
     (apply #'vector (mapcar #'elsa-message-to-lsp (oref state errors)))))
 
