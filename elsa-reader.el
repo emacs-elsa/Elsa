@@ -4,6 +4,7 @@
 (require 'pcase)
 (require 'backquote)
 (require 'seq)
+(require 'map)
 
 (require 'trinary)
 
@@ -299,6 +300,23 @@ prefix and skipped by the sexp scanner.")
 
 (defclass elsa-form-list (elsa-form-cons elsa-form-seq)
   ((sequence :type list :initarg :sequence)))
+
+(cl-defmethod map-elt :extra "elsa-form" ((seq list) key &optional default)
+  (if (cl-typep (car seq) 'elsa-form)
+      (let ((has-key nil))
+        (or (catch 'got-it
+              (while seq
+                (cond
+                 ((eq (elsa-get-name (car seq)) key)
+                  (setq has-key t))
+                 (has-key
+                  (throw 'got-it (car seq))))
+                (!cdr seq)))
+            default))
+    (cl-call-next-method)))
+
+(cl-defmethod map-elt ((seq elsa-form-list) key &optional default)
+  (map-elt (elsa-form-sequence seq) key default))
 
 (cl-defmethod elsa-form-print ((this elsa-form-list))
   (format "(%s)" (mapconcat 'elsa-form-print (oref this sequence) " ")))
