@@ -25,16 +25,32 @@
 ;;; Code:
 
 (require 'eieio)
+(require 'map)
 
 (require 'lsp-protocol)
 
+(require 'elsa-types)
+(require 'elsa-form)
+
 (defclass elsa-message ()
-  ((message :initarg :message)
-   (line :initarg :line :initform nil)
-   (column :initarg :column
-           :initform nil)
-   (expression :initarg :expression)
-   (code :type (or string null) :initarg :code :initform nil))
+  ((message
+    :type string
+    :initarg :message)
+   (line
+    :type (or integer null)
+    :initarg :line
+    :initform nil)
+   (column
+    :type (or integer null)
+    :initarg :column
+    :initform nil)
+   (expression
+    :type elsa-form
+    :initarg :expression)
+   (code
+    :type (or string null)
+    :initarg :code
+    :initform nil))
   :abstract t
   :documentation "Base class representing a message: result of the analysis.
 
@@ -70,13 +86,13 @@ In general, we recognize three states: error, warning, notice
   "Retrieve LSP severity code FOR this message.")
 
 (cl-defmethod elsa-message-to-lsp-severity ((_this elsa-error))
-  1)
+  lsp/diagnostic-severity-error)
 
 (cl-defmethod elsa-message-to-lsp-severity ((_this elsa-warning))
-  2)
+  lsp/diagnostic-severity-warning)
 
 (cl-defmethod elsa-message-to-lsp-severity ((_this elsa-notice))
-  3)
+  lsp/diagnostic-severity-information)
 
 (cl-defmethod elsa-message-format ((this elsa-message))
   "Format an `elsa-message'."
@@ -119,17 +135,78 @@ In general, we recognize three states: error, warning, notice
              :column (oref expression column)
              :code code)))
 
-(defun elsa-make-error (expression format &rest args)
+(defun elsa--make-message-from-explainer (constructor expression explainer args)
+  (let (compact)
+    (when (plist-member args :compact)
+      (setq compact (plist-get args :compact))
+      (setq args (map-delete args :compact)))
+
+    (when (and compact (= 2 (length (elsa-get-messages explainer))))
+      (setf (elsa-get-messages explainer)
+            (list (car (elsa-get-messages explainer)))))
+
+    (elsa--make-message
+     constructor
+     expression
+     (elsa-tostring explainer)
+     args)))
+
+(cl-defmethod elsa-make-error ((expression elsa-form) (format string) &rest args)
   (declare (indent 1))
   (elsa--make-message 'elsa-error expression format args))
 
-(defun elsa-make-warning (expression format &rest args)
+(cl-defmethod elsa-make-error ((expression elsa-form) (explainer elsa-explainer) &rest args)
+  "Create `elsa-error' object.
+
+EXPRESSION is a form to which the error will be attached.
+
+EXPLAINER is an instance of `elsa-explainer'.
+
+If ARGS contains :compact t, if the explanation only has one
+additional line, this line will be dropped, because most likely
+it only reformulates the first line."
+  (declare (indent 1))
+  (elsa--make-message-from-explainer 'elsa-error expression explainer args))
+
+(cl-defmethod elsa-make-warning ((expression elsa-form) (format string) &rest args)
   (declare (indent 1))
   (elsa--make-message 'elsa-warning expression format args))
 
-(defun elsa-make-notice (expression format &rest args)
+(cl-defmethod elsa-make-warning ((expression elsa-form)
+                                 (explainer elsa-explainer)
+                                 &rest args)
+  "Create `elsa-warning' object.
+
+EXPRESSION is a form to which the error will be attached.
+
+EXPLAINER is an instance of `elsa-explainer'.
+
+If ARGS contains :compact t, if the explanation only has one
+additional line, this line will be dropped, because most likely
+it only reformulates the first line."
+  (declare (indent 1))
+  (elsa--make-message-from-explainer 'elsa-warning expression explainer args))
+
+(cl-defmethod elsa-make-notice ((expression elsa-form)
+                                (format string)
+                                &rest args)
   (declare (indent 1))
   (elsa--make-message 'elsa-notice expression format args))
+
+(cl-defmethod elsa-make-notice ((expression elsa-form)
+                                (explainer elsa-explainer)
+                                &rest args)
+  "Create `elsa-notice' object.
+
+EXPRESSION is a form to which the error will be attached.
+
+EXPLAINER is an instance of `elsa-explainer'.
+
+If ARGS contains :compact t, if the explanation only has one
+additional line, this line will be dropped, because most likely
+it only reformulates the first line."
+  (declare (indent 1))
+  (elsa--make-message-from-explainer 'elsa-notice expression explainer args))
 
 (provide 'elsa-error)
 ;;; elsa-error.el ends here

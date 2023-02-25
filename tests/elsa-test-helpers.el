@@ -3,6 +3,7 @@
 (require 'eieio)
 (setq eieio-backward-compatibility nil)
 
+(require 'elsa)
 (require 'elsa-type-helpers)
 (require 'elsa-methods)
 (require 'buttercup)

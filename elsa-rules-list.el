@@ -231,17 +231,22 @@ returned narrowing."
          ((trinary-true-p could-accept)
           (elsa-state-add-message state
             (elsa-make-warning (elsa-car form)
-              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to true because the argument %s will always be `%s'."
-              :code "useless-type-guard"
-              name
-              (elsa-type-describe narrow-type)
-              (elsa-type-describe arg-type)
-              (elsa-form-print (elsa-cadr form))
-              (elsa-type-describe narrow-type))))
+              (elsa-with-temp-explainer expl
+                (elsa-explain-and-indent expl
+                  ("Function `%s' narrows argument type to `%s' and the argument type is `%s'"
+                   name
+                   (elsa-type-describe narrow-type)
+                   (elsa-type-describe arg-type))
+                  (elsa-explain expl
+                    "Expression always evaluates to true because the argument %s will always be `%s'"
+                    (elsa-form-print (elsa-cadr form))
+                    (elsa-type-describe narrow-type)))
+                expl)
+              :code "useless-type-guard")))
          ((trinary-false-p could-accept)
           (elsa-state-add-message state
             (elsa-make-warning (elsa-car form)
-              "Function `%s' narrows type to `%s' and the argument type is `%s'.\n  Expression always evaluates to false because the argument %s can never be `%s'."
+              "Function `%s' narrows argument type to `%s' and the argument type is `%s'.\n  Expression always evaluates to false because the argument %s can never be `%s'."
               :code "useless-type-guard"
               name
               (elsa-type-describe narrow-type)

@@ -59,11 +59,16 @@
              (oref value-form type))
       (elsa-state-add-message state
         (elsa-make-error slot-form
-          "Property `%s' can not accept type `%s', has type `%s'"
+          (elsa-with-temp-explainer explainer
+            (elsa-explain-and-indent explainer
+              ("Property `%s' can not accept type `%s', has type `%s'"
+               slot-name
+               (elsa-tostring (oref value-form type))
+               (elsa-tostring (oref slot-form type)))
+              (elsa-type-accept (oref slot-form type) (oref value-form type) explainer))
+            explainer)
           :code "eieio-invalid-type"
-          slot-name
-          (elsa-tostring (oref value-form type))
-          (elsa-tostring (oref slot-form type)))))))
+          :compact t)))))
 
 (defun elsa-eieio--create-slots (slots)
   (let ((ht (make-hash-table)))

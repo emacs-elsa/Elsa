@@ -165,6 +165,10 @@
       (expect (elsa-type-is-nil (elsa-make-type (or string nil)))
               :to-equal (trinary-maybe)))
 
+    (it "should return maybe₃ for lists"
+      (expect (elsa-type-is-nil (elsa-make-type (list mixed)))
+              :to-equal (trinary-maybe)))
+
     (it "should return false₃ if type is definitely not nil"
       (expect (elsa-type-is-nil (elsa-type-string))
               :to-equal (trinary-false))))
@@ -177,6 +181,10 @@
 
     (it "should return maybe₃ if type can be nil"
       (expect (elsa-type-is-non-nil (elsa-make-type (or string nil)))
+              :to-equal (trinary-maybe)))
+
+    (it "should return maybe₃ for lists"
+      (expect (elsa-type-is-nil (elsa-make-type (list mixed)))
               :to-equal (trinary-maybe)))
 
     (it "should return false₃ if type is definitely nil"

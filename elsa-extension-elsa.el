@@ -1,6 +1,7 @@
 (require 'elsa-analyser)
 (require 'elsa-check)
 (require 'elsa-ruleset)
+(require 'elsa-types)
 
 (require 'find-func)
 
@@ -157,5 +158,21 @@
 
 (defun elsa--analyse:elsa-declare-structure (form scope state)
   nil)
+
+(defun elsa--analyse:elsa-with-temp-explainer (form scope state)
+  (let* ((explainer (elsa-cadr form))
+         (body (elsa-nthcdr 2 form))
+         (last (-last-item body))
+         (var (elsa-variable
+               :name (elsa-get-name explainer)
+               :type (elsa-make-type (struct elsa-explainer)))))
+    (elsa-scope-add-var scope var)
+    (elsa--analyse-body body scope state)
+    (elsa-scope-remove-var scope var)
+    (if body
+        (progn
+          (oset form type (elsa-get-type last))
+          (oset form narrow-types (oref last narrow-types)))
+      (oset form type (elsa-type-nil)))))
 
 (provide 'elsa-extension-elsa)

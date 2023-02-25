@@ -179,7 +179,6 @@
             ;; -------------+---------+---+----------
             (elsa-test-with-analysed-form "|(defun a (x) (or (and (stringp x) (mixed-function)) x))" form
               (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
-                (message "type %s" (elsa-tostring (elsa-get-type test-form)))
                 (expect (elsa-get-type test-form) :to-be-type-equivalent
                         (elsa-type-mixed))))))
 
@@ -271,7 +270,6 @@
         (it "should not narrow the type by the unreachable expressions"
           (elsa-test-with-analysed-form "|(defun a (x) (if (or t x) x x))" form
             (let ((test-form (elsa-nth 2 (elsa-nth 3 form))))
-              (message "%s" (elsa-tostring (elsa-get-type test-form)))
               (expect test-form :to-be-type-equivalent (elsa-make-type mixed)))))
 
         (it "should sum the complements of narrowed types in subsequent conditions"

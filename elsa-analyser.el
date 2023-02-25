@@ -269,10 +269,15 @@ The BINDING should have one of the following forms:
                 (unless (elsa-type-accept var-type val)
                   (elsa-state-add-message state
                     (elsa-make-error place
-                      "Variable %s expects `%s', got `%s'"
-                      (symbol-name (elsa-get-name place))
-                      (elsa-type-describe var-type)
-                      (elsa-type-describe (elsa-get-type val)))))))))))
+                      (elsa-with-temp-explainer explainer
+                        (elsa-explain-and-indent explainer
+                          ("Variable %s expects `%s', got `%s'"
+                           (symbol-name (elsa-get-name place))
+                           (elsa-type-describe var-type)
+                           (elsa-type-describe (elsa-get-type val)))
+                          (elsa-type-accept var-type val explainer))
+                        explainer)
+                      :code "invalid-assignment")))))))))
     (oset form type (oref (-last-item args) type))
     (oset form narrow-types
           (list (elsa-variable :name (elsa-get-name (car (-last-item assignments)))
@@ -592,9 +597,15 @@ handled by `elsa--analyse-function-like-invocation'."
         (unless (elsa-type-assignable-p function-return-type body-return-type)
           (elsa-state-add-message state
             (elsa-make-error (elsa-car form)
-              "Function is expected to return %s but returns %s."
-              (elsa-type-describe function-return-type)
-              (elsa-type-describe body-return-type)))))
+              (elsa-with-temp-explainer explainer
+                (elsa-explain-and-indent explainer
+                  ("Function is expected to return `%s' but returns `%s'"
+                   (elsa-type-describe function-return-type)
+                   (elsa-type-describe body-return-type))
+                  (elsa-type-accept function-return-type body-return-type explainer))
+                explainer)
+              :code "incompatible-return-type"
+              :compact t))))
       ;; infer the type of the function
       (unless (elsa-state-get-defun state name)
         (elsa-state-add-defun state
@@ -658,10 +669,16 @@ make it explicit and precise."
                     (elsa-type-assignable-p var-type (elsa-get-type value)))
           (elsa-state-add-message state
             (elsa-make-error value
-              "Variable %s expects `%s', got `%s'"
-              var-name
-              (elsa-type-describe var-type)
-              (elsa-type-describe (elsa-get-type value)))))
+              (elsa-with-temp-explainer explainer
+                (elsa-explain-and-indent explainer
+                  ("Variable %s expects `%s', got `%s'"
+                   var-name
+                   (elsa-type-describe var-type)
+                   (elsa-type-describe (elsa-get-type value)))
+                  (elsa-type-accept var-type (elsa-get-type value) explainer))
+                explainer)
+              :code "invalid-assignment"
+              :compact t)))
       (if value
           (elsa-state-add-defvar state
             (elsa-defvar :name var-name :type (oref value type)))
@@ -689,10 +706,16 @@ automatically deriving the type."
                     (elsa-type-assignable-p var-type (elsa-get-type value)))
           (elsa-state-add-message state
             (elsa-make-error value
-              "Variable %s expects `%s', got `%s'"
-              var-name
-              (elsa-type-describe var-type)
-              (elsa-type-describe (elsa-get-type value)))))
+              (elsa-with-temp-explainer explainer
+                (elsa-explain-and-indent explainer
+                  ("Variable %s expects `%s', got `%s'"
+                   var-name
+                   (elsa-type-describe var-type)
+                   (elsa-type-describe (elsa-get-type value)))
+                  (elsa-type-accept var-type (elsa-get-type value) explainer))
+                explainer)
+              :code "invalid-assignment"
+              :compact t)))
       ;; TODO: check the `:type' form here and also compare if we
       ;; are doing a valid assignment.
       (if value
@@ -917,102 +940,116 @@ SCOPE and STATE are the scope and state objects."
                                ;; to only the overloads applicable at
                                ;; current caller
                                (overloads (--map-indexed (cons it it-index) all-overloads)))
-                    (-map-indexed
-                     (lambda (index argument-form)
-                       (let* ((good-overloads
-                               ;; Check each argument against all
-                               ;; possible overloads.  Keep only those
-                               ;; which can match current arguments.
-                               ;; If we run out of overloads, report
-                               ;; the last set of possible overloads as
-                               ;; the error.
-                               (-filter
-                                (-lambda ((overload . overload-index))
-                                  (let* ((expected (elsa-function-type-nth-arg overload index))
-                                         (expected-normalized
-                                          (or expected (elsa-type-mixed)))
-                                         (actual (oref argument-form type))
-                                         (acceptablep
-                                          (elsa-type-assignable-p
-                                           expected-normalized
-                                           actual)))
-                                    (cond
-                                     ((not expected)
-                                      (push (list
-                                             overload
-                                             overload-index
-                                             (format
-                                              "Argument %d is present but the function signature does not define it.  Missing overload?"
-                                              (1+ index)))
-                                            overloads-errors))
-                                     ((not acceptablep)
-                                      (push (list
-                                             overload
-                                             overload-index
-                                             ;; we need to sanitize
-                                             ;; the % sign in the
-                                             ;; error because it is
-                                             ;; later passed to format
-                                             ;; in `elsa-make-error'.
-                                             ;; And the "but received"
-                                             ;; string can contain
-                                             ;; arbitrary text as one
-                                             ;; possible type is
-                                             ;; (const "whatever")
-                                             (replace-regexp-in-string
-                                              "%"
-                                              "%%"
+                    (-each-indexed args
+                      (lambda (index argument-form)
+                        (when (elsa-type-is-empty-p (elsa-get-type argument-form))
+                          (elsa-state-add-message state
+                            (elsa-make-warning argument-form
+                              "Domain of variable %s is empty"
+                              :code "empty-domain"
+                              (elsa-tostring argument-form))))
+                        (let* ((good-overloads
+                                ;; Check each argument against all
+                                ;; possible overloads.  Keep only those
+                                ;; which can match current arguments.
+                                ;; If we run out of overloads, report
+                                ;; the last set of possible overloads as
+                                ;; the error.
+                                (-filter
+                                 (-lambda ((overload . overload-index))
+                                   (let* ((expected (elsa-function-type-nth-arg overload index))
+                                          (expected-normalized
+                                           (or expected (elsa-type-mixed)))
+                                          (actual (oref argument-form type))
+                                          (acceptablep
+                                           (elsa-type-assignable-p
+                                            expected-normalized
+                                            actual)))
+                                     (cond
+                                      ((not expected)
+                                       (push (list
+                                              overload
+                                              overload-index
                                               (format
-                                               "Argument %d accepts type `%s' but received `%s'"
-                                               (1+ index)
-                                               (elsa-type-describe expected-normalized)
-                                               (elsa-type-describe actual))))
-                                            overloads-errors)))
-                                    (and expected acceptablep)))
-                                overloads)))
-                         (if good-overloads
-                             ;; If we have multiple overloads where
-                             ;; the argument is of a concrete type,
-                             ;; that is not a sum or intersection
-                             ;; (where the analysis is a bit more
-                             ;; difficult for now), we can eliminate
-                             ;; all the "less specific" overloads and
-                             ;; only pick the one with the narrowest
-                             ;; domain which still accepts the
-                             ;; argument.  Because the
-                             ;; `good-overloads' are only those which
-                             ;; accept the arguments, we can sort them
-                             ;; by `elsa-type-accept' and pick the
-                             ;; last (smallest) one.
-                             (if (elsa-type-composite-p (oref argument-form type))
-                                 (setq overloads good-overloads)
-                               (setq overloads
-                                     (list
-                                      (car
-                                       (-sort
-                                        (lambda (a b)
-                                          (elsa-type-accept
-                                           (elsa-function-type-nth-arg (car b) index)
-                                           (elsa-function-type-nth-arg (car a) index)))
-                                        good-overloads)))))
-                           (elsa-state-add-message state
-                             (if (< 1 (length overloads-errors))
-                                 (elsa-make-error argument-form
-                                   "No overload matches this call.\n%s"
-                                   (s-join
-                                    "\n"
-                                    (-map
-                                     (lambda (err)
-                                       (format "  Overload %d of %d: '%s'\n    %s"
-                                               (1+ (nth 1 err))
-                                               (length all-overloads)
-                                               (elsa-type-describe (car err))
-                                               (nth 2 err)))
-                                     (-sort (-on #'< #'cadr) overloads-errors))))
-                               (elsa-make-error argument-form
-                                 (nth 2 (car overloads-errors)))))
-                           (throw 'no-overloads nil))))
-                     args)
+                                               "Argument %d is present but the function signature does not define it.  Missing overload?"
+                                               (1+ index)))
+                                             overloads-errors))
+                                      ((not acceptablep)
+                                       (push (list
+                                              overload
+                                              overload-index
+                                              ;; we need to sanitize
+                                              ;; the % sign in the
+                                              ;; error because it is
+                                              ;; later passed to format
+                                              ;; in `elsa-make-error'.
+                                              ;; And the "but received"
+                                              ;; string can contain
+                                              ;; arbitrary text as one
+                                              ;; possible type is
+                                              ;; (const "whatever")
+                                              (elsa-with-temp-explainer explainer
+                                                (elsa-explain-and-indent explainer
+                                                  ("Argument %d accepts type `%s' but received `%s'"
+                                                   (1+ index)
+                                                   (elsa-type-describe expected-normalized)
+                                                   (elsa-type-describe actual))
+                                                  (elsa-type-accept
+                                                   expected-normalized
+                                                   actual
+                                                   explainer))
+                                                explainer))
+                                             overloads-errors)))
+                                     (and expected acceptablep)))
+                                 overloads)))
+                          (if good-overloads
+                              ;; If we have multiple overloads where
+                              ;; the argument is of a concrete type,
+                              ;; that is not a sum or intersection
+                              ;; (where the analysis is a bit more
+                              ;; difficult for now), we can eliminate
+                              ;; all the "less specific" overloads and
+                              ;; only pick the one with the narrowest
+                              ;; domain which still accepts the
+                              ;; argument.  Because the
+                              ;; `good-overloads' are only those which
+                              ;; accept the arguments, we can sort them
+                              ;; by `elsa-type-accept' and pick the
+                              ;; last (smallest) one.
+                              (if (elsa-type-composite-p (oref argument-form type))
+                                  (setq overloads good-overloads)
+                                (setq overloads
+                                      (list
+                                       (car
+                                        (-sort
+                                         (lambda (a b)
+                                           (elsa-type-accept
+                                            (elsa-function-type-nth-arg (car b) index)
+                                            (elsa-function-type-nth-arg (car a) index)))
+                                         good-overloads)))))
+                            (elsa-state-add-message state
+                              (if (< 1 (length overloads-errors))
+                                  (let ((explainer (elsa-explainer)))
+                                    (elsa-explain-and-indent explainer
+                                      ("No overload matches this call")
+                                      (-each (-sort (-on #'< #'cadr) overloads-errors)
+                                        (-lambda ((overload overload-index o-expl))
+                                          (elsa-explain-and-indent explainer
+                                            ("Overload %d of %d: '%s'"
+                                             (1+ overload-index)
+                                             (length all-overloads)
+                                             (elsa-tostring overload))
+                                            (elsa--append-explainer explainer o-expl)))))
+                                    (elsa-make-error argument-form
+                                      explainer
+                                      :code "no-overloads"))
+                                (elsa-make-error argument-form
+                                  (let ((expl-or-fmt (nth 2 (car overloads-errors))))
+                                    (if (elsa-explainer-p expl-or-fmt)
+                                        (elsa--reset-depth expl-or-fmt)
+                                      expl-or-fmt))
+                                  :code "no-overloads")))
+                            (throw 'no-overloads nil)))))
                     (mapcar #'car overloads))))))
         ;; set the return type of the form according to the return type
         ;; of the function's declaration
