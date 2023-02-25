@@ -41,11 +41,7 @@ Return trinary logic value.")
 
 ;; TODO: use elsa-type-could-accept or non-nil and trinary-not
 (cl-defmethod elsa-type-is-nil ((type elsa-type))
-  (if (elsa-type-accept type (elsa-type-nil))
-      (if (elsa-type-equivalent-p type (elsa-type-nil))
-          (trinary-true)
-        (trinary-maybe))
-    (trinary-false)))
+  (elsa-type-could-accept (elsa-type-nil) type))
 
 ;; (elsa-type-is-non-nil :: (function (mixed) (struct trinary)))
 (cl-defgeneric elsa-type-is-non-nil (type)
@@ -55,11 +51,7 @@ Return trinary logic value.")
 
 ;; TODO: use elsa-type-could-accept
 (cl-defmethod elsa-type-is-non-nil ((type elsa-type))
-  (if (elsa-type-accept type (elsa-type-nil))
-      (if (elsa-type-equivalent-p type (elsa-type-nil))
-          (trinary-false)
-        (trinary-maybe))
-    (trinary-true)))
+  (trinary-not (elsa-type-could-accept (elsa-type-nil) type)))
 
 (defun elsa--make-const-type (value)
   "Construct const type based on VALUE."
