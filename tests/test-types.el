@@ -348,15 +348,13 @@
                                 (elsa-make-type (or string nil)))
               :to-be-truthy))
 
-    (xit "should not accept nullable if it was made non-nullable"
-      (let ((instance (elsa-make-type mixed)))
-        (elsa-type-make-non-nullable instance)
+    (it "should not accept nullable if it was made non-nullable"
+      (let ((instance (elsa-type-make-non-nullable (elsa-make-type mixed))))
         (expect (elsa-type-accept instance (elsa-make-type (or string nil)))
                 :not :to-be-truthy)))
 
-    (xit "should accept non-nullable if it was made non-nullable"
-      (let ((instance (elsa-make-type mixed)))
-        (elsa-type-make-non-nullable instance)
+    (it "should accept non-nullable if it was made non-nullable"
+      (let ((instance (elsa-type-make-non-nullable (elsa-make-type mixed))))
         (expect (elsa-type-accept instance (elsa-make-type string))
                 :to-be-truthy)))
 
@@ -369,9 +367,8 @@
       (expect (elsa-type-nullable-p (elsa-make-type mixed))
               :to-be-truthy))
 
-    (xit "can be made non-nil"
-      (let ((instance (elsa-make-type mixed)))
-        (elsa-type-make-non-nullable instance)
+    (it "can be made non-nil"
+      (let ((instance (elsa-type-make-non-nullable (elsa-make-type mixed))))
         (expect (elsa-type-nullable-p instance) :not :to-be-truthy))))
 
 
