@@ -234,7 +234,10 @@ be re-analysed during textDocument/didOpen handler.")))
                (-let* (((&DidOpenTextDocumentParams :text-document (&TextDocumentItem :uri :version)) params)
                        (file (elsa-lsp--uri-to-file uri)))
                  (elsa-lsp-add-file elsa-lsp-state file)
-                 (let ((state (elsa-analyse-file file elsa-global-state (oref elsa-lsp-state dependencies))))
+                 (let ((state (elsa-analyse-file
+                               file
+                               elsa-global-state
+                               (oref elsa-lsp-state dependencies))))
                    (oset elsa-lsp-state dependencies
                          (-uniq
                           (-concat
@@ -245,7 +248,10 @@ be re-analysed during textDocument/didOpen handler.")))
                     (lsp-make-publish-diagnostics-params
                      :uri uri
                      :version version
-                     :diagnostics (apply #'vector (mapcar #'elsa-message-to-lsp (oref state errors))))))))
+                     :diagnostics (apply
+                                   #'vector
+                                   (mapcar #'elsa-message-to-lsp
+                                           (oref state errors))))))))
               ((equal method "textDocument/didSave")
                (-let* (((&DidSaveTextDocumentParams :text-document (&TextDocumentItem :uri :version)) params)
                        (file (elsa-lsp--uri-to-file uri)))
