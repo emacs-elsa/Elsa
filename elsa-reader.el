@@ -7,6 +7,7 @@
 
 (require 'trinary)
 
+(require 'elsa-form)
 (require 'elsa-error)
 (require 'elsa-state)
 (require 'elsa-types)
@@ -40,21 +41,6 @@
   (setq n (or n 1))
   (forward-sexp n)
   (point))
-
-(defclass elsa-form nil
-  ((start :type integer :initarg :start)
-   (end :type integer :initarg :end)
-   (quote-type :type symbol :initarg :quote-type :initform nil)
-   (line :type integer :initarg :line)
-   (column :type integer :initarg :column)
-   (end-line :type integer :initarg :end-line)
-   (end-column :type integer :initarg :end-column)
-   (type :type elsa-type :initarg :type :initform (elsa-make-type mixed))
-   (narrow-types :initarg :narrow-type :initform nil)
-   (reachable :type trinary :initarg :reachable :initform (trinary-true))
-   (parent :type (or elsa-form nil) :initarg :parent)
-   (annotation :type list :initarg :annotation :initform nil))
-  :abstract t)
 
 ;; TODO: this will be easier to do later when we properly push quoted
 ;; types up.  The check will then be just for a symbol and a quote
@@ -125,61 +111,17 @@ Nil if FORM is not a quoted symbol."
 (cl-defmethod elsa-type-is-non-nil ((condition elsa-form))
   (elsa-type-is-non-nil (oref condition type)))
 
-(cl-defgeneric elsa-form-print ((this elsa-form))
-  "Print THIS form in a way that can be read back in.
-
-This function does not prettyprint.
-
-Each class should implement more efficient print method if
-possible since format has some overhead parsing the specification
-and so on."
-  (format "%s" this))
-
 (cl-defmethod elsa-tostring ((this elsa-form))
   (elsa-form-print this))
 
 (cl-defmethod cl-print-object ((this elsa-form) stream)
   (princ (elsa-tostring this) stream))
 
-(cl-defgeneric elsa-form-to-lisp ((this elsa-form))
-  "Return this form as lisp form."
-  (error "Not implemented for form: %S" this))
-
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
 
 (defun elsa-form-reachable (form)
   (oref form reachable))
-
-(cl-defgeneric elsa-form-visit ((this elsa-form) fn)
-  "Visit each node of THIS elsa-form and call FN.
-
-If the form is a cons, list or vector, recurse into the child
-nodes."
-  (declare (indent 1))
-  (funcall fn this))
-
-(cl-defgeneric elsa-form-foreach (_elsa-form _fn)
-  "For each item of ELSA-FORM execute FN with the item as first argument.
-
-This only makes sense for the sequence forms:
-
-- `elsa-form-vector'
-- `elsa-form-list'
-- `elsa-form-improper-list'"
-  (declare (indent 1))
-  nil)
-
-(cl-defgeneric elsa-form-map (_elsa-form _fn)
-  "Map each item of ELSA-FORM through FN with the item as first argument.
-
-This only makes sense for the sequence forms:
-
-- `elsa-form-vector'
-- `elsa-form-list'
-- `elsa-form-improper-list'"
-  (declare (indent 1))
-  nil)
 
 ;;; Atoms
 (defclass elsa-form-atom (elsa-form)
@@ -199,9 +141,6 @@ This only makes sense for the sequence forms:
   (if (eq (elsa-get-name this) 'nil)
       nil
     (error "Can not get sequence out of symbol form")))
-
-(cl-defgeneric elsa-form-sequence-p (_this)
-  nil)
 
 (cl-defmethod elsa-form-sequence-p ((this elsa-form-symbol))
   (eq (elsa-get-name this) 'nil))
