@@ -88,7 +88,7 @@
                                         (elsa-form-foreach (elsa-cdr slot)
                                           (lambda (key)
                                             (if next-is-type
-                                                (throw 'type (elsa-get-name key))
+                                                (throw 'type (elsa-form-to-lisp key))
                                               (when (eq (elsa-get-name key) :type)
                                                 (setq next-is-type t))))))))
                            (or (elsa--cl-type-to-elsa-type type)
