@@ -101,7 +101,7 @@ Return trinary logic value.")
   (pcase definition
     (`(edebug-after ,_ ,_ ,form)
      (elsa--make-type form))
-    (`(readonly . ,type)
+    (`(readonly ,type)
      (elsa-readonly-type :type (elsa--make-type type)))
     ((or `(const ,value) `(quote ,value))
      (elsa--make-const-type value))
