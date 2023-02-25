@@ -110,7 +110,7 @@ Declarations are of various types:
     (dolist (key keys-to-remove)
       (remhash key cl-structures))))
 
-;; (elsa-state-get-structure :: (function ((struct elsa-declarations) symbol) (struct elsa-cl-structure)))
+;; (elsa-state-get-structure :: (function ((struct elsa-declarations) symbol) (or (struct elsa-cl-structure) nil)))
 (cl-defgeneric elsa-state-get-structure (this name)
   "Get from THIS the `elsa-cl-structure' definition called NAME.")
 
@@ -134,7 +134,7 @@ Declarations are of various types:
     (dolist (key keys-to-remove)
       (remhash key defuns))))
 
-;; (elsa-state-get-defun :: (function ((struct elsa-declarations) symbol) (struct elsa-defun)))
+;; (elsa-state-get-defun :: (function ((struct elsa-declarations) symbol) (or (struct elsa-defun) nil)))
 (cl-defgeneric elsa-state-get-defun (this name)
   "Get from THIS the `elsa-defun' definition called NAME.")
 
@@ -157,7 +157,7 @@ Declarations are of various types:
     (dolist (key keys-to-remove)
       (remhash key defvars))))
 
-;; (elsa-state-get-defvar :: (function ((struct elsa-declarations) symbol) (struct elsa-defvar)))
+;; (elsa-state-get-defvar :: (function ((struct elsa-declarations) symbol) (or (struct elsa-defvar) nil)))
 (cl-defgeneric elsa-state-get-defvar ((this elsa-declarations) (name symbol))
   "Get from THIS the `elsa-defvar' definition called NAME.")
 

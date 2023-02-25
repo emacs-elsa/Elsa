@@ -33,6 +33,7 @@
 (require 'elsa-types)
 (require 'elsa-type-algebra)
 
+;; (elsa-type-is-nil :: (function (mixed) (struct trinary)))
 (cl-defgeneric elsa-type-is-nil (type)
   "Test if TYPE is always nil.
 
@@ -46,7 +47,7 @@ Return trinary logic value.")
         (trinary-maybe))
     (trinary-false)))
 
-;; (elsa-type-is-non-nil :: (function (mixed) mixed))
+;; (elsa-type-is-non-nil :: (function (mixed) (struct trinary)))
 (cl-defgeneric elsa-type-is-non-nil (type)
   "Test if TYPE is always non-nil.
 

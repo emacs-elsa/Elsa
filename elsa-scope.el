@@ -40,7 +40,7 @@
          :documentation
      "Hash table of variables available in current (lexical) scope.")))
 
-;; (elsa-scope-get-var :: (function ((struct elsa-scope) mixed) (struct elsa-variable)))
+;; (elsa-scope-get-var :: (function ((struct elsa-scope) mixed) (or (struct elsa-variable) nil)))
 (cl-defgeneric elsa-scope-get-var (scope var)
   "Get current state of variable."
   (declare (indent 1)))
@@ -158,6 +158,7 @@ do that."
   "Remove VARIABLE from current scope."
   (--each variables (elsa-scope-remove-var this it)))
 
+;; (elsa-scope--get-var :: (function ((struct elsa-scope) symbol) (or (struct elsa-variable) nil)))
 (defun elsa-scope--get-var (scope var-name)
   (let* ((vars (oref scope vars))
          (var-stack (gethash var-name vars)))

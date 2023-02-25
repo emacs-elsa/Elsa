@@ -20,6 +20,7 @@
            (cl-decf elsa-type-debug-depth)))
     `(progn ,@body)))
 
+;; (elsa-type-sum :: (function (mixed mixed) (struct elsa-type)))
 (cl-defgeneric elsa-type-sum (this other)
   "Return the sum of THIS and OTHER type.
 
@@ -151,6 +152,7 @@ When B and C are unrelated, the rule simplifies to:
           #'elsa-type-intersect
           (-map (lambda (type) (elsa-type-sum type other)) (oref this types))))))))
 
+;; (elsa-type-dif :: (function (mixed mixed) (struct elsa-type)))
 (cl-defgeneric elsa-type-diff (this other)
   "Return the difference of THIS without OTHER.
 
@@ -264,6 +266,7 @@ everything (Mixed)."
      (elsa-diff-type :positive (clone (oref this positive))
                      :negative (elsa-type-sum (oref this negative) other)))))
 
+;; (elsa-type-intersect :: (function (mixed mixed) (struct elsa-type)))
 (cl-defgeneric elsa-type-intersect (this other)
   "Return the intersection of THIS and OTHER.
 
