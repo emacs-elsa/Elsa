@@ -1,6 +1,7 @@
 ;; -*- lexical-binding: t -*-
 
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'pcase)
 (require 'backquote)
 (require 'seq)

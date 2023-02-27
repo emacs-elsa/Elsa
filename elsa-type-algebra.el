@@ -1,6 +1,7 @@
 ;;; elsa-type-algebra.el --- Elsa type algebra -*- lexical-binding: t -*-
 
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'elsa-types)
 
 (defconst elsa-type-debug nil)

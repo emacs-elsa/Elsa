@@ -1,4 +1,5 @@
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 
 (require 'trinary)
 

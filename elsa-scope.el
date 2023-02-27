@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'trinary)
 
 (require 'elsa-variable)

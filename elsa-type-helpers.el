@@ -26,6 +26,7 @@
 
 (require 'cl-generic)
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 
 (require 'dash)
 (require 'trinary)

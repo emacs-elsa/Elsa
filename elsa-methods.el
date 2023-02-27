@@ -27,6 +27,7 @@
 ;;; Code:
 
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 
 ;; (elsa-get-name :: (function (mixed) (or symbol nil)))
 (cl-defgeneric elsa-get-name (this)

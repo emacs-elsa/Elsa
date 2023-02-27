@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'map)
 
 (require 'lsp-protocol)

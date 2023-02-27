@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t -*-
 (when (require 'undercover nil t) (undercover))
 (require 'eieio)
-(setq eieio-backward-compatibility nil)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 
 (require 'elsa)
 (require 'elsa-type-helpers)

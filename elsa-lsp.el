@@ -1,5 +1,5 @@
 (require 'eieio)
-(setq eieio-backward-compatibility nil)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 
 (require 'elsa-lsp-core)
 (setq elsa-is-language-server t)
