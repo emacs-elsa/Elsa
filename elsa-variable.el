@@ -105,7 +105,7 @@ The example of such a form is (and (string x) (concat \"\" x)).")
           (elsa-tostring (elsa-get-type this))))
 
 (cl-defmethod cl-print-object ((this elsa-variable) stream)
-  (princ (elsa-tostring this) stream))
+  (princ (concat "#<elsa-variable " (elsa-tostring this) ">") stream))
 
 (defun elsa-make-variable (name type)
   "Make variable NAME with TYPE."

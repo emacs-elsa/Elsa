@@ -117,7 +117,7 @@ Nil if FORM is not a quoted symbol."
   (elsa-form-print this))
 
 (cl-defmethod cl-print-object ((this elsa-form) stream)
-  (princ (elsa-tostring this) stream))
+  (princ (concat "#<elsa-form " (elsa-tostring this) ">") stream))
 
 (cl-defmethod elsa-form-length ((this elsa-form))
   (- (oref this end) (oref this start)))
