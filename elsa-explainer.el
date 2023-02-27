@@ -49,10 +49,10 @@ Return a multi-line string with rendered graph."
           (lambda (index node)
             (cond
              ((= index (1- (length children)))
-              (cons (concat prefix "└ ")
-                    (elsa--graphify node (concat prefix "  "))))
-             (t (cons (concat prefix "├ ")
-                      (elsa--graphify node (concat prefix "│ "))))))
+              (cons (concat prefix "└─ ")
+                    (elsa--graphify node (concat prefix "   "))))
+             (t (cons (concat prefix "├─ ")
+                      (elsa--graphify node (concat prefix "│  "))))))
           children))))))
 
 (defclass elsa-explainer-message ()
