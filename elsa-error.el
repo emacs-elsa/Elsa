@@ -152,6 +152,8 @@ In general, we recognize three states: error, warning, notice
      (elsa-tostring explainer)
      args)))
 
+(cl-defgeneric elsa-make-error (thing format &rest args))
+
 (cl-defmethod elsa-make-error ((expression elsa-form) (format string) &rest args)
   (declare (indent 1))
   (elsa--make-message 'elsa-error expression format args))
@@ -168,6 +170,8 @@ additional line, this line will be dropped, because most likely
 it only reformulates the first line."
   (declare (indent 1))
   (elsa--make-message-from-explainer 'elsa-error expression explainer args))
+
+(cl-defgeneric elsa-make-warning (thing format &rest args))
 
 (cl-defmethod elsa-make-warning ((expression elsa-form) (format string) &rest args)
   (declare (indent 1))
@@ -187,6 +191,8 @@ additional line, this line will be dropped, because most likely
 it only reformulates the first line."
   (declare (indent 1))
   (elsa--make-message-from-explainer 'elsa-warning expression explainer args))
+
+(cl-defgeneric elsa-make-notice (thing format &rest args))
 
 (cl-defmethod elsa-make-notice ((expression elsa-form)
                                 (format string)
