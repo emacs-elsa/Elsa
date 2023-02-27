@@ -39,8 +39,7 @@
 
 (defun elsa--analyse:oref (form scope state)
   (let* ((instance (elsa-cadr form))
-         (slot-form (elsa-nth 2 form))
-         (slot-name (elsa-get-name slot-form)))
+         (slot-form (elsa-nth 2 form)))
     (elsa--analyse-macro form (list t nil) scope state)
     (elsa--eieio-assert-struct-for-obj instance state)
     (elsa--eieio-analyse-obj-slot instance slot-form state)
@@ -79,7 +78,7 @@
         (puthash (oref slot name) slot ht)))
     ht))
 
-(defun elsa--analyse:defclass (form scope state)
+(defun elsa--analyse:defclass (form _scope state)
   (let* ((name (elsa-get-name (elsa-cadr form)))
          (parents (elsa-nth 2 form))
          (parents-names (when (elsa-form-list-p parents)

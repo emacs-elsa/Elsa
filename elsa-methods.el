@@ -30,12 +30,12 @@
 (eval-and-compile (setq eieio-backward-compatibility nil))
 
 ;; (elsa-get-name :: (function (mixed) (or symbol nil)))
-(cl-defgeneric elsa-get-name (this)
+(cl-defgeneric elsa-get-name (_this)
   "Retrieve name from an Elsa object."
   nil)
 
 ;; (elsa-get-type :: (function (mixed) (or (struct elsa-type) nil)))
-(cl-defgeneric elsa-get-type (this)
+(cl-defgeneric elsa-get-type (_this)
   "Return type of THIS."
   nil)
 

@@ -4,13 +4,14 @@
 (eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'elsa-types)
 
-(defconst elsa-type-debug nil)
+(eval-when-compile
+  (defvar elsa-type-debug nil))
 
 (defvar elsa-type-debug-depth 0)
 
 (defmacro elsa-type-debug (msg-spec &rest body)
   (declare (indent 1)
-           (debug (sexp body)))
+           (debug ((stringp form form) body)))
   (if elsa-type-debug
       `(progn
          (cl-incf elsa-type-debug-depth)
@@ -180,14 +181,14 @@ not accepted by OTHER.")
       (t
        (clone this))))))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-mixed) other)
+(cl-defmethod elsa-type-diff ((_this elsa-type-mixed) other)
   "Mixed is one with everything, so we need to subtract OTHER from the world.
 
 However, mixed without (Mixed without something) is something.
 
 This uses the rule that A - (A - B) = A ∩ B = B where A is
 everything (Mixed)."
-  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-mixed t" this other)
+  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-mixed t" _this other)
     (cond
      ((elsa-diff-type-p other)
       (let ((pos (oref other positive))
@@ -215,14 +216,14 @@ everything (Mixed)."
       (elsa-type-int))
      (t (cl-call-next-method this other)))))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-t))
+(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-t))
   "Bool without T is Nil."
-  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-t" this other)
+  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-t" _this _other)
     (elsa-type-nil)))
 
-(cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-nil))
+(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-nil))
   "Bool without NIL is T."
-  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-nil" this other)
+  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-nil" _this _other)
     (elsa-type-t)))
 
 (cl-defmethod elsa-type-diff ((this elsa-type) (other elsa-sum-type))

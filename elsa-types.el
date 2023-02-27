@@ -67,7 +67,7 @@ This type is a wrapper around one or more other types and
 modifies their behaviour.")
 
 ;; (elsa-type-accept :: (function (mixed mixed (or mixed nil)) bool))
-(cl-defgeneric elsa-type-accept (this other &optional explainer)
+(cl-defgeneric elsa-type-accept (_this _other &optional _explainer)
   "Check if THIS accepts OTHER.
 
 This means OTHER is assignable to THIS.
@@ -380,8 +380,8 @@ In case of functions, it is the return type of the function."
   (-reduce 'elsa-type-sum (-map 'elsa-type-get-return (oref this types))))
 
 (defclass elsa-diff-type (elsa-type elsa-composite-type)
-  ((positive :initform (elsa-type-mixed) :initarg :positive)
-   (negative :initform (elsa-type-empty) :initarg :negative))
+  ((positive :initform (progn (elsa-type-mixed)) :initarg :positive)
+   (negative :initform (progn (elsa-type-empty)) :initarg :negative))
   :documentation "Diff type.
 
 This type is a combination of positive and negative types.  It
@@ -584,9 +584,9 @@ float and number.")
 
 (defclass elsa-type-cons (elsa-type)
   ((car-type :type elsa-type :initarg :car-type
-             :initform (elsa-type-mixed))
+             :initform (progn (elsa-type-mixed)))
    (cdr-type :type elsa-type :initarg :cdr-type
-             :initform (elsa-type-mixed))))
+             :initform (progn (elsa-type-mixed)))))
 
 (cl-defmethod clone ((this elsa-type-cons))
   "Make a deep copy of a cons type."
@@ -614,7 +614,7 @@ other, then this is a supertype of other."
             (elsa-tostring this) (elsa-tostring other))
            (elsa-type-accept (oref this cdr-type) (oref other cdr-type) explainer)))))
 
-(cl-defmethod elsa-type-is-accepted-by ((_this elsa-type-cons) (_other elsa-type-empty) &optional explainer)
+(cl-defmethod elsa-type-is-accepted-by ((_this elsa-type-cons) (_other elsa-type-empty) &optional _explainer)
   "A cons type is not accepted by empty."
   nil)
 
@@ -663,7 +663,7 @@ other, then this is a supertype of other."
 (defclass elsa-type-list (elsa-type-cons elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
-              :initform (elsa-type-mixed))))
+              :initform (progn (elsa-type-mixed)))))
 
 (cl-defmethod clone ((this elsa-type-list))
   "Make a deep copy of a list type."
@@ -992,7 +992,7 @@ only a flag which is used during assignability checks (such as
 (cl-defmethod elsa-type-describe ((this elsa-readonly-type))
   (format "(readonly %s)" (elsa-type-describe (oref this type))))
 
-(cl-defmethod elsa-type-accept ((_this null) _other &optional explainer)
+(cl-defmethod elsa-type-accept ((_this null) _other &optional _explainer)
   "This method catches the impossible situation when we are
 trying to analyse 'nil, which is not a valid type or form."
   (message "An error happened trying to analyse nil")
