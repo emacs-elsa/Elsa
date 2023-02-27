@@ -16,6 +16,50 @@
                (set-marker (make-marker) (1+ cl))))
         t))))
 
+(defun elsa--font-lock-reset-anchor ()
+  (or (re-search-backward (rx (or "::" "elsa-make-type")) (line-beginning-position) t)
+      (and (re-search-backward "elsa-declare-defun" (line-beginning-position) t)
+           (forward-sexp 3)
+           (down-list)
+           t)))
+
+(defun elsa--font-lock-setup-anchor (offset)
+  (ignore-errors
+    (when (save-excursion
+            (backward-sexp 2)
+            (looking-at-p "elsa-declare-defun"))
+      (forward-sexp)))
+  (save-excursion (up-list) (+ offset (point))))
+
+(defconst elsa--font-lock-function-anchors
+  `(
+    ;; highlight the types
+    ("\\(\\_<\\(?:\\sw\\|\\s_\\)+\\_>\\)"
+     (elsa--font-lock-setup-anchor 0)
+     (elsa--font-lock-reset-anchor)
+     (0 font-lock-type-face t))
+    ;; highlight parens with paren-face if it is defined
+    ("[][()]"
+     (elsa--font-lock-setup-anchor -1)
+     (elsa--font-lock-reset-anchor)
+     (0 ,(if (facep 'parenthesis) ''parenthesis nil) t))
+    ;; highlight matching pairs of parens for function args
+    (elsa--match-function-parens
+     (elsa--font-lock-setup-anchor -1)
+     (elsa--font-lock-reset-anchor)
+     (1 nil t)
+     (2 nil t))
+    ;; highlight built-in constants
+    (,(rx symbol-start (or "nil" "t") symbol-end)
+     (elsa--font-lock-setup-anchor -1)
+     (elsa--font-lock-reset-anchor)
+     (0 font-lock-constant-face t))
+    ;; highlight keywords and special type constructors
+    (,(rx "(" symbol-start (group (or "and" "or" "is" "readonly" "const")) symbol-end)
+     (elsa--font-lock-setup-anchor 0)
+     nil
+     (1 font-lock-keyword-face t))))
+
 ;;;###autoload
 (defun elsa-setup-font-lock ()
   "Setup additional font-locking for Elsa forms."
@@ -39,34 +83,11 @@
       (3 font-lock-variable-name-face t t)
       ;; elsa-make-type for inline macro use
       (4 font-lock-keyword-face nil t)
-      ;; highlight the types
-      ("\\(\\_<\\(?:\\sw\\|\\s_\\)+\\_>\\)"
-       (save-excursion (up-list) (point))
-       (re-search-backward (rx (or "::" "elsa-make-type")))
-       (0 font-lock-type-face t))
-      ;; highlight parens with paren-face if it is defined
-      ("[][()]"
-       (save-excursion (up-list) (1- (point)))
-       (re-search-backward (rx (or "::" "elsa-make-type")))
-       (0 ,(if (facep 'parenthesis) ''parenthesis nil) t))
-      ;; highlight matching pairs of parens for function args
-      (elsa--match-function-parens
-       (save-excursion (up-list) (1- (point)))
-       (re-search-backward (rx (or "::" "elsa-make-type")))
-       (1 nil t)
-       (2 nil t))
-      ;; highlight built-in constants
-      (,(rx symbol-start (or "nil" "t") symbol-end)
-       (save-excursion (up-list) (1- (point)))
-       (re-search-backward (rx (or "::" "elsa-make-type")))
-       (0 font-lock-constant-face t))
-      ;; highlight keywords and special type constructors
-      (,(rx "(" symbol-start (group (or "and" "or" "is" "readonly" "const")) symbol-end)
-       (save-excursion (up-list) (point))
-       nil
-       (1 font-lock-keyword-face t)))
-     (,(rx "(" (* space) "elsa-declare-defun" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
-      (1 font-lock-function-name-face))
+      ,@elsa--font-lock-function-anchors)
+     (,(rx "(" (* space) (group "elsa-declare-defun") (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
+      (1 font-lock-keyword-face)
+      (2 font-lock-function-name-face)
+      ,@elsa--font-lock-function-anchors)
      (,(rx "(" (* space) "elsa-declare-defvar" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
       (1 font-lock-variable-name-face))
      (,(rx "(" (* space) "elsa-declare-structure" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
