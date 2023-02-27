@@ -2,7 +2,7 @@
 
 (require 'elsa-types)
 
-;; (elsa-function-get-narrow-types :: (function (symbol) (list mixed)))
+;; (elsa-function-get-narrow-type :: (function (symbol) (list mixed)))
 (defun elsa-function-get-narrow-type (name)
   "Get position narrow types of function NAME."
   (let* ((type (elsa-function-get-type name))
