@@ -46,6 +46,7 @@
 (require 'elsa-analyser)
 (require 'elsa-reader)
 (require 'elsa-log)
+(require 'elsa-declare)
 
 (require 'elsa-ruleset)
 
@@ -59,35 +60,6 @@
 ;; (toggle-debug-on-error)
 
 ;; TODO: unify with `elsa-variable'?
-
-(defvar elsa-global-state (elsa-global-state)
-  "Global state holding elsa analysis context.")
-
-(defmacro elsa-in-file (file)
-  "Specify the current file for registering new structures."
-  `(oset elsa-global-state current-file ,file))
-
-(defmacro elsa-declare-defun (name arglist type)
-  (declare (indent 2))
-  `(elsa-state-add-defun elsa-global-state
-     (elsa-defun :name ',name :type (elsa-make-type ,type) :arglist ',arglist)))
-
-(defmacro elsa-declare-defvar (name type)
-  (declare (indent 1))
-  `(elsa-state-add-defvar elsa-global-state
-     (elsa-defvar :name ',name :type (elsa-make-type ,type))))
-
-(defmacro elsa-declare-structure (name parents slots)
-  (declare (indent 2))
-  `(elsa-state-add-structure elsa-global-state
-     (elsa-cl-structure :name ',name
-                        :parents ',(or parents `((,name)))
-                        :slots (elsa-eieio--create-slots
-                                (list ,@(mapcar
-                                         (lambda (slot)
-                                           `(list ',(car slot)
-                                                  :type (elsa--make-type ',(plist-get (cdr slot) :type))))
-                                         slots))))))
 
 (defun elsa--get-cache-file-name (global-state feature &optional compiled)
   "Return the cache file name for LIBRARY."

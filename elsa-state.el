@@ -187,6 +187,9 @@ Declarations are of various types:
 The other state class `elsa-state' state holds state of an analysis of
 a single file, form or set of forms.")
 
+(defvar elsa-global-state (elsa-global-state)
+  "Global state holding elsa analysis context.")
+
 (cl-defgeneric elsa-state-current-file (this)
   "Return currently processed file.")
 
