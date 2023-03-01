@@ -1,3 +1,5 @@
+(require 'paren-face nil t)
+
 (defun elsa--match-function-parens (limit)
   "Highlight matching pair of parens for function args."
   (when (re-search-forward "function.*?(" limit t)
@@ -8,12 +10,7 @@
       (when (< (point) limit)
         (setq cl (1- (point)))
         (set-match-data
-         (list (set-marker (make-marker) op)
-               (set-marker (make-marker) (1+ cl))
-               (set-marker (make-marker) op)
-               (set-marker (make-marker) (1+ op))
-               (set-marker (make-marker) cl)
-               (set-marker (make-marker) (1+ cl))))
+         (list op (1+ cl) op (1+ op) cl (1+ cl)))
         t))))
 
 (defun elsa--font-lock-reset-anchor ()
