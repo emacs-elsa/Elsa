@@ -208,7 +208,7 @@ optional arguments to the format string.
 
 The message is only added to the explainer if BODY return nil."
   (declare (indent 1)
-           (debug (form form body)))
+           (debug (sexp sexp body)))
   (let ((exp (make-symbol "exp")))
     `(let ((,exp ,explainer))
        (if (progn
