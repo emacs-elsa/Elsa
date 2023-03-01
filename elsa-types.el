@@ -186,14 +186,12 @@ type.
   "mixed")
 
 (cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other &optional explainer)
-  (unless (cl-typep other 'elsa-type)
-    (cl-call-next-method)
-    ;; (error "Other must be subclass of `elsa-type'")
-    )
-  (elsa-with-explainer explainer
-    (elsa--fmt-explain-type-0-does-not-accept-type-1
-     "mixed" (elsa-tostring other))
-    (not (elsa-type-unbound-p other))))
+  (if (not (cl-typep other 'elsa-type))
+      (cl-call-next-method)
+    (elsa-with-explainer explainer
+      (elsa--fmt-explain-type-0-does-not-accept-type-1
+       "mixed" (elsa-tostring other))
+      (not (elsa-type-unbound-p other)))))
 
 (defun elsa-type-assignable-p (this other)
   "Check if THIS accepts OTHER.
