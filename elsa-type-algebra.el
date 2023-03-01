@@ -364,6 +364,12 @@ recursive call between sum and intersect."
       #'elsa-type-intersect
       (-map (lambda (type) (elsa-type-intersect type other)) (oref this types))))))
 
+(cl-defmethod elsa-type-intersect ((this elsa-intersection-type) (other elsa-function-type))
+  "(A ∩ B) ∩ C = (A ∩ C) ∩ (B ∩ C)"
+  (elsa-type-debug ("(elsa-type-intersect %s %s)" this other)
+    (elsa-type-normalize
+     (elsa-intersection-type :types (append (oref this types) (list other))))))
+
 (cl-defmethod elsa-type-intersect ((this elsa-intersection-type) (other elsa-intersection-type))
   "(A ∩ B ∩ ...) ∩ (C ∩ D ∩ ...) = A ∩ B ∩ C ∩ D ∩ ...
 
