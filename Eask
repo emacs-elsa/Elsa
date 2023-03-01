@@ -18,7 +18,7 @@
 (depends-on "dash" "2.14")
 (depends-on "seq")
 (depends-on "f")
-(depends-on "trinary")
+(depends-on "trinary" "1.2.1")
 (depends-on "lsp-mode")
 
 (development
