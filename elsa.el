@@ -6,7 +6,7 @@
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
 ;; Created: 23rd March 2017
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "25.1") (trinary "0") (f "0") (dash "2.14") (cl-lib "0.3") (lsp-mode "0"))
+;; Package-Requires: ((emacs "25.1") (trinary "0") (f "0") (dash "2.14") (cl-lib "0.3") (lsp-mode "0") (ansi "0"))
 ;; Keywords: languages, lisp
 
 ;; This program is free software; you can redistribute it and/or
@@ -34,6 +34,8 @@
 (require 'jka-compr)
 
 (require 'dash)
+(require 'ansi)
+
 (require 'cl-lib)
 (require 'cl-extra)
 (require 'warnings)
@@ -305,9 +307,23 @@ GLOBAL-STATE is the initial configuration."
 (defun elsa-run ()
   "Run `elsa-analyse-file' and output errors to stdout for flycheck."
   (elsa-load-config)
-  (dolist (file command-line-args-left)
-    (--each (reverse (oref (elsa-analyse-file file elsa-global-state) errors))
-      (princ (concat file ":" (elsa-message-format it))))))
+  (let ((errors 0)
+        (warnings 0)
+        (notices 0))
+    (dolist (file command-line-args-left)
+      (--each (reverse (oref (elsa-analyse-file file elsa-global-state) errors))
+        (cond
+         ((elsa-error-p it) (cl-incf errors))
+         ((elsa-warning-p it) (cl-incf warnings))
+         ((elsa-notice-p it) (cl-incf notices)))
+        (princ (concat file ":" (elsa-message-format it)))))
+    (elsa-log (with-ansi
+               "\nAnalysis finished with "
+               (bold (red "%d errors" errors))
+               ", "
+               (bold (yellow "%d warnings" warnings))
+               " and "
+               (bold (blue "%d notices" notices))))))
 
 (defun elsa-run-files-and-exit ()
   "Run `elsa-analyse-file' on files in `command-line-args-left'.

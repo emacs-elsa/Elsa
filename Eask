@@ -20,6 +20,7 @@
 (depends-on "f")
 (depends-on "trinary" "1.2.1")
 (depends-on "lsp-mode")
+(depends-on "ansi")
 
 (development
  (depends-on "elsa")
