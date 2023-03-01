@@ -112,6 +112,12 @@ Declarations are of various types:
   (put (oref def name) 'elsa-type (oref def type))
   (puthash (oref def name) def (oref this defuns)))
 
+(cl-defgeneric elsa-state-remove-defun ((this elsa-declarations) (name symbol))
+  "Remove `elsa-defun' from state object."
+  (declare (indent 1))
+  (put name 'elsa-type nil)
+  (remhash name (oref this defuns)))
+
 (cl-defgeneric elsa-state-clear-file-defuns ((this elsa-declarations) file)
   "Remove from THIS state all functions declared in FILE."
   (let ((keys-to-remove nil)
