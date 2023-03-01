@@ -607,13 +607,29 @@ handled by `elsa--analyse-function-like-invocation'."
               :code "incompatible-return-type"
               :compact t))))
       ;; infer the type of the function
-      (unless (elsa-state-get-defun state name)
-        (elsa-state-add-defun state
-          (elsa-defun :name name
-                      :type (elsa-function-type
-                             :args (elsa--get-default-function-types args)
-                             :return body-return-type)
-                      :arglist (elsa-form-to-lisp args)))))
+      (let ((def (elsa-state-get-defun state name)))
+        ;; if there is no definition, register it
+        (if (not def)
+            (elsa-state-add-defun state
+              (elsa-defun :name name
+                          :type (elsa-function-type
+                                 :args (elsa--get-default-function-types args)
+                                 :return body-return-type)
+                          :arglist (elsa-form-to-lisp args)))
+          ;; Otherwise we will add a new overload to the existing
+          ;; function and re-add it to the state so it is cached again
+          ;; with all the so-far available overloads.
+          ;; TODO: warn if it is not a defmethod because we are
+          ;; overwriting an existing function.
+          (when (eq (elsa-get-name form) 'cl-defmethod)
+            (let ((fn-type (oref def type)))
+              (oset def type
+                    (elsa-type-intersect
+                     (elsa-function-type
+                      :args (elsa--get-default-function-types args)
+                      :return body-return-type)
+                     fn-type))
+              (elsa-state-add-defun state def))))))
     (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:defun (form scope state)

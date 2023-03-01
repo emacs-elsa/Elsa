@@ -98,4 +98,35 @@
             (expect (elsa-function-type-nth-arg (oref (elsa-state-get-defun state 'a-slot) type) 0)
                     :to-be-type-equivalent (elsa-make-type (struct a)))
             (expect (elsa-type-get-return (oref (elsa-state-get-defun state 'a-slot) type))
-                    :to-be-type-equivalent (elsa-make-type string))))))))
+                    :to-be-type-equivalent (elsa-make-type string))))))
+
+    (describe "defgeneric"
+
+      (describe "method registration"
+
+        (it "should register annotated empty generic to state and add arglist"
+          (elsa-test-with-analysed-form "|;; (foo :: (function (string) string))\n(cl-defgeneric foo (a) \"docstring\")" form
+            :state-var state
+            (let ((def (elsa-state-get-defun state 'foo)))
+              (expect (oref def arglist) :to-equal (list 'a))
+              (expect (oref def type) :to-be-type-equivalent
+                      (elsa-make-type (function (string) string))))))
+
+        (it "should register unannotated empty generic to state and add arglist"
+          (elsa-test-with-analysed-form "|(cl-defgeneric foo (a) \"docstring\")" form
+            :state-var state
+            (let ((def (elsa-state-get-defun state 'foo)))
+              (expect (oref def arglist) :to-equal (list 'a))
+              (expect (oref def type) :to-be-type-equivalent
+                      (elsa-make-type (function (mixed) unbound))))))
+
+        )
+      )
+
+    (xdescribe "defmethod"
+
+      (xdescribe "method registration"
+
+
+        )
+      )))
