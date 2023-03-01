@@ -175,4 +175,15 @@
           (oset form narrow-types (oref last narrow-types)))
       (oset form type (elsa-type-nil)))))
 
+(defun elsa--analyse:elsa-with-explainer (form scope state)
+  (let* ((explainer (elsa-cadr form))
+         (body (elsa-nthcdr 3 form))
+         (last (-last-item body)))
+    (elsa--analyse-body body scope state)
+    (if body
+        (progn
+          (oset form type (elsa-get-type last))
+          (oset form narrow-types (oref last narrow-types)))
+      (oset form type (elsa-type-nil)))))
+
 (provide 'elsa-extension-elsa)
