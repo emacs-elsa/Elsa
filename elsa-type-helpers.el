@@ -54,6 +54,38 @@ Return trinary logic value.")
 (cl-defmethod elsa-type-is-non-nil ((type elsa-type))
   (trinary-not (elsa-type-could-accept (elsa-type-nil) type)))
 
+(cl-defgeneric elsa-type-could-accept ((this elsa-type) (other elsa-type))
+  "Check if THIS could accept OTHER.
+
+Return a trinary logical value:
+
+- trinary-true if THIS always accepts OTHER,
+- trinary-maybe if THIS can accept OTHER sometimes and can reject
+  sometimes,
+- trinary-false if THIS never accepts OTHER."
+  (cond
+   ((elsa-type-accept this other)
+    (trinary-true))
+   ((not (elsa-type-empty-p (elsa-type-intersect this other)))
+    (trinary-maybe))
+   (t (trinary-false))))
+
+(defun elsa-type-could-assign-p (this other)
+  "Check if THIS could accept OTHER.
+
+Uses special rules for `elsa-type-mixed'.
+
+- Mixed accepts anything except unbound.
+- Mixed is accepted by anything.
+
+Returns trinary value."
+  (trinary-or
+   (trinary-from-bool
+    (or (and (elsa-type-mixed-p this)
+             (not (elsa-type-unbound-p other)))
+        (elsa-type-mixed-p other)))
+   (elsa-type-could-accept this other)))
+
 (defun elsa--make-const-type (value)
   "Construct const type based on VALUE."
   (cond
@@ -215,11 +247,6 @@ Return trinary logic value.")
 This means that the domain of the type is empty."
   (elsa-type-accept (elsa-type-empty) this))
 
-;; TODO: what is the relationship of `a' and `a?'
-(defun elsa-instance-of (this other)
-  "Non-nil if THIS is instance of OTHER."
-  (object-of-class-p this (eieio-object-class other)))
-
 (defun elsa-type-nullable-p (type)
   "Test if TYPE is nullable (i.e. accepts nil)."
   (elsa-type-accept type (elsa-make-type nil)))
@@ -231,9 +258,6 @@ This means that the domain of the type is empty."
 (defun elsa-type-make-non-nullable (type)
   "Make TYPE non-nullable."
   (elsa-type-diff type (elsa-make-type nil)))
-
-(cl-defgeneric elsa-type-normalize (type)
-  "Normalize TYPE to its most simplest form.")
 
 (cl-defmethod elsa-type-normalize ((this elsa-type))
   "Normalize a type.

@@ -34,6 +34,22 @@
 (require 'elsa-methods)
 (require 'elsa-explainer)
 
+(defclass elsa-structure-slot nil
+  ((name
+    :type symbol
+    :initarg :name
+    :documentation "Slot name.")
+   (type
+    :type elsa-type
+    :initarg :type
+    :documentation "Slot type."))
+  :documentation "Data about a slot in interface-like structure.
+
+An interface-like structure is anything that has defined set of keys
+and associated values.  In elisp, these can be the ad-hoc data
+structures such as plists and alists and more structured cases like
+`cl-defstruct' and `defclass'.")
+
 (defconst elsa--fmt-explain-type-0-does-not-accept-type-1
   "Type `%s' does not accept type `%s'")
 
@@ -47,6 +63,30 @@
   "Sequence item types of these %s do not match.")
 
 (defclass elsa-type nil () :abstract t)
+
+;; (elsa-type-sum :: (function (mixed mixed) (struct elsa-type)))
+(cl-defgeneric elsa-type-sum (this other)
+  "Return the sum of THIS and OTHER type.
+
+A sum accept anything that either THIS or OTHER accepts.")
+
+;; (elsa-type-dif :: (function (mixed mixed) (struct elsa-type)))
+(cl-defgeneric elsa-type-diff (this other)
+  "Return the difference of THIS without OTHER.
+
+The diff type only accepts those types accepted by THIS which are
+not accepted by OTHER.")
+
+;; (elsa-type-intersect :: (function (mixed mixed) (struct elsa-type)))
+(cl-defgeneric elsa-type-intersect (this other)
+  "Return the intersection of THIS and OTHER.
+
+The intersection type only accepts those types which are both
+THIS and OTHER at the same time.")
+
+;; (elsa-type-normalize :: (function ((struct elsa-type)) (struct elsa-type)))
+(cl-defgeneric elsa-type-normalize (type)
+  "Normalize TYPE to its most simplest form.")
 
 ;; (elsa-type-describe :: (function (mixed) string))
 (cl-defgeneric elsa-type-describe (type)
@@ -66,7 +106,7 @@
 This type is a wrapper around one or more other types and
 modifies their behaviour.")
 
-;; (elsa-type-accept :: (function (mixed mixed (or mixed nil)) bool))
+;; (elsa-type-accept :: (function (mixed mixed mixed) bool))
 (cl-defgeneric elsa-type-accept (_this _other &optional _explainer)
   "Check if THIS accepts OTHER.
 
@@ -77,24 +117,7 @@ one type can not accept another.
 
 This method only performs soundness analysis.  To account for the
 special handling of `elsa-type-mixed', use
-`elsa-type-assignable-p'."
-  nil)
-
-(cl-defgeneric elsa-type-could-accept ((this elsa-type) (other elsa-type))
-  "Check if THIS could accept OTHER.
-
-Return a trinary logical value:
-
-- trinary-true if THIS always accepts OTHER,
-- trinary-maybe if THIS can accept OTHER sometimes and can reject
-  sometimes,
-- trinary-false if THIS never accepts OTHER."
-  (cond
-   ((elsa-type-accept this other)
-    (trinary-true))
-   ((not (elsa-type-empty-p (elsa-type-intersect this other)))
-    (trinary-maybe))
-   (t (trinary-false))))
+`elsa-type-assignable-p'.")
 
 (cl-defgeneric elsa-type-is-accepted-by (this other &optional explainer)
   "Check if THIS is accepted by OTHER.
@@ -105,6 +128,28 @@ This method is used to unpack composite types and perform a
 \"double dispatch\" when testing one composite type accepting
 another, because there is a many-to-many relationship."
   (elsa-type-accept other this explainer))
+
+;; TODO: what is the relationship of `a' and `a?'
+;; (elsa-instance-of :: (function ((struct elsa-type) (struct elsa-type)) bool))
+(defun elsa-instance-of (this other)
+  "Non-nil if THIS is instance of OTHER."
+  (object-of-class-p this (eieio-object-class other)))
+
+(defclass elsa-type-unbound (elsa-type) ()
+  :documentation "Type of an unbound variable.
+
+This is not accepted by any type because we don't know what it is.")
+
+(cl-defmethod elsa-type-accept ((_this elsa-type-unbound) _other &optional _explainer)
+  "Unbound type accepts anything.
+
+The only thing that can be of an unbound type is a symbol
+representing a variable.  It can accept anything because it is
+not bound to any specific value yet."
+  t)
+
+(cl-defmethod elsa-type-describe ((_this elsa-type-unbound))
+  "unbound")
 
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
@@ -162,22 +207,6 @@ Uses special rules for `elsa-type-mixed'.
       (elsa-type-mixed-p other)
       (elsa-type-accept this other)))
 
-(defun elsa-type-could-assign-p (this other)
-  "Check if THIS could accept OTHER.
-
-Uses special rules for `elsa-type-mixed'.
-
-- Mixed accepts anything except unbound.
-- Mixed is accepted by anything.
-
-Returns trinary value."
-  (trinary-or
-   (trinary-from-bool
-    (or (and (elsa-type-mixed-p this)
-             (not (elsa-type-unbound-p other)))
-        (elsa-type-mixed-p other)))
-   (elsa-type-could-accept this other)))
-
 (cl-defmethod elsa-get-type ((_this null))
   (elsa-type-unbound))
 
@@ -193,9 +222,10 @@ Returns trinary value."
   "Get argument types of THING."
   nil)
 
-;; (elsa-type-get-return :: (function ((struct elsa-type)) (struct elsa-type)))
+;; (elsa-type-get-return :: (and (function (nil) nil) (function ((struct elsa-type)) (struct elsa-type))))
 (cl-defgeneric elsa-type-get-return (_this)
-  "Get return type of THIS type.")
+  "Get return type of THIS type."
+  nil)
 
 (cl-defmethod elsa-type-get-return ((this elsa-type))
   this)
@@ -245,11 +275,6 @@ If N is more than the arity of the function and the last argument
 is variadic, return that type, otherwise return nil."
   nil)
 
-(defclass elsa-type-unbound (elsa-type) ()
-  :documentation "Type of an unbound variable.
-
-This is not accepted by any type because we don't know what it is.")
-
 (defclass elsa-type-empty (elsa-type) ()
   :documentation "Empty type.  Has no domain.
 
@@ -270,16 +295,27 @@ empty.")
 (cl-defmethod elsa-type-accept ((_this elsa-type) (_this2 elsa-type-empty) &optional _explainer)
   t)
 
-(cl-defmethod elsa-type-accept ((_this elsa-type-unbound) _other &optional _explainer)
-  "Unbound type accepts anything.
+(defun elsa-type-sum-all (types)
+  "Sum of all the TYPES.
 
-The only thing that can be of an unbound type is a symbol
-representing a variable.  It can accept anything because it is
-not bound to any specific value yet."
-  t)
+This will sum the empty type with the first type, then the result
+of this with the second type and so on until all types are
+summed.
 
-(cl-defmethod elsa-type-describe ((_this elsa-type-unbound))
-  "unbound")
+Type sum is similar to set union in that it is commutative and
+associative."
+  (-reduce-from #'elsa-type-sum (elsa-type-empty) types))
+
+(defun elsa-type-intersect-all (types)
+  "Intersect of all the TYPES.
+
+This will intersect the mixed type with the first type, then the
+result of this with the second type and so on until all types are
+intersected.
+
+Type intersect is similar to set intersection in that it is
+commutative and associative."
+  (-reduce-from #'elsa-type-intersect (elsa-type-mixed) types))
 
 (defclass elsa-intersection-type (elsa-type elsa-composite-type)
   ((types :initform nil :initarg :types))
@@ -434,22 +470,6 @@ type and none of the negative types.")
               (elsa-type-describe (oref this negative)))
     (elsa-type-describe (oref this positive))))
 
-(defclass elsa-type-t (elsa-type) ())
-
-(cl-defmethod elsa-type-describe ((_this elsa-type-t))
-  "t")
-
-(defclass elsa-type-nil (elsa-type) ())
-
-(cl-defmethod elsa-type-accept ((_this elsa-type-nil) (other elsa-type) &optional explainer)
-  (elsa-with-explainer explainer
-    (elsa--fmt-explain-type-0-only-accepts-type-1-was-2
-     "nil" "nil" (elsa-tostring other))
-    (elsa-type-nil-p other)))
-
-(cl-defmethod elsa-type-describe ((_this elsa-type-nil))
-  "nil")
-
 (defclass elsa-type-symbol (elsa-type) ()
   :documentation "Quoted symbol")
 
@@ -465,15 +485,15 @@ Any time a function is called with some variable, Elsa will narrow
 that variable to this specific type if the original type is
 compatible.")))
 
-(cl-defmethod elsa-type-accept ((_this elsa-type-bool) other &optional explainer)
-  (elsa-with-explainer explainer
-    (elsa--fmt-explain-type-0-does-not-accept-type-1
-     "bool" (elsa-tostring other))
-    (or (elsa-type-bool-p other)
-        (elsa-type-accept
-         (elsa-sum-type
-          :types (list (elsa-type-t) (elsa-type-nil)))
-         other explainer))))
+(defclass elsa-type-t (elsa-type-bool) ())
+
+(cl-defmethod elsa-type-describe ((_this elsa-type-t))
+  "t")
+
+(defclass elsa-type-nil (elsa-type-bool) ())
+
+(cl-defmethod elsa-type-describe ((_this elsa-type-nil))
+  "nil")
 
 (cl-defmethod elsa-type-describe ((this elsa-type-bool))
   (if (slot-boundp this 'predicates)

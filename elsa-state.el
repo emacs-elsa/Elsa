@@ -8,16 +8,6 @@
 (require 'elsa-error)
 (require 'elsa-methods)
 
-(defclass elsa-structure-slot nil
-  ((name
-    :type symbol
-    :initarg :name
-    :documentation "Slot name.")
-   (type
-    :type elsa-type
-    :initarg :type
-    :documentation "Slot type.")))
-
 ;; TODO: rename to elsa-structure
 (defclass elsa-cl-structure nil
   ((name :initarg :name

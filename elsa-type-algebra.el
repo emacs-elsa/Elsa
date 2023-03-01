@@ -22,23 +22,6 @@
            (cl-decf elsa-type-debug-depth)))
     `(progn ,@body)))
 
-;; (elsa-type-sum :: (function (mixed mixed) (struct elsa-type)))
-(cl-defgeneric elsa-type-sum (this other)
-  "Return the sum of THIS and OTHER type.
-
-A sum accept anything that either THIS or OTHER accepts.")
-
-(defun elsa-type-sum-all (types)
-  "Sum of all the TYPES.
-
-This will sum the empty type with the first type, then the result
-of this with the second type and so on until all types are
-summed.
-
-Type sum is similar to set union in that it is commutative and
-associative."
-  (-reduce-from #'elsa-type-sum (elsa-type-empty) types))
-
 (cl-defmethod elsa-type-sum ((this elsa-type) (other elsa-type))
   "Basic primitive type sum."
   (elsa-type-debug ("(elsa-type-sum %s %s) elsa-type elsa-type " this other)
@@ -154,13 +137,6 @@ When B and C are unrelated, the rule simplifies to:
           #'elsa-type-intersect
           (-map (lambda (type) (elsa-type-sum type other)) (oref this types))))))))
 
-;; (elsa-type-dif :: (function (mixed mixed) (struct elsa-type)))
-(cl-defgeneric elsa-type-diff (this other)
-  "Return the difference of THIS without OTHER.
-
-The diff type only accepts those types accepted by THIS which are
-not accepted by OTHER.")
-
 (cl-defmethod elsa-type-diff ((this elsa-type) other)
   "Any base type without another is the same type, there is no intersection."
   (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type t" this other)
@@ -267,24 +243,6 @@ everything (Mixed)."
     (elsa-type-normalize
      (elsa-diff-type :positive (clone (oref this positive))
                      :negative (elsa-type-sum (oref this negative) other)))))
-
-;; (elsa-type-intersect :: (function (mixed mixed) (struct elsa-type)))
-(cl-defgeneric elsa-type-intersect (this other)
-  "Return the intersection of THIS and OTHER.
-
-The intersection type only accepts those types which are both
-THIS and OTHER at the same time.")
-
-(defun elsa-type-intersect-all (types)
-  "Intersect of all the TYPES.
-
-This will intersect the mixed type with the first type, then the
-result of this with the second type and so on until all types are
-intersected.
-
-Type intersect is similar to set intersection in that it is
-commutative and associative."
-  (-reduce-from #'elsa-type-intersect (elsa-type-mixed) types))
 
 (cl-defmethod elsa-type-intersect ((this elsa-type) (other elsa-type))
   "Basic primitive type intersection."
