@@ -7,7 +7,7 @@
 
   (describe "Numeric types"
 
-    (describe "Acceptance rules"
+    (describe "Subtype rules"
       (it "number should accept int"
         (expect (elsa-type-accept (elsa-make-type number) (elsa-make-type int)) :to-be t))
 
@@ -21,6 +21,20 @@
         (expect (elsa-type-accept (elsa-make-type int)
                                   (elsa-make-type (diff number float)))
                 :to-be t)))
+
+    (xdescribe "Could accept rules")
+
+    (xdescribe "Methods"
+
+      (xdescribe "elsa-type-get-args")
+
+      (xdescribe "elsa-type-get-return")
+
+      (xdescribe "elsa-type-composite-p")
+
+      (xdescribe "elsa-type-callable-p")
+
+      (xdescribe "elsa-function-type-nth-arg"))
 
     (describe "Sum rules"
       (it "number + number should be number"
