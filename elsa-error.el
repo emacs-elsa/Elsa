@@ -149,7 +149,7 @@ In general, we recognize three states: error, warning, notice
     (elsa--make-message
      constructor
      expression
-     (elsa-tostring explainer)
+     (replace-regexp-in-string "%" "%%" (elsa-tostring explainer))
      args)))
 
 (cl-defgeneric elsa-make-error (thing format &rest args)
