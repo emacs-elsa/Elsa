@@ -43,12 +43,23 @@ keyword-sexp pairs."
     ;; be used later during the defun analysis.
     (elsa--cl-analyse-specifiers args-raw)
     (when function-def
-      (elsa-state-add-defun state
-        (elsa-defun :name 'cl-call-next-method
-                    :type (clone (oref function-def type))
-                    :arglist (copy-sequence (and (slot-boundp function-def 'arglist)
-                                                 (oref function-def arglist)))
-                    :file (oref function-def file))))
+      (cond
+       ;; clone always returns the same type as passed in
+       ((eq name 'clone)
+        (elsa-state-add-defun state
+          (elsa-defun :name 'cl-call-next-method
+                      :type (elsa-function-type
+                             :args nil
+                             :return (oref (elsa-car args-raw) type))
+                      :arglist nil
+                      :file (oref function-def file))))
+       (t (elsa-state-add-defun state
+            (elsa-defun :name 'cl-call-next-method
+                        :type (elsa-function-type
+                               :args nil
+                               :return (elsa-type-get-return (oref function-def type)))
+                        :arglist nil
+                        :file (oref function-def file))))))
     (elsa--analyse-defun-like-form name args body form scope state)
     (when function-def
       (elsa-state-remove-defun state 'cl-call-next-method))))
