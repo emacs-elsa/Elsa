@@ -162,6 +162,22 @@ Uses special rules for `elsa-type-mixed'.
       (elsa-type-mixed-p other)
       (elsa-type-accept this other)))
 
+(defun elsa-type-could-assign-p (this other)
+  "Check if THIS could accept OTHER.
+
+Uses special rules for `elsa-type-mixed'.
+
+- Mixed accepts anything except unbound.
+- Mixed is accepted by anything.
+
+Returns trinary value."
+  (trinary-or
+   (trinary-from-bool
+    (or (and (elsa-type-mixed-p this)
+             (not (elsa-type-unbound-p other)))
+        (elsa-type-mixed-p other)))
+   (elsa-type-could-accept this other)))
+
 (cl-defmethod elsa-get-type ((_this null))
   (elsa-type-unbound))
 
