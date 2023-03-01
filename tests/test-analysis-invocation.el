@@ -17,7 +17,20 @@
                       :arglist '(x)))
         (elsa-test-with-analysed-form "|(b [asd])" form
           :state state
-          (expect form :to-be-type-equivalent (elsa-make-type vector))))))
+          (expect form :to-be-type-equivalent (elsa-make-type vector)))))
+
+    (it "should resolve to the most specific incomparable types"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type
+                             (and (function (symbol mixed) vector)
+                                  (function (symbol string) keyword)
+                                  (function (string symbol) vector)))
+                      :arglist '(x)))
+        (elsa-test-with-analysed-form "|(b 'sym)" form
+          :state state
+          (expect form :to-be-type-equivalent (elsa-make-type (or vector keyword)))))))
 
 
   (describe "number of arguments"
