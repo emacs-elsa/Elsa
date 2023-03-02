@@ -241,6 +241,64 @@ Returns trinary value."
   (and (elsa-type-accept (elsa-get-type this) (elsa-get-type other))
        (elsa-type-accept (elsa-get-type other) (elsa-get-type this))))
 
+(defun elsa--poset-sort (comp list)
+  "Use COMP to poset-order LIST.
+
+Return a list of lists where each chain is ordered and different
+chains' heads are not comparable."
+  (setq list (-sort comp list))
+  (let ((chains (list (list (car list))))
+        (comp-inv (-flip comp)))
+    (-each (cdr list)
+      (lambda (item)
+        (unless (catch 'pushed
+                  (-each-indexed chains
+                    (-lambda (index (chain &as head))
+                      (when (funcall comp-inv item head)
+                        (push item chain)
+                        (setq chains (-replace-at index chain chains))
+                        (throw 'pushed t)))))
+          (push (list item) chains))))
+    (mapcar #'reverse chains)))
+
+(defun elsa--equivalence-classes (comp list)
+  "Use COMP to group types in LIST into equivalence classes.
+
+COMP should be an equivalence relation, otherwise the results
+might not make sense."
+  (let ((groups (list (list (car list)))))
+    (-each (cdr list)
+      (lambda (item)
+        (unless (catch 'pushed
+                  (-each-indexed groups
+                    (-lambda (index (group &as head))
+                      (when (funcall comp item head)
+                        (push item group)
+                        (setq groups (-replace-at index group groups))
+                        (throw 'pushed t)))))
+          (push (list item) groups))))
+    groups))
+
+(defun elsa--simplify-overloads (list index)
+  "Select most specific overloads from LIST.
+
+If overloads are not comparable, select all of them.
+
+Items in LIST are of form (TYPE . OVERLOAD-INDEX)."
+  (-mapcat
+   #'car
+   (elsa--poset-sort
+    (lambda (a b)
+      (elsa-type-accept
+       (elsa-function-type-nth-arg (caar b) index)
+       (elsa-function-type-nth-arg (caar a) index)))
+    (elsa--equivalence-classes
+     (lambda (a b)
+       (elsa-type-equivalent-p
+        (elsa-function-type-nth-arg (car b) index)
+        (elsa-function-type-nth-arg (car a) index)))
+     list))))
+
 (defun elsa-type-is-empty-p (this)
   "Test if THIS is type-equivalent to `elsa-type-empty'.
 
