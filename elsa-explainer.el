@@ -176,7 +176,7 @@ ARGS are fed to `format' as arguments to format string FMT."
   (declare (indent 1)
            (debug (form form body)))
   (let ((exp (if (symbolp explainer) explainer (make-symbol "exp"))))
-    `(,(if (symbolp explainer) 'progn `(let ((,exp ,explainer))))
+    `(,@(if (symbolp explainer) '(progn) `(let ((,exp ,explainer))))
       (when ,exp
         (push (elsa-explainer-message
                :message (format ,fmt ,@args)
@@ -192,9 +192,9 @@ ARGS are fed to `format' as arguments to format string FMT."
 
 Return value of the last form in BODY."
   (declare (indent 1)
-           (debug (form listp body)))
+           (debug (form (sexp &rest form) body)))
   (let ((exp (if (symbolp explainer) explainer (make-symbol "exp"))))
-    `(,(if (symbolp explainer) 'progn `(let ((,exp ,explainer))))
+    `(,@(if (symbolp explainer) '(progn) `(let ((,exp ,explainer))))
       (cl-incf (elsa-get-depth ,exp))
       (prog1 (progn ,@body)
         (cl-decf (elsa-get-depth ,exp))
@@ -208,9 +208,9 @@ optional arguments to the format string.
 
 The message is only added to the explainer if BODY return nil."
   (declare (indent 1)
-           (debug (sexp sexp body)))
-  (let ((exp (make-symbol "exp")))
-    `(let ((,exp ,explainer))
+           (debug (form (sexp &rest form) body)))
+  (let ((exp (if (symbolp explainer) explainer (make-symbol "exp"))))
+    `(,@(if (symbolp explainer) '(progn) `(let ((,exp ,explainer))))
        (if (progn
              (when ,exp (cl-incf (elsa-get-depth ,exp)))
              (prog1 (progn
@@ -227,7 +227,7 @@ EXPLAINER is a symbol to which the new instance is bound.
 
 Return value of the last form in BODY."
   (declare (indent 1)
-           (debug (place body)))
+           (debug (sexp body)))
   `(let ((,explainer (elsa-explainer)))
      ,@body))
 

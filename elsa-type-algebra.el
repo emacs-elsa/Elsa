@@ -11,7 +11,7 @@
 
 (defmacro elsa-type-debug (msg-spec &rest body)
   (declare (indent 1)
-           (debug ((stringp form form) body)))
+           (debug ((stringp form &optional form) body)))
   (if elsa-type-debug
       `(progn
          (cl-incf elsa-type-debug-depth)
