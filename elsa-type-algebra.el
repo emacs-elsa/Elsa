@@ -192,15 +192,22 @@ everything (Mixed)."
       (elsa-type-int))
      (t (cl-call-next-method this other)))))
 
-(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-t))
+(cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-bool))
   "Bool without T is Nil."
-  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-t" _this _other)
-    (elsa-type-nil)))
-
-(cl-defmethod elsa-type-diff ((_this elsa-type-bool) (_other elsa-type-nil))
-  "Bool without NIL is T."
-  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-nil" _this _other)
-    (elsa-type-t)))
+  (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-bool" this other)
+    (cond
+     ((and (elsa-type-t-p this) (elsa-type-t-p other))
+      (elsa-type-empty))
+     ((and (elsa-type-t-p this) (elsa-type-nil-p other))
+      (elsa-type-t))
+     ((and (elsa-type-nil-p this) (elsa-type-t-p other))
+      (elsa-type-nil))
+     ((and (elsa-type-nil-p this) (elsa-type-nil-p other))
+      (elsa-type-empty))
+     ((and (elsa-type-bool-p this) (elsa-type-t-p other))
+      (elsa-type-nil))
+     ((and (elsa-type-bool-p this) (elsa-type-nil-p other))
+      (elsa-type-t)))))
 
 (cl-defmethod elsa-type-diff ((this elsa-type) (other elsa-sum-type))
   "A difference of a type and sum is THIS minus all the summed types."
