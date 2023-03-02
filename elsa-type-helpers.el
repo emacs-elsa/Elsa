@@ -90,15 +90,15 @@ Returns trinary value."
   "Construct const type based on VALUE."
   (cond
    ((keywordp value)
-    (elsa-const-type :type (elsa-make-type keyword) :value value))
+    (elsa-const-type :type (elsa-type-keyword) :value value))
    ((stringp value)
-    (elsa-const-type :type (elsa-make-type string) :value value))
+    (elsa-const-type :type (elsa-type-string) :value value))
    ((integerp value)
-    (elsa-const-type :type (elsa-make-type int) :value value))
+    (elsa-const-type :type (elsa-type-int) :value value))
    ((floatp value)
-    (elsa-const-type :type (elsa-make-type float) :value value))
+    (elsa-const-type :type (elsa-type-float) :value value))
    ((symbolp value)
-    (elsa-const-type :type (elsa-make-type symbol) :value value))
+    (elsa-const-type :type (elsa-type-symbol) :value value))
    (t (error "Trying to make a const type out of %S" value))))
 
 (defun elsa--make-union-type (definition)
