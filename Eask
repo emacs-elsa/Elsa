@@ -16,11 +16,11 @@
 
 (depends-on "emacs" "26.1")
 (depends-on "dash" "2.14")
-(depends-on "seq")
 (depends-on "f")
 (depends-on "trinary" "1.2.1")
 (depends-on "lsp-mode")
 (depends-on "ansi")
+(depends-on "cl-lib")
 
 (development
  (depends-on "elsa")
