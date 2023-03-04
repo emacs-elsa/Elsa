@@ -1,6 +1,6 @@
 (require 'dash)
 
-(eval-when-compile (require 'elsa-explainer))
+(require 'elsa-explainer)
 (require 'elsa-reader)
 (require 'elsa-error)
 (require 'elsa-check)

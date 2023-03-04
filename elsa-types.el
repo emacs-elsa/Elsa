@@ -32,7 +32,7 @@
 (require 'dash)
 
 (require 'elsa-methods)
-(eval-when-compile (require 'elsa-explainer))
+(require 'elsa-explainer)
 
 (defclass elsa-structure-slot nil
   ((name

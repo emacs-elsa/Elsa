@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
-(eval-when-compile (require 'elsa-explainer))
+(require 'elsa-explainer)
 (require 'elsa-reader)
 (require 'elsa-check)
 (require 'elsa-error)

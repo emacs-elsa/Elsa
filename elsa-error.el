@@ -30,7 +30,7 @@
 
 (require 'lsp-protocol)
 
-(eval-when-compile (require 'elsa-explainer))
+(require 'elsa-explainer)
 (require 'elsa-types)
 (require 'elsa-form)
 
