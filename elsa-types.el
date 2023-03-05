@@ -1176,10 +1176,7 @@ symbol represents.  During checking, we will try to forward to
    ((elsa-type-unbound))))
 
 (cl-defmethod elsa-type-describe ((this elsa-type--cl-ref))
-  (let ((resolved (elsa-type--resolve-cl-ref this)))
-    (if (not (elsa-type-unbound-p resolved))
-        (elsa-type-describe resolved)
-      (format "(cl-ref %s)" (oref this name)))))
+  (format "(cl-ref %s)" (oref this name)))
 
 (cl-defmethod elsa-type-accept ((this elsa-type--cl-ref) other &optional explainer)
   (elsa-type-accept (elsa-type--resolve-cl-ref this) other explainer))
