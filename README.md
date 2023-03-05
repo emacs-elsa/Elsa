@@ -25,10 +25,11 @@ don't match up before you even try to run the code.
     - [Understand functional overloads](#understand-functional-overloads)
 - [How do I run it](#how-do-i-run-it)
     - [Eask](#eask)
-    - [makem.sh](#makemsh)
     - [Cask](#cask)
-    - [Flycheck/Flymake integration](#flycheckflymake-integration)
     - [Language server protocol (LSP)](#language-server-protocol-lsp)
+    - [makem.sh](#makemsh)
+    - [EMake](#emake)
+    - [Flycheck/Flymake integration](#flycheckflymake-integration)
 - [Configuration](#configuration)
     - [Analysis extension](#analysis-extension)
     - [Rulesets](#rulesets)
@@ -174,10 +175,14 @@ didn't match.
 
 # How do I run it
 
-Elsa can be run with [Eask][Eask], [Cask][Cask] or [makem.sh][makem].
-Before you can perform analysis, see the
+Elsa can be run with [Eask][Eask], [Cask][Cask], [makem.sh][makem] or
+[EMake][emake].  Before you can perform analysis, see the
 [Configuration](#configuration) section on how to configure the
 project.
+
+Elsa project provides support for the Eask, Cask and LSP methods.  For
+makem.sh and EMake support, contact the authors of those packages
+directly.
 
 If you use Eask or Cask, you can use Flycheck and Flymake integrations
 (see below).
@@ -191,12 +196,12 @@ contextual hover type information.
 
 The following table summarizes the options:
 
-| Feature                        | Eask | Cask | makem.sh |
-|--------------------------------|------|------|----------|
-| Stand-alone analysis from CLI  | ✓    | ✓    | ✓        |
-| Flycheck integration           | ✓    | ✓    | ⨯        |
-| Flymake integration            | ✓    | ⨯    | ⨯        |
-| Language Server Protocol (LSP) | ✓    | ✓    | ⨯        |
+| Feature                        | Eask | Cask | makem.sh | EMake |
+|--------------------------------|------|------|----------|-------|
+| Stand-alone analysis from CLI  | ✓    | ✓    | ✓        | ✓     |
+| Flycheck integration           | ✓    | ✓    | ⨯        | ⨯     |
+| Flymake integration            | ✓    | ⨯    | ⨯        | ⨯     |
+| Language Server Protocol (LSP) | ✓    | ✓    | ⨯        | ⨯     |
 
 **Note:** when you run Elsa in a project for the first time, it is
 recommended to start it from the CLI because it will need to crawl all
@@ -241,21 +246,6 @@ and use the `eask link` feature to use the code from the clone.
 3. Run `eask link add elsa <path-to-elsa-repo>`.
 4. `eask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
 
-## makem.sh
-
-Using `makem.sh`, simply run this command from the project root
-directory, which installs and runs Elsa in a temporary sandbox:
-
-    ./makem.sh --sandbox lint-elsa
-
-To use a non-temporary sandbox directory named `.sandbox` and avoid
-installing Elsa on each run:
-
-1.  Initialize the sandbox: `./makem.sh -s.sandbox --install-deps --install-linters`.
-2.  Run Elsa: `./makem.sh -s.sandbox lint-elsa`.
-
-See `makem.sh`'s documentation for more information.
-
 ## Cask
 
 ### [RECOMMENDED] Using packaged version
@@ -275,16 +265,6 @@ and use the `cask link` feature to use the code from the clone.
 2. Add `(depends-on "elsa")` to `Cask` file of your project.
 3. Run `cask link elsa <path-to-elsa-repo>`.
 4. `cask exec elsa FILE-TO-ANALYSE [ANOTHER-FILE...]` to analyse the file.
-
-## Flycheck/Flymake integration
-
-If you use [flycheck](https://github.com/flycheck/flycheck) you can
-use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa)
-package which integrates Elsa with Flycheck.
-
-For
-[flymake](https://www.gnu.org/software/emacs/manual/html_node/emacs/Flymake.html),
-you can use [flymake-elsa](https://github.com/flymake/flymake-elsa).
 
 ## Language server protocol (LSP)
 
@@ -307,6 +287,45 @@ Currently, these LSP capabilities are supported
 | hoverProvider      | Provides contextual type annotations of forms under point                                                                                |
 | textDocumentSync   | openClose, save                                                                                                                          |
 | completionProvider | <ul><li>functions from workspace</li><li>variables from scope and workspace</li><li>special resolution of oref/oset slot names</li></ul> |
+
+## makem.sh
+
+Using `makem.sh`, simply run this command from the project root
+directory, which installs and runs Elsa in a temporary sandbox:
+
+    ./makem.sh --sandbox lint-elsa
+
+To use a non-temporary sandbox directory named `.sandbox` and avoid
+installing Elsa on each run:
+
+1.  Initialize the sandbox: `./makem.sh -s.sandbox --install-deps --install-linters`.
+2.  Run Elsa: `./makem.sh -s.sandbox lint-elsa`.
+
+See `makem.sh`'s documentation for more information.
+
+### EMake
+
+If you've already installed [EMake][emake], run `make lint-elsa`.  You
+may need to update to a recent version via `EMAKE_SHA1`.
+
+Otherwise, install EMake via the usual means:
+
+```sh
+bash <(curl -fsSL https://raw.githubusercontent.com/vermiculus/emake.el/master/new)
+```
+
+This script will prompt you for the name of your package and then
+bootstrap EMake.  You can now run Elsa's checks with `make lint-elsa`.
+
+## Flycheck/Flymake integration
+
+If you use [flycheck](https://github.com/flycheck/flycheck) you can
+use the [flycheck-elsa](https://github.com/emacs-elsa/flycheck-elsa)
+package which integrates Elsa with Flycheck.
+
+For
+[flymake](https://www.gnu.org/software/emacs/manual/html_node/emacs/Flymake.html),
+you can use [flymake-elsa](https://github.com/flymake/flymake-elsa).
 
 # Configuration
 
@@ -435,5 +454,6 @@ and admiration.
 [Cask]: https://github.com/cask/cask
 [Eask]: https://github.com/emacs-eask/cli
 [makem]: https://github.com/alphapapa/makem.sh
+[emake]: https://github.com/vermiculus/emake.el
 [MELPA]: https://melpa.org
 [lsp-mode]: https://emacs-lsp.github.io/lsp-mode/
