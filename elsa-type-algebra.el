@@ -57,7 +57,7 @@
       (elsa-type-number))
      ((and (elsa-type-int-p this) (elsa-type-float-p other))
       (elsa-type-number))
-     (t (cl-call-next-method this other)))))
+     (t (cl-call-next-method)))))
 
 (cl-defmethod elsa-type-sum ((this elsa-sum-type) (other elsa-sum-type))
   "(A ∪ B ∪ ...) ∪ (C ∪ D ∪ ...) = A ∪ B ∪ C ∪ D ∪ ...
@@ -190,7 +190,7 @@ everything (Mixed)."
       (elsa-type-int))
      ((and (elsa-type-int-p this) (elsa-type-float-p other))
       (elsa-type-int))
-     (t (cl-call-next-method this other)))))
+     (t (cl-call-next-method)))))
 
 (cl-defmethod elsa-type-diff ((this elsa-type-bool) (other elsa-type-bool))
   "Bool without T is Nil."
@@ -295,7 +295,7 @@ possible signatures."
       (elsa-type-empty))
      ((and (elsa-type-int-p this) (elsa-type-float-p other))
       (elsa-type-empty))
-     (t (cl-call-next-method this other)))))
+     (t (cl-call-next-method)))))
 
 (cl-defmethod elsa-type-intersect ((this elsa-sum-type) (other elsa-type))
   "(A ∪ B) ∩ C = (A ∩ C) ∪ (B ∩ C)"

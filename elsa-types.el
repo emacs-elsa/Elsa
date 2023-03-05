@@ -275,7 +275,7 @@ of them.")
 (cl-defmethod clone ((this elsa-intersection-type))
   "Make a deep copy of a intersection type."
   (let ((types (-map 'clone (oref this types)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new types types)
     new))
 
@@ -332,7 +332,7 @@ because the actual type can be any of them.")
 (cl-defmethod clone ((this elsa-sum-type))
   "Make a deep copy of a sum type."
   (let ((types (-map 'clone (oref this types)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new types types)
     new))
 
@@ -572,7 +572,7 @@ float and number.")
   "Make a deep copy of a cons type."
   (let ((car-type (clone (oref this car-type)))
         (cdr-type (clone (oref this cdr-type)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new car-type car-type)
     (oset new cdr-type cdr-type)
     new))
@@ -609,7 +609,7 @@ other, then this is a supertype of other."
 (cl-defmethod clone ((this elsa-type-tuple))
   "Make a deep copy of a cons type."
   (let ((types (-map 'clone (oref this types)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new types types)
     new))
 
@@ -648,7 +648,7 @@ other, then this is a supertype of other."
 (cl-defmethod clone ((this elsa-type-list))
   "Make a deep copy of a list type."
   (let ((item-type (clone (oref this item-type)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new item-type item-type)
     new))
 
@@ -780,7 +780,7 @@ symbols as keys.")
 (cl-defmethod clone ((this elsa-type-vector))
   "Make a deep copy of a vector type."
   (let ((item-type (clone (oref this item-type)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new item-type item-type)
     new))
 
@@ -813,7 +813,7 @@ then this is a supertype of other."
   "Make a deep copy of a function type."
   (let ((args (-map 'clone (oref this args)))
         (return (clone (oref this return)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new args args)
     (oset new return return)
     new))
@@ -887,7 +887,7 @@ then this is a supertype of other."
 (cl-defmethod clone ((this elsa-generic-type))
   "Make a deep copy of a generic type."
   (let ((label (oref this label))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new label label)
     new))
 
@@ -1003,7 +1003,7 @@ predefined value.")
 (cl-defmethod clone ((this elsa-const-type))
   "Make a deep copy of a intersection type."
   (let ((type (clone (oref this type)))
-        (new (cl-call-next-method this)))
+        (new (cl-call-next-method)))
     (oset new type type)
     new))
 
