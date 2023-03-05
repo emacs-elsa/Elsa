@@ -9,34 +9,85 @@
 
   (describe "eieio"
 
-    (describe "defclass slot types"
+    (xdescribe "checks"
 
-      (it "should resolve a simple type"
-        (elsa-test-with-analysed-form "|(defclass a () ((slot :type string)))" form
-          :state-var state
-          (expect (oref
-                   (gethash
-                    'slot
-                    (oref (elsa-state-get-defclass state 'a) slots))
-                   type)
-                  :to-be-type-equivalent (elsa-make-type string))))
+      (xdescribe "check xyz"))
 
-      (it "should resolve a list-of type"
-        (elsa-test-with-analysed-form "|(defclass a () ((slot :type (list-of string))))" form
-          :state-var state
-          (expect (oref
-                   (gethash
-                    'slot
-                    (oref (elsa-state-get-defclass state 'a) slots))
-                   type)
-                  :to-be-type-equivalent (elsa-make-type (list string)))))
+    (describe "analysis"
 
-      (it "should default to mixed"
-        (elsa-test-with-analysed-form "|(defclass a () ((slot :type asdasdasd)))" form
-          :state-var state
-          (expect (oref
-                   (gethash
-                    'slot
-                    (oref (elsa-state-get-defclass state 'a) slots))
-                   type)
-                  :to-be-type-equivalent (elsa-make-type mixed)))))))
+      (describe "defclass"
+
+        (describe "constructor"
+
+          (it "should declare a constructor"
+            (elsa-test-with-analysed-form "|(defclass a () ((slot :type string)))" form
+              :state-var state
+              (expect (elsa-state-get-defun state 'a) :not :to-be nil))))
+
+        (describe "type predicate"
+
+          (it "should declare a type predicate"
+            (elsa-test-with-analysed-form "|(defclass a () ((slot :type string)))" form
+              :state-var state
+              (expect (elsa-state-get-defun state 'a-p) :not :to-be nil))))
+
+        (describe "defclass slot types"
+
+          (it "should resolve a simple type"
+            (elsa-test-with-analysed-form "|(defclass a () ((slot :type string)))" form
+              :state-var state
+              (expect (oref
+                       (gethash
+                        'slot
+                        (oref (elsa-state-get-defclass state 'a) slots))
+                       type)
+                      :to-be-type-equivalent (elsa-make-type string))))
+
+          (it "should resolve a list-of type"
+            (elsa-test-with-analysed-form "|(defclass a () ((slot :type (list-of string))))" form
+              :state-var state
+              (expect (oref
+                       (gethash
+                        'slot
+                        (oref (elsa-state-get-defclass state 'a) slots))
+                       type)
+                      :to-be-type-equivalent (elsa-make-type (list string)))))
+
+          (it "should default to mixed"
+            (elsa-test-with-analysed-form "|(defclass a () ((slot :type asdasdasd)))" form
+              :state-var state
+              (expect (oref
+                       (gethash
+                        'slot
+                        (oref (elsa-state-get-defclass state 'a) slots))
+                       type)
+                      :to-be-type-equivalent (elsa-make-type mixed))))))
+
+      (describe "oref"
+
+        (it "should signal error if the instance is not of class type"
+          (elsa-test-with-analysed-form "|(let ((x \"foo\")) (oref x slot))" form
+            :errors-var errors
+            (expect (car errors) :message-to-match "Type `(const \"foo\")' has no properties because it is not a class.")))
+
+        (it "should signal error if the class has no such slot"
+          (elsa-test-with-analysed-form "|(progn (defclass a () ((name :type string))) (oref (a) slot))" form
+            :errors-var errors
+            (expect (car errors) :message-to-match "Type `(class a)' has no slot `slot', has (name)"))))
+
+      (describe "oset"
+
+        (it "should signal error if the instance is not of class type"
+          (elsa-test-with-analysed-form "|(let ((x \"foo\")) (oset x slot 2))" form
+            :errors-var errors
+            (expect (car errors) :message-to-match "Type `(const \"foo\")' has no properties because it is not a class.")))
+
+        (it "should signal error if the class has no such slot"
+          (elsa-test-with-analysed-form "|(progn (defclass a () ((name :type string))) (oset (a) slot 2))" form
+            :errors-var errors
+            (expect (car errors) :message-to-match "Type `(class a)' has no slot `slot', has (name)")))
+
+        (it "should signal error if the slot type does not accept value"
+          (elsa-test-with-analysed-form "|(progn (defclass a () ((name :type string))) (oset (a) name 2))" form
+            :errors-var errors
+            (expect (car errors) :message-to-match "Property `name' can not accept type `(const 2)', has type `string'")))))))
