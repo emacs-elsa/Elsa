@@ -40,13 +40,43 @@
            (let ((,errors (oref ,state errors)))
              ,@body))))))
 
-(buttercup-define-matcher-for-binary-function :to-be-type-equivalent elsa-type-equivalent-p
-  :expect-match-phrase "Expected %A to be equivalent to %B, was %a."
-  :expect-mismatch-phrase "Expected %A to not to be equivalent to %B, was %a")
+(buttercup-define-matcher :to-be-type-equivalent (a b)
+  (-let* ((((a-expr . a) (b-expr . b)) (mapcar #'buttercup--expr-and-value (list a b)))
+          (type-a (elsa-get-type a))
+          (type-b (elsa-get-type b))
+          (spec (format-spec-make
+                 ?A (format "%S" a-expr)
+                 ?a (format "%S" a)
+                 ?B (format "%S" b-expr)
+                 ?b (format "%S" b)
+                 ?t (format "%s" (elsa-tostring type-a))
+                 ?o (format "%s" (elsa-tostring type-b)))))
+    (if (elsa-type-equivalent-p a b)
+        (cons t (buttercup-format-spec
+                 "Expected `%A' of type `%t' not to be equivalent to `%B' of type `%o'."
+                 spec))
+      (cons nil (buttercup-format-spec
+                 "Expected `%A' of type `%t' to be equivalent to `%B' of type `%o'."
+                 spec)))))
 
-(buttercup-define-matcher-for-binary-function :to-accept-type elsa-type-accept
-  :expect-match-phrase "Expected %A to accept %B, was %a."
-  :expect-mismatch-phrase "Expected %A to not to accept %B, was %a")
+(buttercup-define-matcher :to-accept-type (a b)
+  (-let* ((((a-expr . a) (b-expr . b)) (mapcar #'buttercup--expr-and-value (list a b)))
+          (type-a (elsa-get-type a))
+          (type-b (elsa-get-type b))
+          (spec (format-spec-make
+                 ?A (format "%S" a-expr)
+                 ?a (format "%S" a)
+                 ?B (format "%S" b-expr)
+                 ?b (format "%S" b)
+                 ?t (format "%s" (elsa-tostring type-a))
+                 ?o (format "%s" (elsa-tostring type-b)))))
+    (if (elsa-type-accept a b)
+        (cons t (buttercup-format-spec
+                 "Expected `%A' of type `%t' not to accept `%B' of type `%o'."
+                 spec))
+      (cons nil (buttercup-format-spec
+                 "Expected `%A' of type `%t' to accept `%B' of type `%o'."
+                 spec)))))
 
 (defun elsa-test--compare-form-print (form result)
   (equal (elsa-tostring form) result))
@@ -55,11 +85,23 @@
   :expect-match-phrase "Expected %A to print as %B, was %a."
   :expect-mismatch-phrase "Expected %A not to print as %B, was %a")
 
-(defun elsa-test--match-error-message (err pattern)
-  (string-match-p pattern (oref err message)))
-
-(buttercup-define-matcher-for-binary-function :message-to-match elsa-test--match-error-message
-  :expect-match-phrase "Expected error message of %A to match pattern %B, was %a."
-  :expect-mismatch-phrase "Expected error message of %A not to match pattern %B, was %a")
+(buttercup-define-matcher :message-to-match (a b)
+  (-let* ((((a-expr . a) (b-expr . b)) (mapcar #'buttercup--expr-and-value (list a b)))
+          (msg (oref a message))
+          (pattern b)
+          (matches (string-match-p pattern msg))
+          (spec (format-spec-make
+                 ?A (format "%S" a-expr)
+                 ?a (format "%S" a)
+                 ?B (format "%S" b-expr)
+                 ?b (format "%S" b)
+                 ?m (format "%S" msg))))
+    (if matches
+        (cons t (buttercup-format-spec
+                 "Expected error message of `%A' not to match pattern `%B', was %m."
+                 spec))
+      (cons nil (buttercup-format-spec
+                 "Expected error message of `%A' to match pattern `%B', was %m"
+                 spec)))))
 
 (provide 'elsa-test-helpers)
