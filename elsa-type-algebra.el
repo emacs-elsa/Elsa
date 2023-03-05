@@ -196,18 +196,15 @@ everything (Mixed)."
   "Bool without T is Nil."
   (elsa-type-debug ("(elsa-type-diff %s %s) elsa-type-bool elsa-type-bool" this other)
     (cond
-     ((and (elsa-type-t-p this) (elsa-type-t-p other))
-      (elsa-type-empty))
      ((and (elsa-type-t-p this) (elsa-type-nil-p other))
       (elsa-type-t))
      ((and (elsa-type-nil-p this) (elsa-type-t-p other))
       (elsa-type-nil))
-     ((and (elsa-type-nil-p this) (elsa-type-nil-p other))
-      (elsa-type-empty))
      ((and (elsa-type-bool-p this) (elsa-type-t-p other))
       (elsa-type-nil))
      ((and (elsa-type-bool-p this) (elsa-type-nil-p other))
-      (elsa-type-t)))))
+      (elsa-type-t))
+     (t (cl-call-next-method)))))
 
 (cl-defmethod elsa-type-diff ((this elsa-type) (other elsa-sum-type))
   "A difference of a type and sum is THIS minus all the summed types."
@@ -260,6 +257,12 @@ everything (Mixed)."
        (elsa-readonly-type :type (elsa-type-intersect (oref this type) other))))
      ((elsa-type-composite-p other)
       (elsa-type-intersect other this))
+     ((and (elsa-type-list-p this)
+           (or (elsa-type-bool-p other) (elsa-type-nil-p other)))
+      (elsa-type-nil))
+     ((and (or (elsa-type-bool-p this) (elsa-type-nil-p this))
+           (elsa-type-list-p other))
+      (elsa-type-nil))
      ((elsa-type-accept this other)
       (clone other))
      ((elsa-type-accept other this)

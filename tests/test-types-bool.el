@@ -19,7 +19,13 @@
       (it "should accept bool"
         (expect (elsa-type-bool) :to-accept-type (elsa-type-bool))))
 
-    (xdescribe "Could accept rules")
+    (describe "Could accept rules"
+
+      (it "bool could accept list which could be empty"
+        (expect (trinary-maybe-p (elsa-type-could-accept (elsa-type-bool) (elsa-type-list)))))
+
+      (it "nil could accept list which could be empty"
+        (expect (trinary-maybe-p (elsa-type-could-accept (elsa-type-nil) (elsa-type-list))))))
 
     (xdescribe "Methods"
 
@@ -40,7 +46,15 @@
          (elsa-type-bool-p (elsa-type-sum (elsa-type-t) (elsa-type-nil)))
          :to-be t)))
 
-    (xdescribe "Intersection rules")
+    (describe "Intersection rules"
+
+      (it "bool intersected with list is nil"
+        (expect (elsa-type-intersect (elsa-type-bool) (elsa-type-list))
+                :to-be-type-equivalent (elsa-type-nil)))
+
+      (it "nil intersected with list is nil"
+        (expect (elsa-type-intersect (elsa-type-nil) (elsa-type-list))
+                :to-be-type-equivalent (elsa-type-nil))))
 
     (describe "Diff rules"
 
@@ -66,7 +80,19 @@
 
       (it "bool without nil is t"
         (expect (elsa-type-diff (elsa-type-bool) (elsa-type-nil))
-                :to-be-type-equivalent (elsa-type-t))))
+                :to-be-type-equivalent (elsa-type-t)))
+
+      (it "bool without bool is empty"
+        (expect (elsa-type-diff (elsa-type-bool) (elsa-type-bool))
+                :to-be-type-equivalent (elsa-type-empty)))
+
+      (it "t without bool is empty"
+        (expect (elsa-type-diff (elsa-type-t) (elsa-type-bool))
+                :to-be-type-equivalent (elsa-type-empty)))
+
+      (it "nil without bool is empty"
+        (expect (elsa-type-diff (elsa-type-nil) (elsa-type-bool))
+                :to-be-type-equivalent (elsa-type-empty))))
 
     (describe "Type normalization rules"
 
