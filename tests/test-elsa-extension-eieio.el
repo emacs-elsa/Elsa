@@ -17,7 +17,7 @@
           (expect (oref
                    (gethash
                     'slot
-                    (oref (elsa-state-get-structure state 'a) slots))
+                    (oref (elsa-state-get-defclass state 'a) slots))
                    type)
                   :to-be-type-equivalent (elsa-make-type string))))
 
@@ -27,7 +27,7 @@
           (expect (oref
                    (gethash
                     'slot
-                    (oref (elsa-state-get-structure state 'a) slots))
+                    (oref (elsa-state-get-defclass state 'a) slots))
                    type)
                   :to-be-type-equivalent (elsa-make-type (list string)))))
 
@@ -37,6 +37,6 @@
           (expect (oref
                    (gethash
                     'slot
-                    (oref (elsa-state-get-structure state 'a) slots))
+                    (oref (elsa-state-get-defclass state 'a) slots))
                    type)
                   :to-be-type-equivalent (elsa-make-type mixed)))))))

@@ -45,7 +45,7 @@ adds the information that a fallback was used."
         (setq max 'many))
       (cons min max)))))
 
-;; (elsa-fn-arity :: (function ((struct elsa-state) (or (list (or symbol (cons symbol mixed))) symbol)) (cons int (or int (const many) (const unevalled) (const undefined)))))
+;; (elsa-fn-arity :: (function ((class elsa-state) (or (list (or symbol (cons symbol mixed))) symbol)) (cons int (or int (const many) (const unevalled) (const undefined)))))
 (defun elsa-fn-arity (state def)
   (cond
    ;; directly provided arglist
@@ -82,7 +82,7 @@ adds the information that a fallback was used."
 (defun elsa--analyse-keyword (_form _scope _state)
   nil)
 
-;;    (elsa--analyse-symbol :: (function ((struct elsa-form-symbol) mixed (struct elsa-state)) mixed))
+;;    (elsa--analyse-symbol :: (function ((class elsa-form-symbol) mixed (class elsa-state)) mixed))
 (defun elsa--analyse-symbol (form scope state)
   (let* ((name (oref form name))
          (type (cond
@@ -500,7 +500,7 @@ The BINDING should have one of the following forms:
 
     (oset form type return-type)))
 
-;; (elsa--get-default-function-types :: (function ((list (struct elsa-form))) (list (struct elsa-type))))
+;; (elsa--get-default-function-types :: (function ((list (class elsa-form))) (list (class elsa-type))))
 (defun elsa--get-default-function-types (args)
   "Return a default list of types based on ARGS.
 
@@ -552,6 +552,7 @@ argument types.
 
 This function does not perform the call-site analysis, that is
 handled by `elsa--analyse-function-like-invocation'."
+;;  (elsa-log "annotation %s" (oref form annotation))
   (let* (;; TODO: there should be an api for `(get name
          ;; 'elsa-type)'... probably on `scope', but for now scope is
          ;; separate for each processed file which is not great.
@@ -749,14 +750,30 @@ If no type annotation is provided, find the value type through
 `elsa--analyse:defvar' and wrap it as read-only."
   (elsa--analyse:defvar form scope state)
   (let* ((name (elsa-nth 1 form))
+         (value (elsa-nth 2 form))
          (var-name (elsa-get-name name))
+         ;; TODO: remove this once we analyse annotations here and not
+         ;; in the reader.
          (def (elsa-state-get-defvar state var-name))
          (var-type (and def (elsa-get-type def))))
     (when var-type
       (unless (elsa-readonly-type-p var-type)
         (oset def type (elsa-readonly-type :type var-type))
         ;; need to re-add to update the symbol property
-        (elsa-state-add-defvar state def)))))
+        (elsa-state-add-defvar state def)))
+
+    ;; Defconst can also declare an interface, in which case we add it
+    ;; to the global "pool".
+    (when (string-prefix-p "elsa-interface-" (symbol-name var-name))
+      (let* ((iface-name (replace-regexp-in-string
+                          "^elsa-interface-" ""
+                          (symbol-name var-name)))
+             (iface-type-def (cadr (elsa-form-to-lisp value)))
+             (iface-type
+              (elsa--make-type `(interface
+                                 ,(intern iface-name)
+                                 ,@iface-type-def))))
+        (put (intern iface-name) 'elsa-interface iface-type)))))
 
 (defun elsa--analyse:defsubst (form scope state)
   (elsa--analyse:defun form scope state))
@@ -935,6 +952,7 @@ If no type annotation is provided, find the value type through
                   overloads-errors)))
           (and expected (trinary-possible-p acceptablep))))
       overloads))
+    ;; (elsa-log "good-overloads %s" (mapconcat (lambda (x) (elsa-tostring (car x))) good-overloads " "))
     (if good-overloads
         ;; If we have multiple overloads where the argument is of a
         ;; concrete type, that is not a sum or intersection (where the
@@ -946,7 +964,9 @@ If no type annotation is provided, find the value type through
         ;; pick the last (smallest) one.
         (if (= (length good-overloads) 1)
             (setq new-overloads good-overloads)
-          (setq new-overloads (elsa--simplify-overloads good-overloads index)))
+          (setq new-overloads (elsa--simplify-overloads good-overloads index))
+          ;; (elsa-log "new-overloads %s" (mapconcat (lambda (x) (elsa-tostring (car x))) new-overloads " "))
+          )
       (setq new-overloads nil)
       (elsa-state-add-message state
         (if (< 1 (length overloads-errors))
@@ -1106,7 +1126,7 @@ SCOPE and STATE are the scope and state objects."
 (defun elsa--analyse-improper-list (_form _scope _state)
   nil)
 
-;; (elsa--analyse-form :: (function ((struct elsa-form) (struct elsa-scope) (struct elsa-state)) mixed))
+;; (elsa--analyse-form :: (function ((class elsa-form) (class elsa-scope) (class elsa-state)) mixed))
 (defun elsa--analyse-form (form scope state)
   "Analyse FORM.
 
@@ -1178,10 +1198,10 @@ FORM is a result of `elsa-read-form'."
               (let* ((inst-form (elsa-cadr call-form))
                      (inst-type (elsa-get-type inst-form)))
                 (when (elsa-struct-type-p inst-type)
-                  (when-let* ((struct (get (oref inst-type name) 'elsa-cl-structure)))
+                  (when-let* ((class (get (oref inst-type name) 'elsa-defclass)))
                     (let ((slots (--map
                                   (oref it name)
-                                  (elsa-structure-get-all-slots struct))))
+                                  (elsa-get-slots class))))
                       (throw 'lsp-response
                              (lsp-make-completion-list
                               :is-incomplete json-false

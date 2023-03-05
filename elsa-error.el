@@ -31,7 +31,6 @@
 (require 'lsp-protocol)
 
 (require 'elsa-explainer)
-(require 'elsa-types)
 (require 'elsa-form)
 
 (defclass elsa-message ()

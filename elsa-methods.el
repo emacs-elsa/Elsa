@@ -34,7 +34,7 @@
   "Retrieve name from an Elsa object."
   nil)
 
-;; (elsa-get-type :: (function (mixed) (or (struct elsa-type) nil)))
+;; (elsa-get-type :: (function (mixed) (or (class elsa-type) nil)))
 (cl-defgeneric elsa-get-type (_this)
   "Return type of THIS."
   nil)

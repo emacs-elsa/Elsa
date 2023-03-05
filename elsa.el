@@ -160,7 +160,7 @@ tokens."
         (setq has-more (= (forward-line) 0))
         (cl-incf line)))))
 
-;; (elsa-process-file :: (function (string (or (struct elsa-global-state) nil)) mixed))
+;; (elsa-process-file :: (function (string (or (class elsa-global-state) nil)) mixed))
 (defun elsa-process-file (file &optional global-state)
   "Process FILE."
   (setq global-state (or global-state elsa-global-state))
@@ -233,12 +233,23 @@ GLOBAL-STATE is the initial configuration."
                  (insert
                   (format
                    "%S\n"
-                   `(elsa-declare-structure ,name ,(oref def parents)
+                   `(elsa-declare-defstruct ,name ,(oref def parents)
                       ,(mapcar (lambda (slot)
                                  (list (oref slot name)
                                        :type (read (elsa-type-describe (oref slot type)))))
                                (hash-table-values (oref def slots)))))))
-               (oref state cl-structures))
+               (oref state defstructs))
+              (maphash
+               (lambda (name def)
+                 (insert
+                  (format
+                   "%S\n"
+                   `(elsa-declare-defclass ,name ,(oref def parents)
+                      ,(mapcar (lambda (slot)
+                                 (list (oref slot name)
+                                       :type (read (elsa-type-describe (oref slot type)))))
+                               (hash-table-values (oref def slots)))))))
+               (oref state defclasses))
               (maphash
                (lambda (name def)
                  (insert

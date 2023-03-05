@@ -31,67 +31,68 @@
 (require 'trinary)
 (require 'dash)
 
+(require 'elsa-type)
+(require 'elsa-types-simple)
+(require 'elsa-state)
 (require 'elsa-methods)
 (require 'elsa-explainer)
 
-(defclass elsa-structure-slot nil
-  ((name
-    :type symbol
-    :initarg :name
-    :documentation "Slot name.")
-   (type
-    :type elsa-type
-    :initarg :type
-    :documentation "Slot type."))
-  :documentation "Data about a slot in interface-like structure.
+(defclass elsa-type--structured nil
+  (
+   ;; (slots :: (hash-table symbol (class elsa-structure-slot)))
+   (slots
+    :type hash-table
+    :initarg :slots
+    :initform (make-hash-table))
+   (extends
+    :type (list-of symbol)
+    :initarg :extends
+    :initform nil))
+  :documentation "Structured Elsa type with named slots.
 
-An interface-like structure is anything that has defined set of keys
-and associated values.  In elisp, these can be the ad-hoc data
-structures such as plists and alists and more structured cases like
-`cl-defstruct' and `defclass'.")
+This class abstracts the management of slots on an object-like type.
+These include structured types like classes or structures as well as
+ad-hoc types like plists.")
 
-(defconst elsa--fmt-explain-type-0-does-not-accept-type-1
-  "Type `%s' does not accept type `%s'")
+(cl-defmethod elsa-get-slots ((this elsa-type--structured))
+  (append
+   (hash-table-values (oref this slots))
+   (->> (oref this extends)
+        (-keep (lambda (iface) (get iface 'elsa-interface)))
+        (-mapcat #'elsa-get-slots))))
 
-(defconst elsa--fmt-explain-0-is-not-a-1
-  "`%s' is not a `%s'")
+(cl-defmethod elsa-get-slot ((this elsa-type--structured) (name symbol))
+  (or (gethash name (oref this slots))
+      (-some
+       (lambda (iface)
+         (when-let ((iface-type (get iface 'elsa-interface)))
+           (elsa-get-slot iface-type name)))
+       (oref this extends))))
 
-(defconst elsa--fmt-explain-type-0-only-accepts-type-1-was-2
-  "Type `%s' only accepts type `%s', was `%s'")
+(defun elsa-type--check-slots (this other relation explainer)
+  "Check that slots on THIS are compatible with slots on OTHER using RELATION.
 
-(defconst elsa--fmt-explain-sequence-item-types-of-these-0-do-not-match
-  "Sequence item types of these %s do not match.")
-
-(defclass elsa-type nil () :abstract t)
-
-;; (elsa-type-sum :: (function (mixed mixed) (struct elsa-type)))
-(cl-defgeneric elsa-type-sum (this other)
-  "Return the sum of THIS and OTHER type.
-
-A sum accept anything that either THIS or OTHER accepts.")
-
-;; (elsa-type-dif :: (function (mixed mixed) (struct elsa-type)))
-(cl-defgeneric elsa-type-diff (this other)
-  "Return the difference of THIS without OTHER.
-
-The diff type only accepts those types accepted by THIS which are
-not accepted by OTHER.")
-
-;; (elsa-type-intersect :: (function (mixed mixed) (struct elsa-type)))
-(cl-defgeneric elsa-type-intersect (this other)
-  "Return the intersection of THIS and OTHER.
-
-The intersection type only accepts those types which are both
-THIS and OTHER at the same time.")
-
-;; (elsa-type-normalize :: (function ((struct elsa-type)) (struct elsa-type)))
-(cl-defgeneric elsa-type-normalize (type)
-  "Normalize TYPE to its most simplest form.")
-
-;; (elsa-type-describe :: (function (mixed) string))
-(cl-defgeneric elsa-type-describe (type)
-  "Return a string representation of TYPE."
-  (format "%s" type))
+RELATION can be any relation which compares two types and returns
+bool.  Most common relations are `elsa-type-accept' and
+`elsa-type-assignable-p'"
+  (catch 'done
+    (mapc
+     (lambda (slot)
+       (let ((name (oref slot name)))
+         (unless (-if-let* ((other-slot (elsa-get-slot other name)))
+                     (elsa-with-explainer explainer
+                       (elsa--fmt-explain-types-of-slot-0-do-not-match name)
+                       (funcall relation
+                                (oref slot type)
+                                (oref other-slot type)
+                                explainer))
+                   (elsa-explain explainer
+                     elsa--fmt-explain-slot-0-not-found-on-1
+                     name (elsa-tostring other))
+                   nil)
+           (throw 'done nil))))
+     (elsa-get-slots this))
+    t))
 
 (cl-defmethod elsa-tostring ((this elsa-type))
   (elsa-type-describe this))
@@ -130,70 +131,15 @@ another, because there is a many-to-many relationship."
   (elsa-type-accept other this explainer))
 
 ;; TODO: what is the relationship of `a' and `a?'
-;; (elsa-instance-of :: (function ((struct elsa-type) (struct elsa-type)) bool))
+;; (elsa-instance-of :: (function ((class elsa-type) (class elsa-type)) bool))
 (defun elsa-instance-of (this other)
   "Non-nil if THIS is instance of OTHER."
   (object-of-class-p this (eieio-object-class other)))
 
-(defclass elsa-type-unbound (elsa-type) ()
-  :documentation "Type of an unbound variable.
-
-This is not accepted by any type because we don't know what it is.")
-
-(cl-defmethod elsa-type-accept ((_this elsa-type-unbound) _other &optional _explainer)
-  "Unbound type accepts anything.
-
-The only thing that can be of an unbound type is a symbol
-representing a variable.  It can accept anything because it is
-not bound to any specific value yet."
-  t)
-
-(cl-defmethod elsa-type-describe ((_this elsa-type-unbound))
-  "unbound")
-
 ;; Mixed type is special in that it is always created nullable.  Mixed
 ;; can also serve as bool type in Emacs Lisp.
-(defclass elsa-type-mixed (elsa-type) ()
-  :documentation "Type of anything.
 
-Mixed is a special type in a way that it serves as an opt-out
-from type analysis.
-
-Mixed accepts any other type except unbound.  This is
-type-theoretically sound because mixed is the union of all types.
-
-However, mixed is also accepted by any other type.  This is
-unsafe and works as an implicit type-casting.
-
-Typically, if some function returns mixed, such as reading a
-property from a symbol with `get', we can wrap this call in a
-function and provide a more narrow type signature for the return
-type provided we know that the property is always of a certain
-type.
-
-  ;; (set-property :: (function (symbol int) int))
-  (defun set-property (name value)
-    (set name value))
-
-  ;; (get-property :: (function (symbol) int))
-  (defun get-property (name)
-    ;; Even though `get' returns mixed, we know that if we only set it
-    ;; with `set-property' it will always be int and so we can provide
-    ;; more specific return type.
-    (get name value))")
-
-(cl-defmethod elsa-type-describe ((_this elsa-type-mixed))
-  "mixed")
-
-(cl-defmethod elsa-type-accept ((_this elsa-type-mixed) other &optional explainer)
-  (if (not (cl-typep other 'elsa-type))
-      (cl-call-next-method)
-    (elsa-with-explainer explainer
-      (elsa--fmt-explain-type-0-does-not-accept-type-1
-       "mixed" (elsa-tostring other))
-      (not (elsa-type-unbound-p other)))))
-
-(defun elsa-type-assignable-p (this other)
+(defun elsa-type-assignable-p (this other &optional explainer)
   "Check if THIS accepts OTHER.
 
 Uses special rules for `elsa-type-mixed'.
@@ -203,7 +149,7 @@ Uses special rules for `elsa-type-mixed'.
   (or (and (elsa-type-mixed-p this)
            (not (elsa-type-unbound-p other)))
       (elsa-type-mixed-p other)
-      (elsa-type-accept this other)))
+      (elsa-type-accept this other explainer)))
 
 (cl-defmethod elsa-get-type ((_this null))
   (elsa-type-unbound))
@@ -220,7 +166,7 @@ Uses special rules for `elsa-type-mixed'.
   "Get argument types of THING."
   nil)
 
-;; (elsa-type-get-return :: (and (function (nil) nil) (function ((struct elsa-type)) (struct elsa-type))))
+;; (elsa-type-get-return :: (and (function (nil) nil) (function ((class elsa-type)) (class elsa-type))))
 (cl-defgeneric elsa-type-get-return (_this)
   "Get return type of THIS type."
   nil)
@@ -255,7 +201,7 @@ arguments to other constructors."
 
 (cl-defmethod elsa-type-composite-p ((_this elsa-composite-type)) t)
 
-;; (elsa-type-callable-p :: (function ((struct elsa-type)) bool))
+;; (elsa-type-callable-p :: (function ((class elsa-type)) bool))
 (cl-defgeneric elsa-type-callable-p (_this)
   "Check if the type is callable.
 
@@ -729,6 +675,18 @@ For a list of fixed length with heterogeneous types, see
         (-all?
          (lambda (ot) (elsa-type-accept (oref this item-type) ot explainer))
          (oref other types))))
+     ((elsa-type-plist-p other)
+      (let ((plist-type (elsa-type-empty)))
+        (maphash
+         (lambda (_key slot)
+           (setq plist-type
+                 (-> plist-type
+                     (elsa-type-sum (elsa--make-type `(const ,(oref slot name))))
+                     (elsa-type-sum (oref slot type)))))
+         (oref other slots))
+        (elsa-with-explainer explainer
+          (elsa--fmt-explain-sequence-item-types-of-these-0-do-not-match "lists")
+          (elsa-type-accept (oref this item-type) plist-type explainer))))
      ((elsa-type-list-p other)
       (elsa-with-explainer explainer
         (elsa--fmt-explain-sequence-item-types-of-these-0-do-not-match "lists")
@@ -743,10 +701,81 @@ For a list of fixed length with heterogeneous types, see
   "Get the type of items of a sequence type."
   (oref this item-type))
 
+(defclass elsa-interface (elsa-type elsa-type--structured)
+  ((name :type symbol :initarg :name))
+  :documentation "Abstract description of an object-like type.
+
+Each interface is uniquely determined by its name.
+
+Interfaces hold slots.  Each slot must have a name and a type and
+other optional attributes (see `elsa-structure-slot').
+
+Interfaces can not be instantiated by themselves, but can be
+*implemented* by other structured types.
+
+For example, you can construct a plist by either supplying the list of
+names and types or by only supplying the interface name, at which
+point the plist will gain all the slots defined by the interface.
+
+The same interface can be used to define plists or classes or any
+other structured type.
+
+Structured types all inherit from `elsa-type--structured'.")
+
+(cl-defmethod elsa-type-describe ((this elsa-interface))
+  (let* ((slots (oref this slots))
+         (keys (-sort #'string< (hash-table-keys slots))))
+    (format "(interface %s %s)"
+            (oref this name)
+            (mapconcat
+             (lambda (key)
+               (let ((slot (gethash key slots)))
+                 (format "%s %s"
+                         (symbol-name (oref slot name))
+                         (elsa-tostring (oref slot type)))))
+             keys
+             " "))))
+
+(defclass elsa-type-plist (elsa-type-list elsa-type--structured)
+  ()
+  :documentation "Ad-hoc interface-like structure.
+
+The plist data structure is actually a simple list with alternating
+keys and values.
+
+One key and value pair is called a slot.
+
+An example of plist is (:one 1 :two 2).  Elsa currently supports
+symbols as keys.")
+
+(cl-defmethod elsa-type-accept ((this elsa-type-plist) (other elsa-type-plist) &optional explainer)
+  (elsa-with-explainer explainer
+    (elsa--fmt-explain-type-0-does-not-accept-type-1
+     (elsa-tostring this) (elsa-tostring other))
+    (elsa-type--check-slots this other #'elsa-type-accept explainer)))
+
+(cl-defmethod elsa-type-describe ((this elsa-type-plist))
+  (let* ((slots (oref this slots))
+         (keys (-sort #'string< (hash-table-keys slots)))
+         (extends (-sort #'string< (oref this extends))))
+    (format "(plist %s%s)"
+            (mapconcat
+             (lambda (key)
+               (let ((slot (gethash key slots)))
+                 (format "%s %s"
+                         (symbol-name (oref slot name))
+                         (elsa-tostring (oref slot type)))))
+             keys
+             " ")
+            (if extends
+                (format " &extends %s"
+                        (mapconcat #'symbol-name extends " "))
+                ""))))
+
 (defclass elsa-type-vector (elsa-type-sequence)
   ((item-type :type elsa-type
               :initarg :item-type
-              :initform (elsa-type-mixed))))
+              :initform (progn (elsa-type-mixed)))))
 
 (cl-defmethod clone ((this elsa-type-vector))
   "Make a deep copy of a vector type."
@@ -1033,22 +1062,133 @@ trying to analyse 'nil, which is not a valid type or form."
   (backtrace))
 
 (defclass elsa-struct-type (elsa-type)
-  ((name :type (or symbol nil) :initarg :name))
-  :documentation "Type representing a `cl-defstruct' or `defclass'.")
+  ((name
+    :type (or symbol nil)
+    :initarg :name))
+  :documentation "Type representing a `cl-defstruct'.")
+
+(cl-defmethod elsa-get-slots ((this elsa-struct-type))
+  (when-let ((class (get (oref this name) 'elsa-defstruct)))
+    (elsa-get-slots class)))
+
+(cl-defmethod elsa-get-slot ((this elsa-struct-type) (name symbol))
+  (when-let ((class (get (oref this name) 'elsa-defstruct)))
+    (elsa-get-slot class name)))
 
 (cl-defmethod elsa-type-accept ((this elsa-struct-type) other &optional explainer)
   (cond
    ((elsa-type-composite-p other)
-    (elsa-type-is-accepted-by other this))
+    (elsa-type-is-accepted-by other this explainer))
    ((elsa-struct-type-p other)
-    (if (not (oref this name))
-        t
-      (-when-let* ((this-struct (get (oref this name) 'elsa-cl-structure))
-                   (other-struct (get (oref other name) 'elsa-cl-structure)))
-        (not (null (assq (oref this-struct name) (oref other-struct parents)))))))))
+    (let ((this-struct (get (oref this name) 'elsa-defstruct))
+          (other-struct (get (oref other name) 'elsa-defstruct))
+          ;; (this-interface (get (oref this name) 'elsa-interface))
+          ;; (other-interface (get (oref other name) 'elsa-interface))
+          )
+      (cond
+       ((not this-struct))
+       ((and this-struct other-struct)
+        (not (null (assq (oref this-struct name) (oref other-struct parents)))))
+       ;; ((and this-struct other-interface)
+       ;;  (elsa-type--check-slots this-struct other-interface #'elsa-type-assignable-p explainer))
+       ;; ((and this-interface other-struct)
+       ;;  (elsa-type--check-slots this-interface other-struct #'elsa-type-assignable-p explainer))
+       ;; ((and this-interface other-interface)
+       ;;  (elsa-type--check-slots this-interface other-interface #'elsa-type-assignable-p explainer))
+       )))))
 
 (cl-defmethod elsa-type-describe ((this elsa-struct-type))
   (format "(struct %s)" (oref this name)))
+
+(defclass elsa-class-type (elsa-type)
+  ((name
+    :type (or symbol nil)
+    :initarg :name))
+  :documentation "Type representing a `defclass'.")
+
+(cl-defmethod elsa-type-describe ((this elsa-class-type))
+  (format "(class %s)" (oref this name)))
+
+(cl-defmethod elsa-get-slots ((this elsa-class-type))
+  (when-let ((class (get (oref this name) 'elsa-defclass)))
+    (elsa-get-slots class)))
+
+(cl-defmethod elsa-get-slot ((this elsa-class-type) (name symbol))
+  (when-let ((class (get (oref this name) 'elsa-defclass)))
+    (elsa-get-slot class name)))
+
+(cl-defmethod elsa-type-accept ((this elsa-class-type) other &optional explainer)
+  (cond
+   ((elsa-type-composite-p other)
+    (elsa-type-is-accepted-by other this explainer))
+   ;; if we accept interface directly, it should not declare
+   ;; properties but only methods
+   ;; ((elsa-interface-p other)
+   ;;  (let ((this-class (get (oref this name) 'elsa-defclass))
+   ;;        (this-interface (get (oref this name) 'elsa-interface)))
+   ;;    (cond
+   ;;     (this-class
+   ;;      (elsa-type--check-slots this-class other #'elsa-type-assignable-p explainer))
+   ;;     (this-interface
+   ;;      (elsa-type--check-slots this-interface other #'elsa-type-assignable-p explainer)))))
+   ((elsa-class-type-p other)
+    ;; class type (class nil) accepts any class
+    (if (not (oref this name)) t
+      (let ((this-class (get (oref this name) 'elsa-defclass))
+            (other-class (get (oref other name) 'elsa-defclass))
+            (this-interface (get (oref this name) 'elsa-interface))
+            (other-interface (get (oref other name) 'elsa-interface)))
+        (cond
+         ((elsa-with-explainer explainer
+            ("The class or interface %s is not defined" (oref this name))
+            (and (not this-class) (not this-interface))))
+         ((elsa-with-explainer explainer
+            ("The class or interface %s is not defined" (oref other name))
+            (and (not other-class) (not other-interface))))
+         ((and this-class other-class)
+          (elsa-with-explainer explainer
+            ("Class %s is not subtype of %s" (oref other name) (oref this name))
+            (not (null (assq (oref this-class name) (oref other-class parents))))))
+         ((and this-class other-interface)
+          (elsa-type--check-slots this-class other-interface #'elsa-type-assignable-p explainer))
+         ((and this-interface other-class)
+          (elsa-type--check-slots this-interface other-class #'elsa-type-assignable-p explainer))
+         ((and this-interface other-interface)
+          (elsa-type--check-slots this-interface other-interface #'elsa-type-assignable-p explainer))))))))
+
+(defclass elsa-type--cl-ref (elsa-type)
+  ((name
+    :type (or symbol nil)
+    :initarg :name))
+  :documentation "Reference to a cl-typep compatible type.
+
+This is used instead of `elsa-class-type' or `elsa-struct-type' if the
+referenced type was not yet defined and we don't know what exactly the
+symbol represents.  During checking, we will try to forward to
+`elsa-type-accept' of appropriate type.")
+
+(defun elsa-type--resolve-cl-ref (cl-ref)
+  (cond
+   ((get (oref cl-ref name) 'elsa-defclass)
+    (elsa-class-type :name (oref cl-ref name)))
+   ((get (oref cl-ref name) 'elsa-defstruct)
+    (elsa-struct-type :name (oref cl-ref name)))
+   ((elsa-type-unbound))))
+
+(cl-defmethod elsa-type-describe ((this elsa-type--cl-ref))
+  (let ((resolved (elsa-type--resolve-cl-ref this)))
+    (if (not (elsa-type-unbound-p resolved))
+        (elsa-type-describe resolved)
+      (format "(cl-ref %s)" (oref this name)))))
+
+(cl-defmethod elsa-type-accept ((this elsa-type--cl-ref) other &optional explainer)
+  (elsa-type-accept (elsa-type--resolve-cl-ref this) other explainer))
+
+(cl-defmethod elsa-type-accept ((this elsa-class-type) (other elsa-type--cl-ref) &optional explainer)
+  (elsa-type-accept this (elsa-type--resolve-cl-ref other) explainer))
+
+(cl-defmethod elsa-type-accept ((this elsa-struct-type) (other elsa-type--cl-ref) &optional explainer)
+  (elsa-type-accept this (elsa-type--resolve-cl-ref other) explainer))
 
 (provide 'elsa-types)
 ;;; elsa-types.el ends here

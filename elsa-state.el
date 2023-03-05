@@ -3,107 +3,210 @@
 
 (require 'trinary)
 
-(require 'elsa-types)
+(require 'elsa-type)
 (require 'elsa-scope)
 (require 'elsa-error)
 (require 'elsa-methods)
 
-;; TODO: rename to elsa-structure
-(defclass elsa-cl-structure nil
-  ((name :initarg :name
-         :documentation "Name of the structure.")
+(defclass elsa-structure-slot nil
+  ((name
+    :type symbol
+    :initarg :name
+    :documentation "Slot name.")
+   (initarg
+    :type (or symbol null)
+    :initarg :initarg
+    :initform nil
+    :documentation "Symbol or keyword used to initialize the slot.")
+   (type
+    :type elsa-type
+    :initarg :type
+    :documentation "Slot Elsa type."))
+  :documentation "Data about a slot in interface-like structure.
+
+An interface-like structure is anything that has defined set of keys
+and associated values.  In elisp, these can be the ad-hoc data
+structures such as plists and alists and more structured cases like
+`cl-defstruct' and `defclass'.")
+
+(cl-defmethod cl-print-object ((this elsa-structure-slot) stream)
+  (princ
+   (format "#<elsa-structure-slot %s %s %s>"
+           (oref this name)
+           (oref this initarg)
+           (elsa-tostring (oref this type)))
+   stream))
+
+(defclass elsa-structure nil
+  (
+   ;; (slots :: (hash-table symbol (class elsa-structure-slot)))
    (slots
     :type hash-table
     :initarg :slots
     :initform (make-hash-table)
-    :documentation "Slots available on the structure.
+    :documentation "Slots available on this structure.
 
 Does not include slots on parents.")
-   (parents :type list
-            :initarg :parents
-            :documentation "Tree of parents of this structure.")
-   (file :initarg :file :documentation "File where the structure was declared."))
-  :documentation "Representation of a `cl-defstruct' or `defclass'.")
+   (parents
+    :type list
+    :initarg :parents
+    :initform nil
+    :documentation "Tree of parents of this structure."))
+  :documentation "Representation of structured object.
 
-(cl-defgeneric elsa-structure-get-all-slots ((this elsa-cl-structure))
-  "Return all slots from THIS structure and parents."
+Structured objects have slots and parents.")
+
+;; (elsa-get-parents :: (function (mixed) (list (class elsa-structure))))
+(cl-defgeneric elsa-get-parents (this)
+  "Get all parents of THIS structure.")
+
+;; (elsa-get-slots :: (function (mixed) (list (class elsa-structure-slot))))
+(cl-defgeneric elsa-get-slots (this)
+  "Get slots from THIS structure or structured type.")
+
+;; (elsa-get-slot :: (function (mixed symbol) (or nil (class elsa-structure-slot))))
+(cl-defgeneric elsa-get-slot (this name)
+  "Get slot definition NAME from THIS.")
+
+(cl-defmethod elsa-get-slots ((this elsa-structure))
   (-mapcat
-   (lambda (par)
-     (when-let ((par-struct (get par 'elsa-cl-structure)))
-       (hash-table-values (oref par-struct slots))))
-   (mapcar #'car (oref this parents))))
+   (lambda (par) (hash-table-values (oref par slots)))
+   (elsa-get-parents this)))
 
-(defclass elsa-defun nil
-  ((name :initarg :name :documentation "Name of the defun.")
-   (type :initarg :type :documentation "Function type of the defun.")
-   (arglist :initarg :arglist :documentation "Defun arglist.")
-   (file :initarg :file :documentation "File where the defun was declared."))
+(cl-defmethod elsa-get-slot ((this elsa-structure) (name symbol))
+  (-some
+   (lambda (par) (gethash name (oref par slots)))
+   (elsa-get-parents this)))
+
+(defclass elsa-declaration nil
+  ((name
+    :type symbol
+    :initarg :name
+    :documentation "Declaration name.")
+   (file
+    :type (or string null)
+    :initarg :file
+    :documentation "File where the declaration was declared."))
+  :abstract t
+  :documentation "Abstract declaration.
+
+Each declaration such as defun, defvar or defclass has a name and file
+where it was declared.")
+
+(defclass elsa-defstruct (elsa-declaration elsa-structure)
+  ()
+  :documentation "Representation of a `cl-defstruct'.")
+
+(cl-defmethod elsa-get-parents ((this elsa-defstruct))
+  (->> (oref this parents)
+       (mapcar #'car)
+       (-keep (lambda (parent-name)
+                (get parent-name 'elsa-defstruct)))))
+
+(defclass elsa-defclass (elsa-declaration elsa-structure)
+  ()
+  :documentation "Representation of an EIEIO `defclass'.")
+
+(cl-defmethod elsa-get-parents ((this elsa-defclass))
+  (->> (oref this parents)
+       (mapcar #'car)
+       (-keep (lambda (parent-name)
+                (get parent-name 'elsa-defclass)))))
+
+(defclass elsa-defun (elsa-declaration)
+  ((type :initarg :type :documentation "Function type of the defun.")
+   (arglist :initarg :arglist :documentation "Defun arglist."))
   :documentation "Defun and defun-like definitions discovered during analysis.")
 
 (cl-defmethod elsa-get-type ((this elsa-defun))
   (oref this type))
 
-(defclass elsa-defvar nil
-  ((name
-    :type symbol
-    :initarg :name)
-   (type
+(defclass elsa-defvar (elsa-declaration)
+  ((type
     :type elsa-type
-    :initarg :type)
-   (file
-    :type (or string null)
-    :initarg :file)))
+    :initarg :type))
+  :documentation "Defvar and defvar-like declarations.
+
+`defcustom' behaves exactly as `defvar' except we can automatically
+defive the type from the custom type declaration.
+
+`defconst' is like `defvar' but the type is automatically set to
+readonly.")
 
 (cl-defmethod elsa-get-type ((this elsa-defvar))
   (oref this type))
 
 (defclass elsa-declarations nil
-  ((defuns
+  (
+   ;; (defuns :: (hash-table symbol (class elsa-defun)))
+   (defuns
      :type hash-table
      :initform (make-hash-table)
      :documentation "Defun-like declarations.")
+   ;; (defvars :: (hash-table symbol (class elsa-defvar)))
    (defvars
      :type hash-table
      :initform (make-hash-table)
      :documentation "Defvar-like declarations.")
-   (cl-structures
+   ;; (defstructs :: (hash-table symbol (class elsa-defstruct)))
+   (defstructs
     :type hash-table
     :initform (make-hash-table)
-    :documentation "Structure-like declarations."))
-  :documentation "Class holding discovered declarations.
+    :documentation "Structure-like declarations.")
+   ;; (defclasses :: (hash-table symbol (class elsa-defclass)))
+   (defclasses
+    :type hash-table
+    :initform (make-hash-table)
+    :documentation "Class-like declarations."))
+  :documentation "Class holding discovered declarations.")
 
-Declarations are of various types:
-
-- `elsa-defun' is any named callable object, such as `defun',
-  `cl-defgeneric' or `defmacro'.
-- `elsa-defvar' is any named variable, such as `defvar', `defconst' or
-  `defcustom'.
-- `elsa-cl-structure' is any named structure, such as `cl-defstruct'
-  or EIEIO `defclass'.")
-
-(cl-defgeneric elsa-state-add-structure ((this elsa-declarations) (str elsa-cl-structure))
-  "Add `elsa-cl-structure' to state object."
+(cl-defgeneric elsa-state-add-defstruct ((this elsa-declarations) (str elsa-defstruct))
+  "Add `elsa-defstruct' to state object."
   (declare (indent 1))
   (oset str file (elsa-state-current-file this))
-  (put (oref str name) 'elsa-cl-structure str)
-  (puthash (oref str name) str (oref this cl-structures)))
+  (put (oref str name) 'elsa-defstruct str)
+  (puthash (oref str name) str (oref this defstructs)))
 
 (cl-defgeneric elsa-state-clear-file-structures ((this elsa-declarations) file)
   "Remove from THIS state all structures declared in FILE."
   (let ((keys-to-remove nil)
-        (cl-structures (oref this cl-structures)))
+        (defstructs (oref this defstructs)))
     (maphash
      (lambda (key value)
        (when (equal (oref value file) file)
          (push key keys-to-remove)))
-     cl-structures)
-    ;; (message "Removed structures %s" keys-to-remove)
+     defstructs)
+    ;; (message "Removed defstructs %s" keys-to-remove)
     (dolist (key keys-to-remove)
-      (remhash key cl-structures))))
+      (remhash key defstructs))))
 
-;; (elsa-state-get-structure :: (function ((struct elsa-declarations) symbol) (or (struct elsa-cl-structure) nil)))
-(cl-defgeneric elsa-state-get-structure (this name)
-  "Get from THIS the `elsa-cl-structure' definition called NAME.")
+;; (elsa-state-get-defstruct :: (function ((class elsa-declarations) symbol) (or (class elsa-defstruct) nil)))
+(cl-defgeneric elsa-state-get-defstruct (this name)
+  "Get from THIS the `elsa-defstruct' definition called NAME.")
+
+(cl-defgeneric elsa-state-add-defclass ((this elsa-declarations) (str elsa-defclass))
+  "Add `elsa-defclass' to state object."
+  (declare (indent 1))
+  (oset str file (elsa-state-current-file this))
+  (put (oref str name) 'elsa-defclass str)
+  (puthash (oref str name) str (oref this defclasses)))
+
+(cl-defgeneric elsa-state-clear-file-classes ((this elsa-declarations) file)
+  "Remove from THIS state all classes declared in FILE."
+  (let ((keys-to-remove nil)
+        (defclasses (oref this defclasses)))
+    (maphash
+     (lambda (key value)
+       (when (equal (oref value file) file)
+         (push key keys-to-remove)))
+     defclasses)
+    ;; (message "Removed defclasses %s" keys-to-remove)
+    (dolist (key keys-to-remove)
+      (remhash key defclasses))))
+
+;; (elsa-state-get-defclass :: (function ((class elsa-declarations) symbol) (or (class elsa-defclass) nil)))
+(cl-defgeneric elsa-state-get-defclass (this name)
+  "Get from THIS the `elsa-defclass' definition called NAME.")
 
 (cl-defgeneric elsa-state-add-defun ((this elsa-declarations) (def elsa-defun))
   "Add `elsa-defun' to state object."
@@ -131,13 +234,14 @@ Declarations are of various types:
     (dolist (key keys-to-remove)
       (remhash key defuns))))
 
-;; (elsa-state-get-defun :: (function ((struct elsa-declarations) symbol) (or (struct elsa-defun) nil)))
+;; (elsa-state-get-defun :: (function ((class elsa-declarations) symbol) (or (class elsa-defun) nil)))
 (cl-defgeneric elsa-state-get-defun (this name)
   "Get from THIS the `elsa-defun' definition called NAME.")
 
 (cl-defgeneric elsa-state-add-defvar ((this elsa-declarations) (def elsa-defvar))
   "Add `elsa-defvar' to state object."
   (declare (indent 1))
+  ;; FIXME: the call to `elsa-state-current-file' is not safe.
   (oset def file (elsa-state-current-file this))
   (put (oref def name) 'elsa-type-var (oref def type))
   (puthash (oref def name) def (oref this defvars)))
@@ -154,7 +258,7 @@ Declarations are of various types:
     (dolist (key keys-to-remove)
       (remhash key defvars))))
 
-;; (elsa-state-get-defvar :: (function ((struct elsa-declarations) symbol) (or (struct elsa-defvar) nil)))
+;; (elsa-state-get-defvar :: (function ((class elsa-declarations) symbol) (or (class elsa-defvar) nil)))
 (cl-defgeneric elsa-state-get-defvar ((this elsa-declarations) (name symbol))
   "Get from THIS the `elsa-defvar' definition called NAME.")
 
@@ -198,8 +302,11 @@ a single file, form or set of forms.")
 (cl-defmethod elsa-state-get-defvar ((this elsa-global-state) (name symbol))
   (gethash name (oref this defvars)))
 
-(cl-defmethod elsa-state-get-structure ((this elsa-global-state) name)
-  (gethash name (oref this cl-structures)))
+(cl-defmethod elsa-state-get-defstruct ((this elsa-global-state) name)
+  (gethash name (oref this defstructs)))
+
+(cl-defmethod elsa-state-get-defclass ((this elsa-global-state) name)
+  (gethash name (oref this defclasses)))
 
 (cl-defmethod elsa-global-state-get-counter ((this elsa-global-state))
   (let ((max-len (length (number-to-string (oref this number-of-files)))))
@@ -207,7 +314,7 @@ a single file, form or set of forms.")
             (oref this processed-file-index)
             (oref this number-of-files))))
 
-;; (elsa-global-state-prefix-length :: (function ((struct elsa-global-state) (or int nil)) int))
+;; (elsa-global-state-prefix-length :: (function ((class elsa-global-state) (or int nil)) int))
 (cl-defmethod elsa-global-state-prefix-length ((this elsa-global-state) &optional extra)
   (let ((max-len (length (number-to-string (oref this number-of-files)))))
     (+ max-len 1 max-len (or extra 0))))
@@ -244,8 +351,8 @@ a single file, form or set of forms.")
              (elsa-state-add-defvar global def))
            (oref this defvars))
   (maphash (lambda (_name def)
-             (elsa-state-add-structure global def))
-           (oref this cl-structures)))
+             (elsa-state-add-defstruct global def))
+           (oref this defstructs)))
 
 (cl-defmethod elsa-state-current-file ((this elsa-state))
   (oref (oref this global-state) current-file))
@@ -258,14 +365,18 @@ a single file, form or set of forms.")
   (or (gethash name (oref this defvars))
       (elsa-state-get-defvar (oref this global-state) name)))
 
-(cl-defmethod elsa-state-get-structure ((this elsa-state) name)
-  (or (gethash name (oref this cl-structures))
-      (elsa-state-get-structure (oref this global-state) name)))
+(cl-defmethod elsa-state-get-defstruct ((this elsa-state) name)
+  (or (gethash name (oref this defstructs))
+      (elsa-state-get-defstruct (oref this global-state) name)))
+
+(cl-defmethod elsa-state-get-defclass ((this elsa-state) name)
+  (or (gethash name (oref this defclasses))
+      (elsa-state-get-defclass (oref this global-state) name)))
 
 (cl-defmethod elsa-state-ignore-line ((state elsa-state) line)
   (push line (oref state ignored-lines)))
 
-;; (elsa-state-add-message :: (function ((struct elsa-state) (struct elsa-message)) nil))
+;; (elsa-state-add-message :: (function ((class elsa-state) (class elsa-message)) nil))
 (defun elsa-state-add-message (state error)
   "In STATE, record an ERROR.
 
@@ -279,7 +390,7 @@ STATE is `elsa-state', ERROR is `elsa-message'."
   (append (hash-table-keys (oref this defvars))
           (hash-table-keys (oref (oref this global-state) defvars))))
 
-;; (elsa-state-get-reachability :: (function ((struct elsa-state)) (struct trinary)))
+;; (elsa-state-get-reachability :: (function ((class elsa-state)) (class trinary)))
 (defun elsa-state-get-reachability (state)
   "Return the current reachability.
 
@@ -301,7 +412,7 @@ Reachability is tracked on the STATE."
      ,@body
      (pop (oref ,state reachable))))
 
-;; (elsa-state-quoted-p :: (function ((struct elsa-state)) bool))
+;; (elsa-state-quoted-p :: (function ((class elsa-state)) bool))
 (defun elsa-state-quoted-p (state)
   "Return non-nil if the current form is quoted."
   (trinary-true-p (oref state quoted)))

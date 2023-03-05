@@ -16,7 +16,7 @@ A check has to implement two methods:
   the current node.
 - `elsa-check-check' which performs the actual computation.")
 
-;; (elsa-checks :: (list (struct elsa-check)))
+;; (elsa-checks :: (list (class elsa-check)))
 (defvar elsa-checks nil)
 
 (cl-defgeneric elsa-check-should-run ((this elsa-check) (form elsa-form) (scope elsa-scope) (state elsa-state))

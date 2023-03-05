@@ -14,7 +14,7 @@ ARGS-RAW is the raw forms as present in the `cl-defmethod' or
         (-when-let* ((arg-form (elsa-car arg))
                      (type-annotation (elsa-cadr arg))
                      (struct-name (elsa-get-name type-annotation))
-                     (struct (get struct-name 'elsa-cl-structure)))
+                     (struct (get struct-name 'elsa-defstruct)))
           (oset arg-form type (elsa--make-type `(struct ,(oref struct name)))))))))
 
 (defun elsa--analyse:cl-defmethod (form scope state)
@@ -109,8 +109,12 @@ keyword-sexp pairs."
                    (elsa-cdr (elsa-cadr form))))
          (slots (elsa-nthcdr 2 form)))
 
-    (elsa-state-add-structure state
-      (elsa-cl-structure
+    ;; First "slot" could be a docstring, we need to skip it.
+    (when (elsa-form-string-p (car slots))
+      (pop slots))
+
+    (elsa-state-add-defstruct state
+      (elsa-defstruct
        :name name
        :slots (elsa-eieio--create-slots
                (mapcar
@@ -155,14 +159,15 @@ keyword-sexp pairs."
 
     (let ((has-default-constructor t))
       (--each params
-        (when-let ((ctr-def (map-elt it :constructor)))
-          (if (elsa-get-name ctr-def)
-              (elsa-state-add-defun state
-                (elsa-defun
-                 :name (elsa-get-name ctr-def)
-                 :type (elsa--make-type `(function (&rest mixed) (struct ,name)))
-                 :arglist (list '&rest 'args)))
-            (setq has-default-constructor nil))))
+        (when (elsa-form-list-p it)
+          (when-let ((ctr-def (map-elt it :constructor)))
+            (if (elsa-get-name ctr-def)
+                (elsa-state-add-defun state
+                  (elsa-defun
+                   :name (elsa-get-name ctr-def)
+                   :type (elsa--make-type `(function (&rest mixed) (struct ,name)))
+                   :arglist (list '&rest 'args)))
+              (setq has-default-constructor nil)))))
 
       (when has-default-constructor
         (elsa-state-add-defun state

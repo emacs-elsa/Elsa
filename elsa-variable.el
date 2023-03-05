@@ -26,8 +26,13 @@
 
 (require 'eieio)
 (eval-and-compile (setq eieio-backward-compatibility nil))
+
 (require 'trinary)
+(require 'dash)
+
 (require 'elsa-methods)
+(require 'elsa-type)
+(require 'elsa-types-simple)
 
 ;; TODO: maybe move the acceptance resolution into an expression type?
 (defclass elsa-variable nil

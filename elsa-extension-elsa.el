@@ -165,7 +165,7 @@
          (last (-last-item body))
          (var (elsa-variable
                :name (elsa-get-name explainer)
-               :type (elsa-make-type (struct elsa-explainer)))))
+               :type (elsa-make-type (class elsa-explainer)))))
     (elsa-scope-add-var scope var)
     (elsa--analyse-body body scope state)
     (elsa-scope-remove-var scope var)
