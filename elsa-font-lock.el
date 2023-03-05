@@ -51,6 +51,10 @@
      (elsa--font-lock-setup-anchor -1)
      (elsa--font-lock-reset-anchor)
      (0 font-lock-constant-face t))
+    (,(rx symbol-start (or "&extends" "&implements") symbol-end)
+     (elsa--font-lock-setup-anchor -1)
+     (elsa--font-lock-reset-anchor)
+     (0 font-lock-keyword-face t))
     ;; highlight keywords and special type constructors
     (,(rx "(" symbol-start (group (or "and" "or" "is" "readonly" "const")) symbol-end)
      (elsa--font-lock-setup-anchor 0)

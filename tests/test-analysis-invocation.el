@@ -30,7 +30,31 @@
                       :arglist '(x)))
         (elsa-test-with-analysed-form "|(b 'sym)" form
           :state state
-          (expect form :to-be-type-equivalent (elsa-make-type (or vector keyword)))))))
+          (expect form :to-be-type-equivalent (elsa-make-type (or vector keyword))))))
+
+    (it "should filter the overloads on input args if certain"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type
+                             (and (function (&rest (or int marker)) int)
+                                  (function (&rest (or number marker)) number)))
+                      :arglist '(x)))
+        (elsa-test-with-analysed-form "|(b 1 2)" form
+          :state state
+          (expect form :to-be-type-equivalent (elsa-make-type int)))))
+
+    (it "should not filter the overloads on input args if uncertain"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type
+                             (and (function (&rest (or int marker)) int)
+                                  (function (&rest (or number marker)) number)))
+                      :arglist '(x)))
+        (elsa-test-with-analysed-form "|(b 1 2.0)" form
+          :state state
+          (expect (oref form type) :to-be-type-equivalent (elsa-make-type number))))))
 
 
   (describe "number of arguments"

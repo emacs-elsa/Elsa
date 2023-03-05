@@ -158,6 +158,41 @@ Returns trinary value."
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
        list-type))
+    (`(plist . ,slots)
+     (let* ((decl (-split-on '&extends slots))
+            (slot-pairs (-partition 2 (unless (eq '&extends (car slots))
+                                        (car decl))))
+            (interfaces (if (eq '&extends (car slots))
+                            (car decl)
+                          (cadr decl)))
+            (table (make-hash-table)))
+       (-each slot-pairs
+         (lambda (slot)
+           (puthash (car slot)
+                    (elsa-structure-slot
+                     :name (car slot)
+                     :type (elsa--make-type (cadr slot)))
+                    table)))
+       (elsa-type-plist :slots table
+                        :extends interfaces)))
+    (`(interface ,name . ,slots)
+     (let* ((decl (-split-on '&extends slots))
+            (slot-pairs (-partition 2 (unless (eq '&extends (car slots))
+                                        (car decl))))
+            (interfaces (if (eq '&extends (car slots))
+                            (car decl)
+                          (cadr decl)))
+            (table (make-hash-table)))
+       (-each slot-pairs
+         (lambda (slot)
+           (puthash (car slot)
+                    (elsa-structure-slot
+                     :name (car slot)
+                     :type (elsa--make-type (cadr slot)))
+                    table)))
+       (elsa-interface :name name
+                       :slots table
+                       :extends interfaces)))
     (`(&rest ,a)
      (let* ((item-type (elsa--make-type a))
             (variadic-type (elsa-variadic-type :item-type item-type)))
@@ -168,6 +203,10 @@ Returns trinary value."
        vector-type))
     (`(struct ,name)
      (elsa-struct-type :name name))
+    (`(class ,name)
+     (elsa-class-type :name name))
+    (`(cl-ref ,name)
+     (elsa-type--cl-ref :name name))
     (`(function ,args ,ret)
      (elsa-function-type
       :args (-map 'elsa--make-type
@@ -197,6 +236,7 @@ Returns trinary value."
 
 (defmacro elsa-make-type (&rest definition)
   "Make a type according to DEFINITION."
+  (declare (debug (&rest sexp)))
   `(elsa--make-type ',@definition))
 
 (defun elsa--cl-type-to-elsa-type (definition)
@@ -216,12 +256,17 @@ Returns trinary value."
       (ignore-errors (elsa--make-type definition))
       ;; It can also be a cl-struct name.  So we try to construct an
       ;; elsa struct type from it.
-      (and (get definition 'elsa-cl-structure)
+      (and (get definition 'elsa-defstruct)
            (elsa--make-type
-            `(struct ,definition)))))
+            `(struct ,definition)))
+      (and (get definition 'elsa-defclass)
+           (elsa--make-type
+            `(class ,definition)))
+      (elsa-type--cl-ref :name definition)))
     ;; list of "cl-type"
     (`(list-of ,type)
-     (elsa-type-list :item-type (elsa--cl-type-to-elsa-type type)))
+     (elsa-type-list :item-type (or (elsa--cl-type-to-elsa-type type)
+                                    (elsa-type-mixed))))
     (`(or . ,type)
      (elsa-sum-type :types (--map (elsa--cl-type-to-elsa-type it) type)))
     (`(and . ,type)

@@ -11,9 +11,9 @@
   (when slot-form
     (let ((slot-name (elsa-get-name slot-form))
           (inst-type (elsa-get-type instance)))
-      (when (elsa-struct-type-p inst-type)
-        (when-let* ((struct (get (oref inst-type name) 'elsa-cl-structure)))
-          (let* ((slots (elsa-structure-get-all-slots struct))
+      (when (elsa-class-type-p inst-type)
+        (when-let* ((class (get (oref inst-type name) 'elsa-defclass)))
+          (let* ((slots (elsa-get-slots class))
                  (slot-names (--map (oref it name) slots))
                  (slot (--find (eq slot-name (oref it name)) slots)))
             (oset slot-form type (or (and slot (oref slot type))
@@ -29,13 +29,13 @@
 
 (defun elsa--eieio-assert-struct-for-obj (instance state)
   (let ((type (elsa-get-type instance)))
-    ;; This test instead of `elsa-struct-type-p' is so that mixed can
+    ;; This test instead of `elsa-class-type-p' is so that mixed can
     ;; be used as a struct.
-    (unless (elsa-type-assignable-p (elsa-make-type (struct nil)) type)
+    (unless (elsa-type-assignable-p (elsa-make-type (class nil)) type)
       (elsa-state-add-message state
         (elsa-make-error instance
-          "Type `%s' has no properties because it is not a struct."
-          :code "eieio-not-a-struct"
+          "Type `%s' has no properties because it is not a class."
+          :code "eieio-not-a-class"
           (elsa-type-describe type))))))
 
 (defun elsa--analyse:oref (form scope state)
@@ -103,7 +103,7 @@
                           (-mapcat
                            (lambda (p)
                              (if (symbolp p)
-                                 (let* ((str (elsa-state-get-structure state p))
+                                 (let* ((str (elsa-state-get-defclass state p))
                                         (pars (and str (oref str parents)))
                                         (pts (cdr (assq p pars))))
                                    (cons (cons p (copy-sequence pts))
@@ -111,8 +111,8 @@
                                (list p)))
                            parents))
                         parents-names)))
-    (elsa-state-add-structure state
-      (elsa-cl-structure
+    (elsa-state-add-defclass state
+      (elsa-defclass
        :name name
        :slots (elsa-eieio--create-slots
                (-zip-with
@@ -126,14 +126,14 @@
     (elsa-state-add-defun state
       (elsa-defun
        :name name
-       :type (elsa--make-type `(function (&rest mixed) (struct ,name)))
+       :type (elsa--make-type `(function (&rest mixed) (class ,name)))
        :arglist (list '&rest 'args)))
 
     ;; add the type predicate
     (elsa-state-add-defun state
       (elsa-defun
        :name (intern (concat (symbol-name name) "-p"))
-       :type (elsa--make-type `(function (mixed) (is (struct ,name))))
+       :type (elsa--make-type `(function (mixed) (is (class ,name))))
        :arglist (list 'x)))))
 
 (provide 'elsa-extension-eieio)

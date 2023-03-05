@@ -2,7 +2,7 @@
 
 (require 'trinary)
 
-(require 'elsa-types)
+(require 'elsa-types-simple)
 
 (defclass elsa-form nil
   ((start :type integer :initarg :start)

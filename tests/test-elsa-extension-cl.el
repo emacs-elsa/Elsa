@@ -16,12 +16,12 @@
         (it "should parse name from a symbol"
           (elsa-test-with-analysed-form "|(cl-defstruct a name)" form
             :state-var state
-            (expect (elsa-state-get-structure state 'a) :to-be-truthy)))
+            (expect (elsa-state-get-defstruct state 'a) :to-be-truthy)))
 
         (it "should parse name from a list"
           (elsa-test-with-analysed-form "|(cl-defstruct (a) name)" form
             :state-var state
-            (expect (elsa-state-get-structure state 'a) :to-be-truthy))))
+            (expect (elsa-state-get-defstruct state 'a) :to-be-truthy))))
 
       (describe "constructor"
 
@@ -53,7 +53,7 @@
             (expect (oref
                      (gethash
                       'slot
-                      (oref (elsa-state-get-structure state 'a) slots))
+                      (oref (elsa-state-get-defstruct state 'a) slots))
                      type)
                     :to-be-type-equivalent (elsa-make-type string))))
 
@@ -63,7 +63,7 @@
             (expect (oref
                      (gethash
                       'slot
-                      (oref (elsa-state-get-structure state 'a) slots))
+                      (oref (elsa-state-get-defstruct state 'a) slots))
                      type)
                     :to-be-type-equivalent (elsa-make-type (list string)))))
 
@@ -73,7 +73,7 @@
             (expect (oref
                      (gethash
                       'slot
-                      (oref (elsa-state-get-structure state 'a) slots))
+                      (oref (elsa-state-get-defstruct state 'a) slots))
                      type)
                     :to-be-type-equivalent (elsa-make-type mixed))))
 
@@ -81,7 +81,7 @@
           (elsa-test-with-analysed-form "|(cl-defstruct (a) (slot nil :type string :read-only t))" form
             :state-var state
             (let ((type (oref
-                         (gethash 'slot (oref (elsa-state-get-structure state 'a) slots))
+                         (gethash 'slot (oref (elsa-state-get-defstruct state 'a) slots))
                          type)))
               (expect type :to-be-type-equivalent (elsa-make-type (readonly string))))))
 
