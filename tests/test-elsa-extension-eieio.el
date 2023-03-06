@@ -31,6 +31,24 @@
               :state-var state
               (expect (elsa-state-get-defun state 'a-p) :not :to-be nil))))
 
+        (describe "accessor"
+
+          (it "should register accessor as a new defun if it doesn't exist"
+            (elsa-test-with-analysed-form "|(defclass a () ((slot :type string :accessor get-slot)))" form
+              :state-var state
+              (expect (elsa-state-get-defun state 'get-slot) :not :to-be nil)
+              (expect (elsa-function-type-p (oref (elsa-state-get-defun state 'get-slot) type)))
+              (expect (elsa-type-get-return (oref (elsa-state-get-defun state 'get-slot) type))
+                      :to-be-type-equivalent (elsa-make-type string))))
+
+          (it "should register accessor as a new overload if it already exists"
+            (elsa-test-with-analysed-form "|(progn (defclass a () ((slot :type string :accessor get-slot))) (defclass b () ((slot :type number :accessor get-slot))))" form
+              :state-var state
+              (expect (elsa-state-get-defun state 'get-slot) :not :to-be nil)
+              (expect (elsa-intersection-type-p (oref (elsa-state-get-defun state 'get-slot) type)))
+              (expect (elsa-type-get-return (oref (elsa-state-get-defun state 'get-slot) type))
+                      :to-be-type-equivalent (elsa-make-type (or string number))))))
+
         (describe "defclass slot types"
 
           (it "should resolve a simple type"

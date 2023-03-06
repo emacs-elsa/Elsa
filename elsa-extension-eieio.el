@@ -1,4 +1,34 @@
-;; -*- lexical-binding: t -*-
+;;; elsa-extension-eieio.el --- Elsa extension for EIEIO -*- lexical-binding: t -*-
+
+;; Copyright (C) 2023 Matúš Goljer
+
+;; Author: Matúš Goljer <matus.goljer@gmail.com>
+;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
+;; Version: 0.0.1
+;; Created:  6th March 2023
+;; Package-requires: ((dash "2.17.0"))
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License
+;; as published by the Free Software Foundation; either version 3
+;; of the License, or (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;; Code:
+
+(require 'map)
+
+(require 'dash)
 
 (require 'elsa-explainer)
 (require 'elsa-analyser)
@@ -85,19 +115,6 @@
          (parents-names (when (elsa-form-list-p parents)
                           (elsa-form-map parents #'elsa-get-name)))
          (slots (elsa-nth 3 form))
-         (slot-names (elsa-form-map slots #'elsa-get-name))
-         (slot-types (elsa-form-map slots
-                       (lambda (slot)
-                         (let* ((next-is-type nil)
-                                (type (catch 'type
-                                        (elsa-form-foreach (elsa-cdr slot)
-                                          (lambda (key)
-                                            (if next-is-type
-                                                (throw 'type (elsa-form-to-lisp key))
-                                              (when (eq (elsa-get-name key) :type)
-                                                (setq next-is-type t))))))))
-                           (or (elsa--cl-type-to-elsa-type type)
-                               (elsa-type-mixed))))))
          (parents-tree (-fix
                         (lambda (parents)
                           (-mapcat
@@ -111,14 +128,33 @@
                                (list p)))
                            parents))
                         parents-names)))
+
     (elsa-state-add-defclass state
       (elsa-defclass
        :name name
        :slots (elsa-eieio--create-slots
-               (-zip-with
-                (lambda (name type)
-                  (list name :type type))
-                slot-names slot-types))
+               (mapcar
+                (lambda (slot)
+                  (let* ((slot-name (elsa-get-name slot))
+                         (type-form (map-elt (elsa-cdr slot) :type))
+                         (type-lisp (elsa-form-to-lisp type-form))
+                         (elsa-type (or (and type-lisp
+                                             (or (elsa--cl-type-to-elsa-type type-lisp)
+                                                 (elsa-type-mixed)))
+                                        (elsa-type-mixed)))
+                         (accessor (map-elt (elsa-cdr slot) :accessor)))
+
+                    (when accessor
+                      (elsa-state-add-method state
+                        (elsa-defun
+                         :name (elsa-get-name accessor)
+                         :type (elsa-function-type
+                                :args (list (elsa--make-type `(class ,name)))
+                                :return elsa-type)
+                         :arglist (list 'this))))
+
+                    (list slot-name :type elsa-type)))
+                (elsa-form-sequence slots)))
        :parents (let ((-compare-fn (-on #'eq #'car)))
                   (-uniq (cons (cons name parents-names) parents-tree)))))
 
@@ -137,3 +173,4 @@
        :arglist (list 'x)))))
 
 (provide 'elsa-extension-eieio)
+;;; elsa-extension-eieio.el ends here

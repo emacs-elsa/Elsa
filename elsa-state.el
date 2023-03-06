@@ -238,6 +238,20 @@ readonly.")
 (cl-defgeneric elsa-state-get-defun (this name)
   "Get from THIS the `elsa-defun' definition called NAME.")
 
+;; (elsa-state-add-method :: (function ((class elsa-declarations) (class elsa-defun)) mixed))
+(defun elsa-state-add-method (this method)
+  (declare (indent 1))
+  (let ((def (elsa-state-get-defun this (oref method name))))
+    (if (not def)
+        (elsa-state-add-defun this method)
+      ;; if the defun already exist, intersect the function type to
+      ;; add new "overload".
+      (oset def type
+            (elsa-type-intersect
+             (oref method type)
+             (oref def type)))
+      (elsa-state-add-defun this def))))
+
 (cl-defgeneric elsa-state-add-defvar ((this elsa-declarations) (def elsa-defvar))
   "Add `elsa-defvar' to state object."
   (declare (indent 1))
