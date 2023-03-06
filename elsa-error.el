@@ -28,6 +28,7 @@
 (eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'map)
 
+(require 'ansi)
 (require 'lsp-protocol)
 
 (require 'elsa-explainer)
@@ -83,6 +84,18 @@ In general, we recognize three states: error, warning, notice
 (cl-defmethod elsa-message-type ((_this elsa-notice))
   "notice")
 
+(cl-defgeneric elsa-message-type-ansi ((this elsa-message))
+  "Retrieve human readable description of THIS message type with ANSI color.")
+
+(cl-defmethod elsa-message-type-ansi ((_this elsa-error))
+  (ansi-bright-red "error"))
+
+(cl-defmethod elsa-message-type-ansi ((_this elsa-warning))
+  (ansi-bright-yellow "warning"))
+
+(cl-defmethod elsa-message-type-ansi ((_this elsa-notice))
+  (ansi-bright-blue "notice"))
+
 (cl-defgeneric elsa-message-to-lsp-severity ((this elsa-message))
   "Retrieve LSP severity code FOR this message.")
 
@@ -97,11 +110,14 @@ In general, we recognize three states: error, warning, notice
 
 (cl-defmethod elsa-message-format ((this elsa-message))
   "Format an `elsa-message'."
-  (format "%s:%s:%s:%s\n"
-          (oref this line)
-          (or (oref this column) "?")
-          (elsa-message-type this)
-          (oref this message)))
+  (with-ansi
+   (bright-green "%s" (oref this line))
+   ":"
+   (green "%s" (or (oref this column) "?"))
+   ":"
+   (elsa-message-type-ansi this)
+   ":"
+   (format "%s" (replace-regexp-in-string "%" "%%" (oref this message)))))
 
 (cl-defmethod elsa-message-to-lsp ((this elsa-message))
   (lsp-make-diagnostic

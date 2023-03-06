@@ -95,8 +95,11 @@ used by the LSP server to not reload already processed files."
           (if (and (or (member library visited)
                        (member library already-loaded))
                    (not (file-newer-than-file-p library elsa-cache-file)))
-              (elsa-log "[%s] Skipping already processed dependency %s (was circular)"
-                        (elsa-global-state-get-counter global-state) dep)
+              (elsa-log
+               (with-ansi
+                (green "[%s]" (elsa-global-state-get-counter global-state))
+                (format " Processing file %s ... " library)
+                (bright-black "(skipped, already loaded)")))
             (push library visited)
             (when (require (intern (concat "elsa-typed-"
                                            (replace-regexp-in-string ".el\\'" "" dep)))
@@ -121,8 +124,11 @@ used by the LSP server to not reload already processed files."
                   ;; copy new definitions to the global state
                   (elsa-state-update-global state global-state)
                   (setq file-state state))
-              (elsa-log "[%s] Loading %s from cache %s"
-                        (elsa-global-state-get-counter global-state) dep elsa-cache-file)
+              (elsa-log
+               (with-ansi
+                (green "[%s]" (elsa-global-state-get-counter global-state))
+                (format " Processing file %s ... " library)
+                (yellow "(loaded from cache %s)" elsa-cache-file)))
               (load (f-no-ext elsa-cache-file) t t)))))
       (cl-incf (oref global-state processed-file-index)))
     (oset file-state dependencies visited)
@@ -164,8 +170,10 @@ tokens."
 (defun elsa-process-file (file &optional global-state)
   "Process FILE."
   (setq global-state (or global-state elsa-global-state))
-  (elsa-log "[%s] Processing file %s"
-            (elsa-global-state-get-counter global-state) file)
+  (elsa-log
+   (with-ansi
+    (green "[%s]" (elsa-global-state-get-counter global-state))
+    (format " Processing file %s ..." file)))
   (let ((state (elsa-state :global-state global-state))
         (current-time (current-time))
         (form))
@@ -210,10 +218,23 @@ tokens."
         ;; When not running as language server, just crash on errors.
         (while (setq form (elsa-read-form state))
           (elsa-analyse-form state form))))
-    (elsa-log "[%s] Processing file %s ... done after %.3fs"
-              (elsa-global-state-get-counter global-state)
-              file
-              (float-time (time-subtract (current-time) current-time)))
+    (elsa-log
+     (with-ansi
+      (previous-line)
+      (kill)
+      (green "[%s]" (elsa-global-state-get-counter global-state))
+      (format " Processing file %s ... " file)
+      (green "done")
+      " after "
+      (let ((duration (float-time
+                       (time-subtract
+                        (current-time) current-time))))
+        (cond
+         ((> duration 5)
+          (bright-red "%.3fs" duration))
+         ((> duration 2)
+          (bright-yellow "%.3fs" duration))
+         (t (green "%.3fs" duration))))))
     state))
 
 (defun elsa-save-cache (state global-state)
@@ -321,21 +342,27 @@ GLOBAL-STATE is the initial configuration."
   (elsa-load-config)
   (let ((errors 0)
         (warnings 0)
-        (notices 0))
+        (notices 0)
+        (current-time (current-time)))
     (dolist (file command-line-args-left)
       (--each (reverse (oref (elsa-analyse-file file elsa-global-state) errors))
         (cond
          ((elsa-error-p it) (cl-incf errors))
          ((elsa-warning-p it) (cl-incf warnings))
          ((elsa-notice-p it) (cl-incf notices)))
-        (princ (concat file ":" (elsa-message-format it)))))
-    (elsa-log (with-ansi
-               "\nAnalysis finished with "
-               (bold (red "%d errors" errors))
-               ", "
-               (bold (yellow "%d warnings" warnings))
-               " and "
-               (bold (blue "%d notices" notices))))))
+        (elsa-log (with-ansi (yellow file) ":" (elsa-message-format it)))))
+    (let ((duration (float-time
+                     (time-subtract
+                      (current-time) current-time))))
+      (elsa-log (with-ansi
+                 "\nAnalysis finished with "
+                 (bright-red "%d errors" errors)
+                 ", "
+                 (bright-yellow "%d warnings" warnings)
+                 " and "
+                 (bright-blue "%d notices" notices)
+                 " after "
+                 (blue "%.3f seconds" duration))))))
 
 (defun elsa-run-files-and-exit ()
   "Run `elsa-analyse-file' on files in `command-line-args-left'.
@@ -347,7 +374,7 @@ errors are found."
       (when-let* ((errors (oref (elsa-analyse-file file elsa-global-state) errors)))
         (setf exit-code 1)
         (--each (reverse errors)
-          (princ (concat file ":" (elsa-message-format it))))))
+          (princ (with-ansi (bright-magenta file) ":" (elsa-message-format it))))))
     (kill-emacs exit-code)))
 
 (defun elsa-analyse-form (state form &optional _type)

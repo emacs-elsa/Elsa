@@ -23,6 +23,11 @@ Elsa options:
 EOF
 }
 
+INHIBIT_ANSI="t"
+if [ -t 1 ] ; then
+    INHIBIT_ANSI="nil"
+fi
+
 EMACS_ARGS=()
 ELSA_ARGS=()
 
@@ -50,5 +55,5 @@ done
 # configuration:
 exec "$EMACS_BIN" --batch --no-init-file --no-site-file --no-splash \
      "${EMACS_ARGS[@]}" \
-     --eval "(setq enable-dir-local-variables nil eieio-backward-compatibility nil)" \
+     --eval "(setq enable-dir-local-variables nil eieio-backward-compatibility nil ansi-inhibit-ansi $INHIBIT_ANSI gc-cons-threshold 200000000)" \
      --load=elsa --funcall=elsa-run "${ELSA_ARGS[@]}"
