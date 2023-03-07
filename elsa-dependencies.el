@@ -1,26 +1,4 @@
-;;    (elsa-get-dep-tree :: (function (string) mixed))
-(defun elsa-get-dep-tree (file)
-  "Recursively crawl require forms starting from FILE.
-
-Only top-level `require' forms are considered."
-  (elsa-fold-tree
-   (plist-get (elsa--get-dep-tree file) :deps)
-   file))
-
-;;    (elsa-get-dependencies :: (function (string (or int nil)) mixed))
-(defun elsa-get-dependencies (file &optional min-depth)
-  "Get all recursive dependencies of FILE.
-
-The order is such that if we load the features in order we will
-satisfy all inclusion relationships.
-
-MIN-DEPTH will fold all the dependencies of greater depth only."
-  (setq min-depth (or min-depth 0))
-  (let ((folded-deps (elsa-get-dep-tree file)))
-    (if (> min-depth 0)
-        (--map (elsa-topo-sort (elsa-tree-to-deps it) (car it))
-               (cdr folded-deps))
-      (elsa-topo-sort (elsa-tree-to-deps folded-deps) file))))
+(require 'dash)
 
 ;;    (elsa--find-dependency :: (function (string) (or nil string)))
 (defun elsa--find-dependency (library-name)
@@ -31,7 +9,17 @@ LIBRARY-NAME should be the feature name (not symbol)."
          (load-file-rep-suffixes (list "")))
     (locate-library library-name)))
 
-(defun elsa--get-dep-tree (file &optional current-library state)
+(defun elsa--get-dep-alist (file &optional current-library state)
+  "Get dependencies of FILE and all its dependencies recursively.
+
+STATE is a plist with two keys:
+
+- :visited is a list that keeps track of visited files so we do not
+  add the same library multiple times.
+- :deps is an alist of dependencies with `car' being the library name
+  and `cdr' its requires.
+
+Return the state."
   (unless state
     (setq state (list :visited nil :deps nil)))
   (setq current-library (or current-library file))
@@ -44,7 +32,8 @@ LIBRARY-NAME should be the feature name (not symbol)."
              "(" (*? whitespace)
              "require" (*? whitespace)
              "'" (group (+? (or word (syntax symbol))))
-             (*? whitespace) ")") nil t)
+             (*? whitespace) ")")
+            nil t)
       (unless (or (nth 4 (syntax-ppss))
                   ;(< 0 (car (syntax-ppss)))
                   )
@@ -57,27 +46,12 @@ LIBRARY-NAME should be the feature name (not symbol)."
             (unless (member library (plist-get state :visited))
               (setq state (plist-put state :visited
                                      (cons library (plist-get state :visited))))
-              (setq state (elsa--get-dep-tree library library-name state)))))))
+              (setq state (elsa--get-dep-alist library library-name state)))))))
     state))
 
-(defun elsa-topo-sort (deps start)
-  "Topologically sort DEPS starting at START node."
-  (let ((candidates (list start))
-        (result nil)
-        (deps (copy-sequence deps)))
-    (while candidates
-      (let* ((current (pop candidates))
-             (current-deps (cdr (assoc current deps))))
-        (setq deps (assoc-delete-all current deps))
-        (push current result)
-        (dolist (dependency current-deps)
-          (unless (--some (member dependency (cdr it)) deps)
-            (push dependency candidates)))))
-    result))
-
-;;    (elsa-fold-tree :: (function (list string (or (list string) nil) (or (list string) nil) (or int nil)) mixed))
-(defun elsa-fold-tree (deps start &optional visited parents depth)
-  "Fold DEPS tree from START.
+;; (elsa--fold-alist-to-tree :: (function (list string (or (list string) nil) (or (list string) nil) (or int nil)) mixed))
+(defun elsa--fold-alist-to-tree (deps start &optional visited parents depth)
+  "Fold DEPS alist to tree from START.
 
 Repeated dependencies are not expanded, that is, each feature
 only lists its dependencies exactly once.
@@ -94,19 +68,21 @@ loops."
     (push start (car visited))
     (let ((dependencies (cdr (assoc start deps))))
       (cons start
-            (--map (elsa-fold-tree deps it
-                                   visited
-                                   (cons start parents)
-                                   (1+ depth))
+            (--map (elsa--fold-alist-to-tree
+                    deps it
+                    visited
+                    (cons start parents)
+                    (1+ depth))
                    (reverse dependencies))))))
 
-(defun elsa-tree-to-deps (tree)
-  "Convert TREE of dependencies to adjacency list graph representationn."
-  (let ((deps (elsa--tree-to-deps tree)))
-    (mapcar
-     (lambda (dep)
-       (cons (car dep) (-uniq (cdr dep))))
-     deps)))
+;;    (elsa-get-dep-tree :: (function (string) mixed))
+(defun elsa-get-dep-tree (file)
+  "Recursively crawl require forms starting from FILE.
+
+Only top-level `require' forms are considered."
+  (elsa--fold-alist-to-tree
+   (plist-get (elsa--get-dep-alist file) :deps)
+   file))
 
 (defun elsa--tree-to-deps (tree &optional deps)
   (setq deps (or deps nil))
@@ -118,5 +94,43 @@ loops."
       (dolist (p (cdr tree))
         (setq deps (elsa--tree-to-deps p deps)))))
   deps)
+
+(defun elsa-tree-to-deps (tree)
+  "Convert TREE of dependencies to adjacency list graph representationn."
+  (let ((deps (elsa--tree-to-deps tree)))
+    (mapcar
+     (lambda (dep)
+       (cons (car dep) (-uniq (cdr dep))))
+     deps)))
+
+(defun elsa-topo-sort (deps start)
+  "Topologically sort DEPS starting at START node."
+  (let ((candidates (list start))
+        (result nil)
+        (deps (copy-sequence deps)))
+    (while candidates
+      (let* ((current (pop candidates))
+             (current-deps (cdr (assoc current deps))))
+        (setq deps (assoc-delete-all current deps))
+        (push current result)
+        (dolist (dependency current-deps)
+          (unless (--some (member dependency (cdr it)) deps)
+            (push dependency candidates)))))
+    result))
+
+;;    (elsa-get-dependencies :: (function (string (or int nil)) mixed))
+(defun elsa-get-dependencies (file &optional min-depth)
+  "Get all recursive dependencies of FILE.
+
+The order is such that if we load the features in order we will
+satisfy all inclusion relationships.
+
+MIN-DEPTH will fold all the dependencies of greater depth only."
+  (setq min-depth (or min-depth 0))
+  (let ((folded-deps (elsa-get-dep-tree file)))
+    (if (> min-depth 0)
+        (--map (elsa-topo-sort (elsa-tree-to-deps it) (car it))
+               (cdr folded-deps))
+      (elsa-topo-sort (elsa-tree-to-deps folded-deps) file))))
 
 (provide 'elsa-dependencies)
