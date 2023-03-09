@@ -1,3 +1,52 @@
+(require 'dash)
+
+(defun elsa--get-deps-with-no-deps (deps)
+  "Return dependencies from DEPS with zero dependencies.
+
+DEPS is an alist of (LIBRARY . DEPENDENCIES).  Here we select all
+those DEPENDENCIES which themselves are not present in the
+alist."
+  (let ((scanned-files (mapcar #'car deps))
+        (deps-all (-mapcat #'cdr deps)))
+    (->> deps-all
+         (-uniq)
+         (--remove (member it scanned-files))
+         (--remove (string-match-p ":" it)))))
+
+(defun elsa--alist-to-layers (deps)
+  "Transform the dependencies alist DEPS to list of layers.
+
+Each layer can be processed in parallel because it only depends
+on the lower layers.
+
+The bottom layer is the last in the list."
+  (let* (;; initial files with no dependencies
+         (empty-deps (elsa--get-deps-with-no-deps deps))
+         (processed nil)
+         (layers nil)
+         (current-layer)
+         (remaining-deps (append deps (mapcar #'list empty-deps)))
+         (i 0))
+    (catch 'done
+      (while t
+        (cl-incf i)
+        (when (= i 1000) (error "Dependency resolution overflow"))
+
+        (setq current-layer (apply #'append (--filter (= 1 (length it)) remaining-deps)))
+
+        (unless current-layer
+          (throw 'done layers))
+        (push current-layer layers)
+        (setq processed (-uniq (append current-layer processed)))
+
+        ;; remove current layer because those are heads with no dependencies
+        (setq remaining-deps (--remove (member (car it) current-layer) remaining-deps))
+        ;; remove current layer from remaining packages' dependencies
+        (setq remaining-deps
+              (mapcar (-lambda ((head . tail))
+                        (cons head (--remove (member it processed) tail)))
+                      remaining-deps))))))
+
 ;;    (elsa-get-dep-tree :: (function (string) mixed))
 (defun elsa-get-dep-tree (file)
   "Recursively crawl require forms starting from FILE.
@@ -7,20 +56,18 @@ Only top-level `require' forms are considered."
    (plist-get (elsa--get-dep-alist file) :deps)
    file))
 
-;;    (elsa-get-dependencies :: (function (string (or int nil)) mixed))
-(defun elsa-get-dependencies (file &optional min-depth)
+;;    (elsa-get-dependencies :: (function (string) mixed))
+(defun elsa-get-dependencies (file)
   "Get all recursive dependencies of FILE.
 
 The order is such that if we load the features in order we will
-satisfy all inclusion relationships.
-
-MIN-DEPTH will fold all the dependencies of greater depth only."
-  (setq min-depth (or min-depth 0))
+satisfy all inclusion relationships."
   (let ((folded-deps (elsa-get-dep-tree file)))
-    (if (> min-depth 0)
-        (--map (elsa-topo-sort (elsa-tree-to-deps it) (car it))
-               (cdr folded-deps))
-      (elsa-topo-sort (elsa-tree-to-deps folded-deps) file))))
+    (elsa-topo-sort (elsa-tree-to-deps folded-deps) file)))
+
+(defun elsa-get-dependencies-as-layers (file)
+  (let ((deps (plist-get (elsa--get-dep-alist file) :deps)))
+    (elsa--alist-to-layers deps)))
 
 ;;    (elsa--find-dependency :: (function (string) (or nil string)))
 (defun elsa--find-dependency (library-name)
@@ -45,43 +92,41 @@ Return the state."
   (unless state
     (setq state (list :visited nil :deps nil)))
   (setq current-library (or current-library file))
-  (with-temp-buffer
-    (let ((jka-compr-verbose nil)) (insert-file-contents file))
-    (emacs-lisp-mode)
-    (goto-char (point-min))
-    (while (re-search-forward
-            (rx
-             "(" (*? whitespace)
-             "require" (*? whitespace)
-             "'" (group (+? (or word (syntax symbol))))
-             (*? whitespace) ")")
-            nil t)
-      (unless (nth 4 (syntax-ppss))
-        (let* ((library-name (match-string 1))
-               (library (elsa--find-dependency library-name))
-               (library-name-sanitized
-                ;; This require does not happen right away but lazily
-                ;; when some function is called.  This is a "soft
-                ;; require" and we will first analyze the file without
-                ;; it, then re-analyze later once this dependency was
-                ;; resolved. (do we want to reanalyze?)
-                (if (and (< 0 (car (syntax-ppss)))
+  ;; (var this-file-requires :: (string string))
+  (let ((this-file-requires nil))
+    (with-temp-buffer
+      (let ((jka-compr-verbose nil)) (insert-file-contents file))
+      (let ((emacs-lisp-mode-hook nil)) (emacs-lisp-mode))
+      (goto-char (point-min))
+      (while (re-search-forward
+              (rx
+               "(" (*? whitespace)
+               "require" (*? whitespace)
+               "'" (group (+? (or word (syntax symbol))))
+               (*? whitespace) ")")
+              nil t)
+        (unless (or (nth 4 (syntax-ppss))
+                    (and (< 0 (car (syntax-ppss)))
                          (not (and (= 1 (car (syntax-ppss)))
                                    (save-excursion
                                      (backward-up-list)
                                      (down-list)
-                                     (looking-at-p "eval-")))))
-                    (concat library-name ":" current-library)
-                  library-name)))
-          (when library
-            (let ((deps (plist-get state :deps)))
-              (push library-name-sanitized (alist-get current-library deps nil nil #'equal))
-              (setq state (plist-put state :deps deps)))
-            (unless (member library (plist-get state :visited))
-              (setq state (plist-put state :visited
-                                     (cons library (plist-get state :visited))))
-              (setq state (elsa--get-dep-alist library library-name state)))))))
-    state))
+                                     (looking-at-p "eval-"))))) )
+          (let* ((library-name (match-string 1))
+                 (library (elsa--find-dependency library-name)))
+            (when library
+              (push (list library library-name) this-file-requires))))))
+    (dolist (req (nreverse this-file-requires))
+      (let ((library (car req))
+            (library-name (cadr req)))
+        (let ((deps (plist-get state :deps)))
+          (push library-name (alist-get current-library deps nil nil #'equal))
+          (setq state (plist-put state :deps deps)))
+        (unless (member library (plist-get state :visited))
+          (setq state (plist-put state :visited
+                                 (cons library (plist-get state :visited))))
+          (setq state (elsa--get-dep-alist library library-name state))))))
+  state)
 
 (defun elsa-topo-sort (deps start)
   "Topologically sort DEPS starting at START node."

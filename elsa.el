@@ -6,7 +6,7 @@
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
 ;; Created: 23rd March 2017
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "26.1") (trinary "0") (f "0") (dash "2.14") (cl-lib "0.3") (lsp-mode "0") (ansi "0"))
+;; Package-Requires: ((emacs "26.1") (trinary "0") (f "0") (dash "2.14") (cl-lib "0.3") (lsp-mode "0") (ansi "0") ("async" "1.9.7"))
 ;; URL: https://github.com/emacs-elsa/Elsa
 ;; Keywords: languages, lisp
 
