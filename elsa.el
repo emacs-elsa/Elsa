@@ -577,6 +577,10 @@ This function is soft-deprecated in favour of
                        (princ (format "An error occured during startup: Ruleset %s not found\n" (symbol-name it))))))))))
         (end-of-file t)))))
 
+(defvar elsa-cli-with-exit nil)
+(defun elsa--cli-with-exit ()
+  (setq elsa-cli-with-exit t))
+
 (defun elsa-run ()
   "Analyze files and output errors to stdout."
   (elsa-load-config)
@@ -584,6 +588,17 @@ This function is soft-deprecated in favour of
         (warnings 0)
         (notices 0)
         (current-time (current-time)))
+
+    ;; Process command line options
+    (catch 'done
+      (while t
+        (let ((opt (car command-line-args-left)))
+          (cond
+           ((equal opt "-with-exit")
+            (elsa--cli-with-exit)
+            (pop command-line-args-left))
+           (t (throw 'done t))))))
+
     (dolist (file command-line-args-left)
       (--each (reverse (oref (elsa-analyse-file-parallel
                               file elsa-global-state)
@@ -614,22 +629,8 @@ This function is soft-deprecated in favour of
       ;;               (memory-report)
       ;;               (buffer-string)))
       )
-    errors))
-
-(defun elsa-run-files-and-exit ()
-  "Analyze files, output errors to stdout and set error code.
-
-This function does the same as `elsa-run' except it also sets the
-exit code to non-zero in case there were any errors during
-analysis.
-
-It exists because flycheck complains when process exits with
-non-zero status."
-  (let ((errors (elsa-run))
-        (exit-code 0))
-    (when (< 0 errors)
-      (setq exit-code 1))
-    (kill-emacs exit-code)))
+    (when (and elsa-cli-with-exit (< 0 errors))
+      (kill-emacs 1))))
 
 (provide 'elsa)
 ;;; elsa.el ends here
