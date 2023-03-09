@@ -295,7 +295,12 @@ readonly.")
                          :documentation "Index of currently processed file.")
    (number-of-files :type integer
                     :initarg :number-of-files
-                    :documentation "Total number of files to analyze."))
+                    :documentation "Total number of files to analyze.")
+   (max-file-name-length
+    :type integer
+    :documentation "Maximum file name length of all the processed files.
+
+This is mostly used for output formatting."))
   :documentation "Initial configuration and state of the entire analysis.
 
 The other state class `elsa-state' state holds state of an analysis of

@@ -21,6 +21,7 @@
 (depends-on "lsp-mode")
 (depends-on "ansi")
 (depends-on "cl-lib")
+(depends-on "async")
 
 (development
  (depends-on "elsa")

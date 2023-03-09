@@ -17,7 +17,7 @@
     :type list :initform nil
     :documentation "Loaded dependencies.
 
-We use this list to remove `elsa-get-dependencies' which don't need to
+We use this list to remove dependencies which don't need to
 be re-analysed during textDocument/didOpen handler.")))
 
 (defvar elsa-lsp-state (elsa-lsp-state))
