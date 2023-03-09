@@ -475,6 +475,7 @@ used by the LSP server to not reload already processed files."
          (elsa--processing-line global-state "done" file-fullname -1
                                 (elsa-get-elapsed start-time)))
         (cl-incf (oref global-state processed-file-index))
+        (elsa-save-cache state global-state)
         state))))
 
 (defun elsa-analyse-file (file global-state &optional already-loaded)
