@@ -1,3 +1,28 @@
+;;; elsa-dependencies.el --- Dependency resolver -*- lexical-binding: t -*-
+
+;; Copyright (C) 2023 Matúš Goljer
+
+;; Author: Matúš Goljer <matus.goljer@gmail.com>
+;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
+;; Created:  9th March 2023
+
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License
+;; as published by the Free Software Foundation; either version 3
+;; of the License, or (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;; Code:
+
 (require 'dash)
 
 (defun elsa--get-deps-with-no-deps (deps)
@@ -46,40 +71,6 @@ The bottom layer is the last in the list."
               (mapcar (-lambda ((head . tail))
                         (cons head (--remove (member it processed) tail)))
                       remaining-deps))))))
-
-;;    (elsa-get-dep-tree :: (function (string) mixed))
-(defun elsa-get-dep-tree (file)
-  "Recursively crawl require forms starting from FILE.
-
-Only top-level `require' forms are considered."
-  (elsa--fold-alist-to-tree
-   (plist-get (elsa--get-dep-alist file) :deps)
-   file))
-
-;;    (elsa-get-dependencies :: (function (string) mixed))
-(defun elsa-get-dependencies (file)
-  "Get all recursive dependencies of FILE.
-
-The order is such that if we load the features in order we will
-satisfy all inclusion relationships."
-  (let ((folded-deps (elsa-get-dep-tree file)))
-    (elsa-topo-sort (elsa-tree-to-deps folded-deps) file)))
-
-(defun elsa-get-dependencies-as-layers (file)
-  (let* ((dep-alist (elsa--get-dep-alist file))
-         (deps (plist-get dep-alist :deps))
-         (visited (plist-get dep-alist :visited)))
-    (list :layers (elsa--alist-to-layers deps) :visited visited)))
-
-;;    (elsa--find-dependency :: (function (string) (or nil string)))
-(defun elsa--find-dependency (library-name)
-  "Find the implementation file of dependency LIBRARY-NAME.
-
-LIBRARY-NAME should be the feature name (not symbol)."
-  (let* ((load-suffixes (list ".el" ".el.gz"))
-         (load-file-rep-suffixes (list "")))
-    (when-let ((lib-file (locate-library library-name)))
-      (file-truename lib-file))))
 
 (defun elsa--get-requires (file-or-buffer)
   "Return all requires from FILE-OR-BUFFER."
@@ -140,21 +131,6 @@ Return the state."
           (setq state (elsa--get-dep-alist library library-name state))))))
   state)
 
-(defun elsa-topo-sort (deps start)
-  "Topologically sort DEPS starting at START node."
-  (let ((candidates (list start))
-        (result nil)
-        (deps (copy-sequence deps)))
-    (while candidates
-      (let* ((current (pop candidates))
-             (current-deps (cdr (assoc current deps))))
-        (setq deps (assoc-delete-all current deps))
-        (push current result)
-        (dolist (dependency current-deps)
-          (unless (--some (member dependency (cdr it)) deps)
-            (push dependency candidates)))))
-    result))
-
 ;; (elsa--fold-alist-to-tree :: (function (list string (or (list string) nil) (or (list string) nil) (or int nil)) mixed))
 (defun elsa--fold-alist-to-tree (deps start &optional visited parents depth)
   "Fold DEPS alist to tree from START.
@@ -181,13 +157,14 @@ loops."
                     (1+ depth))
                    (reverse dependencies))))))
 
-(defun elsa-tree-to-deps (tree)
-  "Convert TREE of dependencies to adjacency list graph representationn."
-  (let ((deps (elsa--tree-to-deps tree)))
-    (mapcar
-     (lambda (dep)
-       (cons (car dep) (-uniq (cdr dep))))
-     deps)))
+;;    (elsa-get-dep-tree :: (function (string) mixed))
+(defun elsa-get-dep-tree (file)
+  "Recursively crawl require forms starting from FILE.
+
+Only top-level `require' forms are considered."
+  (elsa--fold-alist-to-tree
+   (plist-get (elsa--get-dep-alist file) :deps)
+   file))
 
 (defun elsa--tree-to-deps (tree &optional deps)
   (setq deps (or deps nil))
@@ -200,4 +177,60 @@ loops."
         (setq deps (elsa--tree-to-deps p deps)))))
   deps)
 
+(defun elsa-tree-to-deps (tree)
+  "Convert TREE of dependencies to adjacency list graph representationn."
+  (let ((deps (elsa--tree-to-deps tree)))
+    (mapcar
+     (lambda (dep)
+       (cons (car dep) (-uniq (cdr dep))))
+     deps)))
+
+;;    (elsa-get-dependencies :: (function (string) mixed))
+(defun elsa-get-dependencies (file)
+  "Get all recursive dependencies of FILE.
+
+The order is such that if we load the features in order we will
+satisfy all inclusion relationships.
+
+This function is deprecated."
+  (let ((folded-deps (elsa-get-dep-tree file)))
+    (elsa-topo-sort (elsa-tree-to-deps folded-deps) file)))
+
+(defun elsa-get-dependencies-as-layers (file)
+  "Get dependencies of FILE as layers for parallel processing.
+
+This is the main way to obtain dependencies of files.  The older
+`elsa-get-dependencies' is soft deprecated and will be removed in
+the future when the parallel processing is deemed stable."
+  (let* ((dep-alist (elsa--get-dep-alist file))
+         (deps (plist-get dep-alist :deps))
+         (visited (plist-get dep-alist :visited)))
+    (list :layers (elsa--alist-to-layers deps) :visited visited)))
+
+;;    (elsa--find-dependency :: (function (string) (or nil string)))
+(defun elsa--find-dependency (library-name)
+  "Find the implementation file of dependency LIBRARY-NAME.
+
+LIBRARY-NAME should be the feature name (not symbol)."
+  (let* ((load-suffixes (list ".el" ".el.gz"))
+         (load-file-rep-suffixes (list "")))
+    (when-let ((lib-file (locate-library library-name)))
+      (file-truename lib-file))))
+
+(defun elsa-topo-sort (deps start)
+  "Topologically sort DEPS starting at START node."
+  (let ((candidates (list start))
+        (result nil)
+        (deps (copy-sequence deps)))
+    (while candidates
+      (let* ((current (pop candidates))
+             (current-deps (cdr (assoc current deps))))
+        (setq deps (assoc-delete-all current deps))
+        (push current result)
+        (dolist (dependency current-deps)
+          (unless (--some (member dependency (cdr it)) deps)
+            (push dependency candidates)))))
+    result))
+
 (provide 'elsa-dependencies)
+;;; elsa-dependencies.el ends here
