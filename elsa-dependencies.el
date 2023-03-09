@@ -66,8 +66,10 @@ satisfy all inclusion relationships."
     (elsa-topo-sort (elsa-tree-to-deps folded-deps) file)))
 
 (defun elsa-get-dependencies-as-layers (file)
-  (let ((deps (plist-get (elsa--get-dep-alist file) :deps)))
-    (elsa--alist-to-layers deps)))
+  (let* ((dep-alist (elsa--get-dep-alist file))
+         (deps (plist-get dep-alist :deps))
+         (visited (plist-get dep-alist :visited)))
+    (list :layers (elsa--alist-to-layers deps) :visited visited)))
 
 ;;    (elsa--find-dependency :: (function (string) (or nil string)))
 (defun elsa--find-dependency (library-name)
@@ -76,7 +78,38 @@ satisfy all inclusion relationships."
 LIBRARY-NAME should be the feature name (not symbol)."
   (let* ((load-suffixes (list ".el" ".el.gz"))
          (load-file-rep-suffixes (list "")))
-    (locate-library library-name)))
+    (when-let ((lib-file (locate-library library-name)))
+      (file-truename lib-file))))
+
+(defun elsa--get-requires (file-or-buffer)
+  "Return all requires from FILE-OR-BUFFER."
+  (let ((this-file-requires nil))
+    (with-temp-buffer
+      (if (bufferp file-or-buffer)
+          (set-buffer file-or-buffer)
+        (let ((jka-compr-verbose nil)) (insert-file-contents file-or-buffer))
+        (let ((emacs-lisp-mode-hook nil)) (emacs-lisp-mode)))
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward
+                (rx
+                 "(" (*? whitespace)
+                 "require" (*? whitespace)
+                 "'" (group (+? (or word (syntax symbol))))
+                 (*? whitespace) ")")
+                nil t)
+          (unless (or (nth 4 (syntax-ppss))
+                      (and (< 0 (car (syntax-ppss)))
+                           (not (and (= 1 (car (syntax-ppss)))
+                                     (save-excursion
+                                       (backward-up-list)
+                                       (down-list)
+                                       (looking-at-p "eval-"))))) )
+            (let* ((library-name (match-string 1))
+                   (library (elsa--find-dependency library-name)))
+              (when library
+                (push (list library library-name) this-file-requires)))))))
+    (nreverse this-file-requires)))
 
 (defun elsa--get-dep-alist (file &optional current-library state)
   "Get dependencies of FILE and all its dependencies recursively.
@@ -93,38 +126,17 @@ Return the state."
     (setq state (list :visited nil :deps nil)))
   (setq current-library (or current-library file))
   ;; (var this-file-requires :: (string string))
-  (let ((this-file-requires nil))
-    (with-temp-buffer
-      (let ((jka-compr-verbose nil)) (insert-file-contents file))
-      (let ((emacs-lisp-mode-hook nil)) (emacs-lisp-mode))
-      (goto-char (point-min))
-      (while (re-search-forward
-              (rx
-               "(" (*? whitespace)
-               "require" (*? whitespace)
-               "'" (group (+? (or word (syntax symbol))))
-               (*? whitespace) ")")
-              nil t)
-        (unless (or (nth 4 (syntax-ppss))
-                    (and (< 0 (car (syntax-ppss)))
-                         (not (and (= 1 (car (syntax-ppss)))
-                                   (save-excursion
-                                     (backward-up-list)
-                                     (down-list)
-                                     (looking-at-p "eval-"))))) )
-          (let* ((library-name (match-string 1))
-                 (library (elsa--find-dependency library-name)))
-            (when library
-              (push (list library library-name) this-file-requires))))))
+  (let ((this-file-requires (elsa--get-requires file)))
     (dolist (req (nreverse this-file-requires))
       (let ((library (car req))
             (library-name (cadr req)))
         (let ((deps (plist-get state :deps)))
           (push library-name (alist-get current-library deps nil nil #'equal))
           (setq state (plist-put state :deps deps)))
-        (unless (member library (plist-get state :visited))
+        (unless (assoc library-name (plist-get state :visited))
           (setq state (plist-put state :visited
-                                 (cons library (plist-get state :visited))))
+                                 (cons (cons library-name library)
+                                       (plist-get state :visited))))
           (setq state (elsa--get-dep-alist library library-name state))))))
   state)
 

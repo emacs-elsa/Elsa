@@ -50,6 +50,7 @@
 (require 'elsa-reader)
 (require 'elsa-log)
 (require 'elsa-declare)
+(require 'elsa-parallel)
 
 (require 'elsa-ruleset)
 
@@ -167,13 +168,14 @@ tokens."
         (cl-incf line)))))
 
 ;; (elsa-process-file :: (function (string (or (class elsa-global-state) nil)) mixed))
-(defun elsa-process-file (file &optional global-state)
+(defun elsa-process-file (file &optional global-state no-log)
   "Process FILE."
   (setq global-state (or global-state elsa-global-state))
-  (elsa-log
-   (with-ansi
-    (green "[%s]" (elsa-global-state-get-counter global-state))
-    (format " Processing file %s ..." file)))
+  (unless no-log
+    (elsa-log
+     (with-ansi
+      (green "[%s]" (elsa-global-state-get-counter global-state))
+      (format " Processing file %s ..." file))))
   (let ((state (elsa-state :global-state global-state))
         (current-time (current-time))
         (form))
@@ -218,23 +220,24 @@ tokens."
         ;; When not running as language server, just crash on errors.
         (while (setq form (elsa-read-form state))
           (elsa-analyse-form state form))))
-    (elsa-log
-     (with-ansi
-      (previous-line)
-      (kill)
-      (green "[%s]" (elsa-global-state-get-counter global-state))
-      (format " Processing file %s ... " file)
-      (green "done")
-      " after "
-      (let ((duration (float-time
-                       (time-subtract
-                        (current-time) current-time))))
-        (cond
-         ((> duration 5)
-          (bright-red "%.3fs" duration))
-         ((> duration 2)
-          (bright-yellow "%.3fs" duration))
-         (t (green "%.3fs" duration))))))
+    (unless no-log
+      (elsa-log
+       (with-ansi
+        (previous-line)
+        (kill)
+        (green "[%s]" (elsa-global-state-get-counter global-state))
+        (format " Processing file %s ... " file)
+        (green "done")
+        " after "
+        (let ((duration (float-time
+                         (time-subtract
+                          (current-time) current-time))))
+          (cond
+           ((> duration 5)
+            (bright-red "%.3fs" duration))
+           ((> duration 2)
+            (bright-yellow "%.3fs" duration))
+           (t (green "%.3fs" duration)))))))
     state))
 
 (defun elsa-save-cache (state global-state)
@@ -345,7 +348,9 @@ GLOBAL-STATE is the initial configuration."
         (notices 0)
         (current-time (current-time)))
     (dolist (file command-line-args-left)
-      (--each (reverse (oref (elsa-analyse-file file elsa-global-state) errors))
+      (--each (reverse (oref (elsa-analyse-file-parallel
+                              file elsa-global-state)
+                             errors))
         (cond
          ((elsa-error-p it) (cl-incf errors))
          ((elsa-warning-p it) (cl-incf warnings))
@@ -362,7 +367,16 @@ GLOBAL-STATE is the initial configuration."
                  " and "
                  (bright-blue "%d notices" notices)
                  " after "
-                 (blue "%.3f seconds" duration))))))
+                 (blue "%.3f seconds" duration)))
+      ;; (elsa-log "%d elsa-simple-type objects were created" elsa-type-simple-make-count)
+      ;; (elsa-log "%d elsa-composite-type objects were created" elsa-type-composite-make-count)
+      ;; (elsa-log "clone on simple type was called %d times "elsa-type-simple-clone-count)
+      ;; (elsa-debug "memory report %s"
+      ;;             (with-current-buffer (get-buffer-create "*Memory Report*")
+      ;;               (require 'memory-report)
+      ;;               (memory-report)
+      ;;               (buffer-string)))
+      )))
 
 (defun elsa-run-files-and-exit ()
   "Run `elsa-analyse-file' on files in `command-line-args-left'.
