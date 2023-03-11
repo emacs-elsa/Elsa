@@ -91,7 +91,9 @@
       ,@elsa--font-lock-function-anchors)
      (,(rx "(" (* space) "elsa-declare-defvar" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
       (1 font-lock-variable-name-face))
-     (,(rx "(" (* space) "elsa-declare-structure" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
+     (,(rx "(" (* space) "elsa-declare-defclass" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
+      (1 font-lock-type-face))
+     (,(rx "(" (* space) "elsa-declare-defstruct" (1+ space) (group (1+ (or (syntax word) (syntax symbol)))))
       (1 font-lock-type-face)))))
 
 (provide 'elsa-font-lock)
