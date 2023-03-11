@@ -249,6 +249,8 @@ Returns trinary value."
      (elsa-type-nil))
     (`integer
      (elsa-type-int))
+    (`boolean
+     (elsa-type-bool))
     ((pred symbolp)
      (or
       ;; It can be a primitive type, which should be represented as an
