@@ -148,6 +148,7 @@
                       (elsa-state-add-method state
                         (elsa-defun
                          :name (elsa-get-name accessor)
+                         :defun-type 'cl-defmethod
                          :type (elsa-function-type
                                 :args (list (elsa--make-type `(class ,name)))
                                 :return elsa-type)
