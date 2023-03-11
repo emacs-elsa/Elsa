@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
-(require 'lgr)
+(require 'elsa-lgr)
 (require 'async)
 
 (defclass elsa-worker-appender (lgr-appender) ()
