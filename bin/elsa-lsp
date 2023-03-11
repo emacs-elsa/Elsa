@@ -1,4 +1,5 @@
 #!/bin/bash
 
 exec emacs --batch --no-init-file --no-site-file --no-splash \
+     --eval "(setq ansi-inhibit-ansi t)" \
      --load=elsa-lsp --funcall=elsa-lsp-stdin-loop
