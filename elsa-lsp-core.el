@@ -51,6 +51,18 @@ be re-analysed during textDocument/didOpen handler.")))
         (insert-file-contents file)))
     (message "Updated file %s" file)))
 
+(cl-defmethod elsa-lsp--analyze-file ((this elsa-lsp-state) (file string))
+  (let ((state (elsa-analyse-file-parallel
+                file
+                elsa-global-state
+                (oref this dependencies))))
+    (oset this dependencies
+          (-uniq
+           (-concat
+            (oref this dependencies)
+            (oref state dependencies))))
+    state))
+
 (defun elsa-lsp-register ()
   (interactive)
   (add-to-list 'lsp-language-id-configuration '(emacs-lisp-mode . "emacs-lisp"))
@@ -160,6 +172,52 @@ be re-analysed during textDocument/didOpen handler.")))
     (elsa-state-update-global state elsa-global-state)
     (apply #'vector (mapcar #'elsa-message-to-lsp (oref state errors)))))
 
+(defun elsa-lsp--handle-textDocument/hover (id method params)
+  (-let* (((&HoverParams :text-document (&TextDocumentIdentifier :uri)
+                         :position (&Position :line :character))
+           params)
+          (file (elsa-lsp--uri-to-file uri))
+          (buffer (elsa-lsp-get-buffer elsa-lsp-state file)))
+    (when buffer
+      (with-current-buffer buffer
+        (goto-char (point-min))
+        (forward-line line)
+        (forward-char character)
+        (beginning-of-defun)
+        (let* ((state (elsa-state :global-state elsa-global-state
+                                  :lsp-params params
+                                  :lsp-method method))
+               (value (catch 'lsp-response
+                        (elsa-process-form state))))
+          (when (and value (hash-table-p value))
+            (lsp--make-response id value)))))))
+
+(defun elsa-lsp--handle-textDocument/didChange (id method params)
+  (-let* (((&DidChangeTextDocumentParams
+            :text-document (&VersionedTextDocumentIdentifier :uri :version?)
+            :content-changes [(&TextDocumentContentChangeEvent :text)])
+           params)
+          (file (elsa-lsp--uri-to-file uri))
+          (buffer (elsa-lsp-get-buffer elsa-lsp-state file)))
+    (elsa-lsp-update-file-buffer elsa-lsp-state file text)
+
+    ;; load new dependencies to LSP server process
+    (when buffer
+      (let ((deps (elsa--get-requires buffer))
+            (loaded-deps (oref elsa-lsp-state dependencies))
+            (to-process nil))
+        (message "dependencies found in file %s: %s" file deps)
+        (-each deps
+          (lambda (dep)
+            (unless (member (car dep) loaded-deps)
+              (push (car dep) to-process))))
+        (when to-process
+          (message "new dependencies to process: %s" to-process)
+          (-each to-process
+            (lambda (new-dep)
+              (elsa-lsp--analyze-file elsa-lsp-state new-dep))))))
+    nil))
+
 (defun elsa-lsp--on-request (id method params)
   (message ">> %s" (lsp--json-serialize (list :id id :method method :params params)))
   (let ((res (cond
@@ -180,24 +238,7 @@ be re-analysed during textDocument/didOpen handler.")))
                                                        :resolve-provider? json-false
                                                        :trigger-characters? [":" "-"])))))
               ((equal method "textDocument/hover")
-               (-let* (((&HoverParams :text-document (&TextDocumentIdentifier :uri)
-                                      :position (&Position :line :character))
-                        params)
-                       (file (elsa-lsp--uri-to-file uri))
-                       (buffer (elsa-lsp-get-buffer elsa-lsp-state file)))
-                 (when buffer
-                   (with-current-buffer buffer
-                     (goto-char (point-min))
-                     (forward-line line)
-                     (forward-char character)
-                     (beginning-of-defun)
-                     (let* ((state (elsa-state :global-state elsa-global-state
-                                               :lsp-params params
-                                               :lsp-method method))
-                            (value (catch 'lsp-response
-                                     (elsa-process-form state))))
-                       (when (and value (hash-table-p value))
-                         (lsp--make-response id value)))))))
+               (elsa-lsp--handle-textDocument/hover id method params))
               ((equal method "textDocument/completion")
                (-let* (((&CompletionParams :text-document (&TextDocumentIdentifier :uri)
                                            :position (&Position :line :character))
@@ -234,15 +275,7 @@ be re-analysed during textDocument/didOpen handler.")))
                (-let* (((&DidOpenTextDocumentParams :text-document (&TextDocumentItem :uri :version)) params)
                        (file (elsa-lsp--uri-to-file uri)))
                  (elsa-lsp-add-file elsa-lsp-state file)
-                 (let ((state (elsa-analyse-file
-                               file
-                               elsa-global-state
-                               (oref elsa-lsp-state dependencies))))
-                   (oset elsa-lsp-state dependencies
-                         (-uniq
-                          (-concat
-                           (oref elsa-lsp-state dependencies)
-                           (oref state dependencies))))
+                 (let ((state (elsa-lsp--analyze-file elsa-lsp-state file)))
                    (lsp--make-notification
                     "textDocument/publishDiagnostics"
                     (lsp-make-publish-diagnostics-params
@@ -263,13 +296,7 @@ be re-analysed during textDocument/didOpen handler.")))
                    :version version
                    :diagnostics (elsa-lsp--get-diagnostics file)))))
               ((equal method "textDocument/didChange")
-               (-let* (((&DidChangeTextDocumentParams
-                         :text-document (&VersionedTextDocumentIdentifier :uri :version?)
-                         :content-changes [(&TextDocumentContentChangeEvent :text)])
-                        params)
-                       (file (elsa-lsp--uri-to-file uri)))
-                 (elsa-lsp-update-file-buffer elsa-lsp-state file text)
-                 nil)))))
+               (elsa-lsp--handle-textDocument/didChange id method params)))))
     (if (not res)
         (message "<< %s" "no response")
       (message "<< %s" (lsp--json-serialize res))
