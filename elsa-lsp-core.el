@@ -5,6 +5,43 @@
 
 (require 'elsa)
 
+(defun append-to-log-file (message)
+  "Appends a message to a log file."
+  (let ((log-file "elsa-lsp.log"))
+    (with-temp-buffer
+      (insert (replace-regexp-in-string "\\(\r\\|\n\\)" "" message) "\n")
+      (write-region (point-min) (point-max) log-file t))))
+
+(defun elsa-lsp-send-response (message)
+  (when (or (hash-table-p message)
+            (and (listp message) (plist-get message :jsonrpc)))
+    (setq message (lsp--json-serialize message)))
+
+  ;; (append-to-log-file (concat "<< " message))
+  (princ (format "Content-Length: %d\r\n\r\n" (string-bytes message)))
+  (princ message)
+  (terpri))
+
+(defclass elsa-lsp-appender (lgr-appender) ()
+  "Appender sending messages to lsp client as window/showMessage.")
+
+(cl-defmethod lgr-append ((this elsa-lsp-appender) event)
+  "Send window/showMessage LSP notification."
+  (when elsa-is-language-server
+    (elsa-lsp-send-response
+     (lsp--make-notification
+      "window/showMessage"
+      (lsp-make-message-params
+       :type lsp/message-type-info
+       :message (lgr-format-event (oref this layout) event)))))
+  this)
+
+(defconst elsa-lsp-logger (-> (lgr-get-logger "elsa")
+                              (lgr-add-appender
+                               (-> (elsa-lsp-appender)
+                                   (lgr-set-layout (elsa-plain-layout))
+                                   (lgr-set-threshold lgr-level-info)))))
+
 (defclass elsa-lsp-file ()
   ((name :type string :initarg :name)
    (buffer :type buffer :initarg :buffer)))
@@ -79,23 +116,6 @@ be re-analysed during textDocument/didOpen handler.")))
     :major-modes '(emacs-lisp-mode)
     :priority 1
     :server-id 'elsa)))
-
-(defun append-to-log-file (message)
-  "Appends a message to a log file."
-  (let ((log-file "elsa-lsp.log"))
-    (with-temp-buffer
-      (insert (replace-regexp-in-string "\\(\r\\|\n\\)" "" message) "\n")
-      (write-region (point-min) (point-max) log-file t))))
-
-(defun elsa-lsp-send-response (message)
-  (when (or (hash-table-p message)
-            (and (listp message) (plist-get message :jsonrpc)))
-    (setq message (lsp--json-serialize message)))
-
-  ;; (append-to-log-file (concat "<< " message))
-  (princ (format "Content-Length: %d\r\n\r\n" (string-bytes message)))
-  (princ message)
-  (terpri))
 
 (defun elsa-lsp--uri-to-file (uri)
   (substring uri 7))

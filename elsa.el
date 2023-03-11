@@ -6,7 +6,7 @@
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
 ;; Created: 23rd March 2017
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "26.1") (trinary "0") (f "0") (dash "2.14") (cl-lib "0.3") (lsp-mode "0") (ansi "0") ("async" "1.9.7"))
+;; Package-Requires: ((emacs "26.1") (trinary "0") (f "0") (dash "2.14") (cl-lib "0.3") (lsp-mode "0") (ansi "0") (async "1.9.7"))
 ;; URL: https://github.com/emacs-elsa/Elsa
 ;; Keywords: languages, lisp
 
@@ -283,80 +283,100 @@ GLOBAL-STATE is the initial configuration."
   "Return function running in the Elsa analysis worker."
   (let ((load--path load-path))
     (lambda ()
-      (setq load-path load--path)
-      (setq elsa-is-language-server nil)
-      (setq ansi-inhibit-ansi t)
-      (require 'elsa)
-      (require 'async)
-      (let ((msg nil))
-        (setq elsa-global-state (elsa-global-state))
-        (oset elsa-global-state project-directory project-directory)
-        (oset elsa-global-state number-of-files 1)
-        (oset elsa-global-state processed-file-index 1)
-        (catch 'done
-          (while t
-            (setq msg (async-receive))
-            (let ((op (plist-get msg :op)))
-              (cond
-               ((equal op "analyze")
-                (let* ((dep (plist-get msg :dep))
-                       (library (plist-get msg :file))
-                       (current-time (current-time))
-                       (elsa-cache-file (elsa--get-cache-file-name elsa-global-state dep)))
-                  (elsa--autoload-types elsa-global-state dep)
-                  (elsa--autoload-extension elsa-global-state dep)
-                  (condition-case err
-                      (let ((state (elsa-process-file library elsa-global-state)))
-                        ;; `subr' has no provide for some circular
-                        ;; dependency "bootstrap" issues.  We add it here
-                        ;; artificially.
-                        (when (equal dep "subr")
-                          (oset state provide (list 'subr)))
-                        (elsa-save-cache state elsa-global-state))
-                    (error (async-send :ack "error" :error err)))
-                  (async-send :ack "ok" :op op
-                              :worker-id worker-id :dep dep
-                              :file library
-                              :duration (float-time
-                                         (time-subtract
-                                          (current-time) current-time)))))
-               ((equal op "load-from-cache")
-                (let ((files (plist-get msg :files)))
-                  (dolist (file files) (load (f-no-ext file) t t))
-                  (async-send :ack "ok" :op op :worker-id worker-id)))
-               ((equal op "quit")
-                (throw 'done t))))))))))
+      (condition-case err
+          (progn
+            (setq load-path load--path)
+            (setq elsa-is-language-server nil)
+            (setq ansi-inhibit-ansi t)
+            (require 'elsa)
+            (require 'async)
+            (require 'lgr)
+            (-> (lgr-get-logger "elsa")
+                (lgr-reset-appenders)
+                (lgr-add-appender
+                 (-> (elsa-worker-appender)
+                     (lgr-set-layout (elsa-plain-layout))))
+                (lgr-set-threshold lgr-level-info))
+            (let ((msg nil)
+                  (lgr (lgr-get-logger "elsa.analyse.worker")))
+              (setq elsa-global-state (elsa-global-state))
+              (oset elsa-global-state project-directory project-directory)
+              (oset elsa-global-state number-of-files 1)
+              (oset elsa-global-state processed-file-index 1)
+              (catch 'done
+                (while t
+                  (setq msg (async-receive))
+                  (let ((op (plist-get msg :op)))
+                    (cond
+                     ((equal op "analyze")
+                      (let* ((dep (plist-get msg :dep))
+                             (library (plist-get msg :file))
+                             (current-time (current-time))
+                             (elsa-cache-file (elsa--get-cache-file-name elsa-global-state dep)))
+                        (elsa--autoload-types elsa-global-state dep)
+                        (elsa--autoload-extension elsa-global-state dep)
+                        (lgr-debug lgr "Starting analysis of %s" dep)
+                        (let ((state (elsa-process-file library elsa-global-state)))
+                          ;; `subr' has no provide for some circular
+                          ;; dependency "bootstrap" issues.  We add it here
+                          ;; artificially.
+                          (lgr-debug lgr "Analysis of %s done" dep)
+                          (when (equal dep "subr")
+                            (oset state provide (list 'subr)))
+                          (elsa-save-cache state elsa-global-state)
+                          (lgr-debug lgr "Finished saving cache for %s" dep))
+                        (async-send :ack "ok" :op op
+                                    :dep dep
+                                    :file library
+                                    :duration (float-time
+                                               (time-subtract
+                                                (current-time) current-time)))))
+                     ((equal op "load-from-cache")
+                      (let ((files (plist-get msg :files)))
+                        (dolist (file files) (load (f-no-ext file) t t))
+                        (async-send :ack "ok" :op op)))
+                     ((equal op "quit")
+                      (throw 'done t))))))))
+        (error (async-send :ack "error" :error err :trace (progn (require 'backtrace) (backtrace-to-string))))))))
 
 (defun elsa--parent-function-factory (worker-id workers-state max-file-name-length global-state)
   "Function handling child-to-parent messages and worker exit."
-  (lambda (result)
-    (if (async-message-p result)
-        (let* ((worker-id (plist-get result :worker-id))
-               (worker-state (assoc worker-id workers-state))
-               (op (plist-get result :op)))
-          (cond
-           ((equal op "analyze")
-            (let* ((dep (plist-get result :dep))
-                   (file (plist-get result :file))
-                   (duration (plist-get result :duration))
-                   (elsa-cache-file (elsa--get-cache-file-name global-state dep)))
+  (let ((lgr (lgr-get-logger "elsa.analyse.parent")))
+    (lambda (result)
+      (if (async-message-p result)
+          (let* ((worker-state (assoc worker-id workers-state))
+                 (op (plist-get result :op))
+                 (ack (plist-get result :ack)))
+            (cond
+             ((equal ack "error")
+              (error "Error in child process %d %s" worker-id (plist-get result :error)))
+             ((equal op "echo")
               (elsa-log
-               (elsa--processing-line global-state "done" file worker-id duration))
-              (load (f-no-ext elsa-cache-file) t t))
-            (cl-incf (oref global-state processed-file-index))
-            (setf (cdr worker-state) (plist-put (cdr worker-state) :ready t)))
-           ((equal op "load-from-cache")
-            (elsa-debug "Worker %s loaded all cache files for this layer" worker-id)
-            (setf (cdr worker-state) (plist-put (cdr worker-state) :ready t)))))
-      (elsa-debug "Async process done in worker %d, result: %s" worker-id result)
-      t)))
+               (with-ansi
+                (red "Worker %d said: " worker-id)
+                (yellow (plist-get result :message)))))
+             ((equal op "analyze")
+              (let* ((dep (plist-get result :dep))
+                     (file (plist-get result :file))
+                     (duration (plist-get result :duration))
+                     (elsa-cache-file (elsa--get-cache-file-name global-state dep)))
+                (elsa-log
+                 (elsa--processing-line global-state "done" file worker-id duration))
+                (load (f-no-ext elsa-cache-file) t t))
+              (cl-incf (oref global-state processed-file-index))
+              (setf (cdr worker-state) (plist-put (cdr worker-state) :ready t)))
+             ((equal op "load-from-cache")
+              (lgr-debug lgr "Worker %s loaded all cache files for this layer" worker-id)
+              (setf (cdr worker-state) (plist-put (cdr worker-state) :ready t)))))
+        (lgr-debug lgr "Async process done in worker %d, result: %s" worker-id result)
+        t))))
 
 (defun elsa--wait-for-all (get-worker-states)
   (catch 'all-workers-ready
     (while t
       (when (--all? (plist-get (cdr it) :ready) (funcall get-worker-states))
         (throw 'all-workers-ready t))
-      (sleep-for 0.1))))
+      (sleep-for 0.01))))
 
 (defun elsa-analyse-file-parallel (file global-state &optional already-loaded)
   "Analyse FILE with GLOBAL-STATE.
@@ -365,7 +385,8 @@ Optional argument ALREADY-LOADED is used to skip dependencies which
 are already loaded in the currently running Emacs process.  This is
 used by the LSP server to not reload already processed files."
   (elsa-with-elapsed-time "Process dependencies"
-    (let* ((dep-layers (elsa-with-elapsed-time "Resolving dependencies"
+    (let* ((lgr (lgr-get-logger "elsa.analyse"))
+           (dep-layers (elsa-with-elapsed-time "Resolving dependencies"
                          (elsa-get-dependencies-as-layers file)))
            (dependencies (let ((deps (append
                                       (plist-get dep-layers :layers)
@@ -399,16 +420,16 @@ used by the LSP server to not reload already processed files."
       (oset global-state processed-file-index 1)
       (oset global-state number-of-files (length (-flatten dependencies)))
       (oset global-state max-file-name-length max-file-name-length)
-      (elsa-debug "Processing dependency layers: %s" dependencies)
-      (elsa-debug "Processing dependency alist: %s" dep-to-file)
+      (lgr-debug lgr "Processing dependency layers: %s" dependencies)
+      (lgr-debug lgr "Processing dependency alist: %s" dep-to-file)
       (dolist (layer (butlast dependencies))
         (cl-incf i)
-        (elsa-debug "Processing layer %s" i)
+        (lgr-debug lgr "Processing layer %s" i)
         (while layer
           (-each workers-state
             (-lambda ((state &as worker-id . (&plist :ready)))
               (when (and ready layer)
-                (elsa-debug "Worker %s is ready, submitting dependency %s" worker-id (car layer))
+                (lgr-debug lgr "Worker %s is ready, submitting dependency %s" worker-id (car layer))
                 (let* ((worker (nth worker-id workers))
                        (dep (pop layer))
                        (file (or (cdr (assoc dep dep-to-file))
@@ -433,11 +454,11 @@ used by the LSP server to not reload already processed files."
                     (elsa--autoload-extension global-state dep)
                     (setf (cdr state) (plist-put (cdr state) :ready nil))
                     (async-send worker :op "analyze" :dep dep :file file)))))))
-          (sleep-for 0.1))
-        (elsa-debug "All work for layer %s was distributed" i)
+          (sleep-for 0.01))
+        (lgr-debug lgr "All work for layer %s was distributed" i)
 
         (elsa--wait-for-all (lambda () workers-state))
-        (elsa-debug "All workers finished processing layer %s" i)
+        (lgr-debug lgr "All workers finished processing layer %s" i)
 
         (let ((cache-files (mapcar
                             (lambda (dep)
@@ -450,11 +471,11 @@ used by the LSP server to not reload already processed files."
                 (async-send worker :op "load-from-cache" :files cache-files)))))
 
         (elsa--wait-for-all (lambda () workers-state))
-        (elsa-debug "All workers updated global state for layer %s" i))
+        (lgr-debug lgr "All workers updated global state for layer %s" i))
 
       (--each workers
         (async-send it :op "quit"))
-      (elsa-debug "All workers quit")
+      (lgr-debug lgr "All workers quit")
 
       (let ((start-time (current-time))
             (state (elsa-process-file (car (-last-item dependencies)) global-state 'no-log))
@@ -611,15 +632,13 @@ This function is soft-deprecated in favour of
                  (bright-blue "%d notices" notices)
                  " after "
                  (blue "%.3f seconds" duration)))
-      ;; (elsa-log "%d elsa-simple-type objects were created" elsa-type-simple-make-count)
-      ;; (elsa-log "%d elsa-composite-type objects were created" elsa-type-composite-make-count)
-      ;; (elsa-log "clone on simple type was called %d times "elsa-type-simple-clone-count)
-      ;; (elsa-debug "memory report %s"
-      ;;             (with-current-buffer (get-buffer-create "*Memory Report*")
-      ;;               (require 'memory-report)
-      ;;               (memory-report)
-      ;;               (buffer-string)))
-      )
+
+      (lgr-trace (lgr-get-logger "elsa.perf")
+                 "memory report %s"
+                 (with-current-buffer (get-buffer-create "*Memory Report*")
+                   (require 'memory-report)
+                   (memory-report)
+                   (buffer-string))))
     (when (and elsa-cli-with-exit (< 0 errors))
       (kill-emacs 1))))
 
