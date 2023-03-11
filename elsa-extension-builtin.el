@@ -1,22 +1,65 @@
+;;; elsa-extension-builtin.el --- Basic extensions for builtin packages -*- lexical-binding: t -*-
+
+;; Copyright (C) 2023 Matúš Goljer
+
+;; Author: Matúš Goljer <matus.goljer@gmail.com>
+;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
+;; Created:  9th March 2023
+
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License
+;; as published by the Free Software Foundation; either version 3
+;; of the License, or (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;; Code:
+
 (require 'f)
 
+(require 'elsa-log)
 (require 'elsa-reader)
 (require 'elsa-analyser)
-(require 'elsa-extension-subr)
 
-(defvar elsa-analyzed nil
-  "List of already analyzed files.")
+(require 'elsa-extension-subr)
+(require 'elsa-extension-eieio)
+(require 'elsa-extension-cl)
+
+(require 'elsa-typed-builtin)
+
+(require 'elsa-typed-syntax)
+
+(defun elsa--autoload-types (global-state dep)
+  (when (require (intern (concat "elsa-typed-"
+                                 (replace-regexp-in-string ".el\\'" "" dep)))
+                 nil t)
+    (elsa-log "%sAutoloading types for %s"
+              (make-string (elsa-global-state-prefix-length global-state 3) ? )
+              dep)))
+
+(defun elsa--autoload-extension (global-state dep)
+  (when (require (intern (concat "elsa-extension-"
+                                 (replace-regexp-in-string ".el\\'" "" dep)))
+                 nil t)
+    (elsa-log "%sAutoloading extension for %s"
+              (make-string (elsa-global-state-prefix-length global-state 3) ? )
+              dep)))
 
 (defun elsa--analyse:require (form scope state)
-  (let ((feature (elsa-nth 1 form)))
+  (let* ((feature (elsa-nth 1 form))
+         (feature-name (symbol-name (elsa-get-name feature))))
+    (elsa--autoload-types (oref state global-state) feature-name)
+    (elsa--autoload-extension (oref state global-state) feature-name)
     (when (elsa--quoted-symbol-p feature)
-      (let* ((load-suffixes (list ".el" ".el.gz"))
-             (load-file-rep-suffixes (list ""))
-             ;; elsa-nth because feature is (quote library)
-             (library-symbol (elsa-get-name (elsa-nth 1 feature)))
-             (library-name (symbol-name library-symbol))
-             (library (locate-library library-name)))
-        (push (elsa-get-name (elsa-cadr feature)) (oref state requires))))))
+      (push (elsa-get-name (elsa-cadr feature)) (oref state requires)))))
 
 (defun elsa--analyse:provide (form scope state)
   (let ((feature (elsa-nth 1 form)))
@@ -224,3 +267,4 @@ empty, because it has no value."
   (elsa--analyse:progn form scope state))
 
 (provide 'elsa-extension-builtin)
+;;; elsa-extension-builtin.el ends here

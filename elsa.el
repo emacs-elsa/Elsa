@@ -238,22 +238,6 @@ GLOBAL-STATE is the initial configuration."
               (f-write-text (buffer-string) 'utf-8 elsa-cache-file)
               (byte-compile-file elsa-cache-file))))))))
 
-(defun elsa--autoload-types (global-state dep)
-  (when (require (intern (concat "elsa-typed-"
-                                 (replace-regexp-in-string ".el\\'" "" dep)))
-                 nil t)
-    (elsa-log "%sAutoloading types for %s"
-              (make-string (elsa-global-state-prefix-length global-state 3) ? )
-              dep)))
-
-(defun elsa--autoload-extension (global-state dep)
-  (when (require (intern (concat "elsa-extension-"
-                                 (replace-regexp-in-string ".el\\'" "" dep)))
-                 nil t)
-    (elsa-log "%sAutoloading extension for %s"
-              (make-string (elsa-global-state-prefix-length global-state 3) ? )
-              dep)))
-
 (defun elsa--processing-line (global-state operation file &optional worker-id duration)
   (pcase operation
     ("done"

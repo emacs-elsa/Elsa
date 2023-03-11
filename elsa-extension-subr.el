@@ -1,5 +1,6 @@
 (require 'elsa-analyser)
-(require 'elsa-typed-cl)
+
+(require 'elsa-typed-subr)
 
 (defalias 'elsa--analyse:with-temp-buffer 'elsa--analyse:progn)
 

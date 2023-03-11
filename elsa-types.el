@@ -33,9 +33,9 @@
 
 (require 'elsa-type)
 (require 'elsa-types-simple)
-(require 'elsa-state)
 (require 'elsa-methods)
 (require 'elsa-explainer)
+(require 'elsa-structure-slot)
 
 (defclass elsa-type--structured nil
   (

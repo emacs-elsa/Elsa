@@ -1,9 +1,9 @@
+(require 'find-func)
+
 (require 'elsa-analyser)
 (require 'elsa-check)
 (require 'elsa-ruleset)
 (require 'elsa-types)
-
-(require 'find-func)
 
 (defclass elsa-ruleset-elsa (elsa-ruleset) ())
 

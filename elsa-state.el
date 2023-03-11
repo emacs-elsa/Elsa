@@ -3,39 +3,11 @@
 
 (require 'trinary)
 
-(require 'elsa-type)
+(require 'elsa-types)
 (require 'elsa-scope)
 (require 'elsa-error)
 (require 'elsa-methods)
-
-(defclass elsa-structure-slot nil
-  ((name
-    :type symbol
-    :initarg :name
-    :documentation "Slot name.")
-   (initarg
-    :type (or symbol null)
-    :initarg :initarg
-    :initform nil
-    :documentation "Symbol or keyword used to initialize the slot.")
-   (type
-    :type elsa-type
-    :initarg :type
-    :documentation "Slot Elsa type."))
-  :documentation "Data about a slot in interface-like structure.
-
-An interface-like structure is anything that has defined set of keys
-and associated values.  In elisp, these can be the ad-hoc data
-structures such as plists and alists and more structured cases like
-`cl-defstruct' and `defclass'.")
-
-(cl-defmethod cl-print-object ((this elsa-structure-slot) stream)
-  (princ
-   (format "#<elsa-structure-slot %s %s %s>"
-           (oref this name)
-           (oref this initarg)
-           (elsa-tostring (oref this type)))
-   stream))
+(require 'elsa-structure-slot)
 
 (defclass elsa-structure nil
   (

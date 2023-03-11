@@ -12,8 +12,6 @@
 (require 'elsa-scope)
 (require 'elsa-functions)
 
-(require 'elsa-typed-builtin)
-
 ;; (elsa--arglist-to-arity :: (function ((or (list (or symbol (cons symbol mixed))) t string)) (cons int (or int (const many) (const undefined)))))
 (defun elsa--arglist-to-arity (arglist)
   "Return minimal and maximal number of arguments ARGLIST supports.
