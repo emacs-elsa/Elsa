@@ -200,8 +200,6 @@
       (let* ((old (elsa-make-type (or int string)))
              (new (clone old)))
         (expect (eq old new) :not :to-be-truthy)
-        (expect (eq (car (oref old types))
-                    (car (oref new types))) :not :to-be-truthy)
         (oset new types nil)
         (expect (length (oref old types)) :to-be 2)
         (expect (length (oref new types)) :to-be 0)))
@@ -377,10 +375,10 @@
     (it "should not be changed by being made non-nullable"
       (expect (elsa-type-make-non-nullable (elsa-make-type string)) :to-equal (elsa-make-type string)))
 
-    (it "should not share data with its clone"
+    (it "should be singleton"
       (let* ((old (elsa-make-type int))
              (new (clone old)))
-        (expect (eq old new) :not :to-be-truthy))))
+        (expect (eq old new) :to-be-truthy))))
 
   (describe "Bool type"
 

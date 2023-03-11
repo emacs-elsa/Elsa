@@ -219,7 +219,7 @@ If N is more than the arity of the function and the last argument
 is variadic, return that type, otherwise return nil."
   nil)
 
-(defclass elsa-type-empty (elsa-type) ()
+(defclass elsa-type-empty (elsa-type elsa-simple-type eieio-singleton) ()
   :documentation "Empty type.  Has no domain.
 
 This is accepted by any type and does not accept any type except
@@ -414,7 +414,7 @@ type and none of the negative types.")
               (elsa-type-describe (oref this negative)))
     (elsa-type-describe (oref this positive))))
 
-(defclass elsa-type-symbol (elsa-type) ()
+(defclass elsa-type-symbol (elsa-type elsa-simple-type eieio-singleton) ()
   :documentation "Quoted symbol")
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-symbol))
@@ -461,7 +461,7 @@ the type of its argument to the predicated type."
   "Get the type of items of a sequence type."
   nil)
 
-(defclass elsa-type-string (elsa-type-sequence) ())
+(defclass elsa-type-string (elsa-type-sequence elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-get-item-type ((_this elsa-type-string))
   "Get the type of items of a sequence type."
@@ -472,17 +472,17 @@ the type of its argument to the predicated type."
 (cl-defmethod elsa-type-describe ((_this elsa-type-string))
   "string")
 
-(defclass elsa-type-buffer (elsa-type) ())
+(defclass elsa-type-buffer (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-buffer))
   "buffer")
 
-(defclass elsa-type-frame (elsa-type) ())
+(defclass elsa-type-frame (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-frame))
   "frame")
 
-(defclass elsa-type-number (elsa-type)
+(defclass elsa-type-number (elsa-type elsa-simple-type eieio-singleton)
   ()
   :documentation "Type of any number.
 
@@ -552,7 +552,7 @@ float and number.")
 (cl-defmethod elsa-type-describe ((_this elsa-type-int))
   "int")
 
-(defclass elsa-type-marker (elsa-type) ())
+(defclass elsa-type-marker (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-marker))
   "marker")
@@ -895,13 +895,13 @@ then this is a supertype of other."
   (symbol-name (oref this label)))
 
 ;; One-dimensional sparse arrays indexed by characters
-(defclass elsa-type-char-table (elsa-type) ())
+(defclass elsa-type-char-table (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-char-table))
   "char-table")
 
 ;; One-dimensional arrays of t or nil.
-(defclass elsa-type-bool-vector (elsa-type) ())
+(defclass elsa-type-bool-vector (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-bool-vector))
   "bool-vector")
@@ -920,73 +920,73 @@ then this is a supertype of other."
   "record")
 
 ;; Buffers are displayed in windows
-(defclass elsa-type-window (elsa-type) ())
+(defclass elsa-type-window (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-window))
   "window")
 
 ;; A terminal device displays frames
-(defclass elsa-type-terminal (elsa-type) ())
+(defclass elsa-type-terminal (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-terminal))
   "terminal")
 
 ;; Recording the way a frame is subdivided
-(defclass elsa-type-window-configuration (elsa-type) ())
+(defclass elsa-type-window-configuration (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-window-configuration))
   "window-configuration")
 
 ;; Recording the status of all frames
-(defclass elsa-type-frame-configuration (elsa-type) ())
+(defclass elsa-type-frame-configuration (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-frame-configuration))
   "frame-configuration")
 
 ;; A subprocess of Emacs running on the underlying OS
-(defclass elsa-type-process (elsa-type) ())
+(defclass elsa-type-process (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-process))
   "process")
 
 ;; A thread of Emacs Lisp execution
-(defclass elsa-type-thread (elsa-type) ())
+(defclass elsa-type-thread (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-thread))
   "thread")
 
 ;; An exclusive lock for thread synchronization
-(defclass elsa-type-mutex (elsa-type) ())
+(defclass elsa-type-mutex (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-mutex))
   "mutex")
 
 ;; Condition variable for thread synchronization
-(defclass elsa-type-condition-variable (elsa-type) ())
+(defclass elsa-type-condition-variable (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-condition-variable))
   "condition-variable")
 
 ;; Receive or send characters
-(defclass elsa-type-stream (elsa-type) ())
+(defclass elsa-type-stream (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-stream))
   "stream")
 
 ;; What function a keystroke invokes
-(defclass elsa-type-keymap (elsa-type) ())
+(defclass elsa-type-keymap (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-keymap))
   "keymap")
 
 ;; How an overlay is represented
-(defclass elsa-type-overlay (elsa-type) ())
+(defclass elsa-type-overlay (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-overlay))
   "overlay")
 
 ;; Fonts for displaying text
-(defclass elsa-type-font (elsa-type) ())
+(defclass elsa-type-font (elsa-type elsa-simple-type eieio-singleton) ())
 
 (cl-defmethod elsa-type-describe ((_this elsa-type-font))
   "font")

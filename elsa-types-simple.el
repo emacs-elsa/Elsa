@@ -4,10 +4,7 @@
 
 ;; Author: Matúš Goljer <matus.goljer@gmail.com>
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
-;; Version: 0.0.1
 ;; Created:  4th March 2023
-;; Package-requires: ((dash "2.17.0"))
-;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -26,10 +23,30 @@
 
 ;;; Code:
 
+(require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
+(require 'eieio-base)
+
 (require 'elsa-type)
 (require 'elsa-explainer)
 
-(defclass elsa-type-unbound (elsa-type) ()
+(defclass elsa-simple-type (eieio-singleton) ()
+  :abstract t
+  :documentation "Simple types holding no other types.
+
+A simple type is only itself and never changes to anything.  We can
+keep only one instance of a simple type per the entire duration of the
+program, because two simple types would always be equal to each
+other.")
+
+(cl-defmethod clone ((this elsa-simple-type))
+  "Simple types do not need to be cloned.
+
+This violates the `clone' contract but we know what we are
+doing."
+  this)
+
+(defclass elsa-type-unbound (elsa-type elsa-simple-type eieio-singleton) ()
   :documentation "Type of an unbound variable.
 
 This is not accepted by any type because we don't know what it is.")
@@ -45,7 +62,7 @@ not bound to any specific value yet."
 (cl-defmethod elsa-type-describe ((_this elsa-type-unbound))
   "unbound")
 
-(defclass elsa-type-mixed (elsa-type) ()
+(defclass elsa-type-mixed (elsa-type elsa-simple-type eieio-singleton) ()
   :documentation "Type of anything.
 
 Mixed is a special type in a way that it serves as an opt-out
