@@ -227,6 +227,7 @@ CONSTANT-FORM is the value to which the variable is narrowed."
         (vars))
     (--each bindings
       (-when-let (var (elsa--analyse-variable-from-binding it scope state))
+        (elsa-type-make-non-nullable var)
         (elsa-scope-add-var scope var)
         (push var vars)))
     (elsa--analyse-body body scope state)

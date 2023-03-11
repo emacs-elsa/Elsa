@@ -112,6 +112,10 @@ The example of such a form is (and (string x) (concat \"\" x)).")
 (cl-defmethod cl-print-object ((this elsa-variable) stream)
   (princ (concat "#<elsa-variable " (elsa-tostring this) ">") stream))
 
+(cl-defmethod elsa-type-make-non-nullable ((this elsa-variable))
+  (oset this type (elsa-type-make-non-nullable (oref this type)))
+  this)
+
 (defun elsa-make-variable (name type)
   "Make variable NAME with TYPE."
   (elsa-variable :name name :type type))

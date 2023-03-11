@@ -23,4 +23,12 @@
         (elsa-test-with-analysed-form "|(not x)" form
           (expect (elsa-type-accept (elsa-make-type bool)
                                     (oref form type))
-                  :to-be-truthy))))))
+                  :to-be-truthy))))
+
+
+    (describe "when-let"
+
+      (it "should make variables non-nullable in the body"
+        (elsa-test-with-analysed-form "|(when-let ((x (kek))) x)" form
+          (expect (elsa-nth 2 form)
+                  :not :to-accept-type (elsa-type-nil)))))))

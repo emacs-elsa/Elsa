@@ -75,5 +75,12 @@ THIS and OTHER at the same time.")
   "Return a string representation of TYPE."
   (format "%s" type))
 
+;; FIXME: rename to elsa-make-non-nullable
+;; (elsa-type-make-non-nullable :: (function (mixed) mixed))
+(cl-defgeneric elsa-type-make-non-nullable (type)
+  "Make TYPE non-nullable.
+
+This is the same as diffing nil from type.")
+
 (provide 'elsa-type)
 ;;; elsa-type.el ends here

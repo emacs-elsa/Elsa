@@ -358,7 +358,7 @@ This means that the domain of the type is empty."
   "Make TYPE nullable."
   (elsa-type-sum type (elsa-make-type nil)))
 
-(defun elsa-type-make-non-nullable (type)
+(cl-defmethod elsa-type-make-non-nullable ((type elsa-type))
   "Make TYPE non-nullable."
   (elsa-type-diff type (elsa-make-type nil)))
 
