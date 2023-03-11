@@ -15,7 +15,14 @@
    (type :type elsa-type :initarg :type :initform (elsa-type-mixed))
    (narrow-types :initarg :narrow-type :initform nil)
    (reachable :type trinary :initarg :reachable :initform (trinary-true))
-   (parent :type (or elsa-form nil) :initarg :parent)
+   (parent
+    :type (or elsa-form null)
+    :initarg :parent
+    :documentation "Parent form.")
+   (previous
+    :type (or elsa-form null)
+    :initarg :previous
+    :documentation "Previous form in a sequence.")
    (annotation :type list :initarg :annotation :initform nil))
   :abstract t)
 

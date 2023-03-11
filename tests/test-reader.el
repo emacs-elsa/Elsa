@@ -153,8 +153,23 @@
       (it "should read a list in dotted notation with quoted last cdr"
         (elsa-test-with-read-form "(foo . (quote . '(bar baz)))" form
           (expect (elsa-form-list-p form) :to-be-truthy)
-          (expect (elsa-form-print form) :to-equal "(foo quote quote (bar baz))")))))
+          (expect (elsa-form-print form) :to-equal "(foo quote quote (bar baz))"))))
 
+    (describe "setting parents"
+
+      (it "should set parent of forms in a list to the list form"
+        (elsa-test-with-read-form "(a b c)" form
+          (expect (oref (elsa-nth 0 form) parent) :to-be form)
+          (expect (oref (elsa-nth 1 form) parent) :to-be form)
+          (expect (oref (elsa-nth 2 form) parent) :to-be form))))
+
+    (describe "setting previous"
+
+      (it "should set previous of forms in a list to the previous form"
+        (elsa-test-with-read-form "(a b c)" form
+          (expect (oref (elsa-nth 0 form) previous) :to-be nil)
+          (expect (oref (elsa-nth 1 form) previous) :to-be (elsa-nth 0 form))
+          (expect (oref (elsa-nth 2 form) previous) :to-be (elsa-nth 1 form))))))
 
   (describe "functions"
 

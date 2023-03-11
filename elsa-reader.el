@@ -656,17 +656,27 @@ for the analysis."
            (let ((cons-form (cond
                              ((elsa--quote-p (car form))
                               (elsa--read-quote form state))
-                             (t (elsa--read-cons form state)))))
+                             (t (elsa--read-cons form state))))
+                 (previous nil))
              (elsa-form-foreach cons-form
-               (lambda (f) (oset f parent cons-form)))
+               (lambda (f)
+                 (oset f parent cons-form)
+                 ;; first one is set to nil
+                 (oset f previous previous)
+                 (setq previous f)))
              cons-form))
           ((integerp form) (elsa--read-integer form))
           ((floatp form) (elsa--read-float form))
           ((stringp form) (elsa--read-string form))
           ((vectorp form)
-           (let ((vector-form (elsa--read-vector form state)))
+           (let ((vector-form (elsa--read-vector form state))
+                 (previous nil))
              (elsa-form-foreach vector-form
-               (lambda (f) (oset f parent vector-form)))
+               (lambda (f)
+                 (oset f parent vector-form)
+                 ;; first one is set to nil
+                 (oset f previous previous)
+                 (setq previous f)))
              vector-form))
           ((functionp form) (elsa--read-function form state))
           (t (error "Invalid form")))))
