@@ -37,8 +37,17 @@
 
 (defmacro elsa-declare-defun (name arglist type)
   (declare (indent 2))
-  `(elsa-state-add-defun elsa-global-state
+  `(elsa-state-add-method elsa-global-state
      (elsa-defun :name ',name :type (elsa-make-type ,type) :arglist ',arglist)))
+
+(defmacro elsa-declare-defgeneric (name arglist type)
+  (declare (indent 2))
+  `(elsa-state-add-defun elsa-global-state
+     (elsa-defun :name ',name
+                 :type (elsa-make-type ,type)
+                 :defun-type 'cl-defgeneric
+                 :defgeneric-type (elsa-make-type ,type)
+                 :arglist ',arglist)))
 
 (defmacro elsa-declare-defvar (name type)
   (declare (indent 1))

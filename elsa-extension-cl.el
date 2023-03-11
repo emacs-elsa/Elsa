@@ -31,8 +31,10 @@
 (require 'dash)
 
 (require 'elsa-analyser)
-(require 'elsa-typed-cl)
+(require 'elsa-type-helpers)
 (require 'elsa-extension-eieio)
+
+(require 'elsa-typed-cl)
 
 (defun elsa--cl-analyse-specifiers (args-raw)
   "Analyse the cl-style specifiers to extract type information.
@@ -44,9 +46,9 @@ ARGS-RAW is the raw forms as present in the `cl-defmethod' or
       (when (elsa-form-list-p arg)
         (-when-let* ((arg-form (elsa-car arg))
                      (type-annotation (elsa-cadr arg))
-                     (struct-name (elsa-get-name type-annotation))
-                     (struct (get struct-name 'elsa-defstruct)))
-          (oset arg-form type (elsa--make-type `(struct ,(oref struct name)))))))))
+                     (type (elsa--cl-type-to-elsa-type
+                            (elsa-form-to-lisp type-annotation))))
+          (oset arg-form type type))))))
 
 (defun elsa--analyse:cl-defmethod (form scope state)
   "cl-defmethod is like defun, but there can be extra
@@ -109,16 +111,26 @@ keyword-sexp pairs."
                        (elsa-car arg)
                      arg))))
          (body (elsa-cdr args-and-body))
-         (function-type (get name 'elsa-type)))
+         (annotation (oref form annotation)))
     ;; check if the cl-defgeneric body is empty
     (if (or (eq (length (elsa-form-sequence form)) 3)
             (and (eq (length (elsa-form-sequence form)) 4)
                  (elsa-form-string-p (elsa-nth 3 form))))
-        (if-let ((def (elsa-state-get-defun state name)))
-            ;; If the type was determined by annotation, we only add
-            ;; the arglist.
-            (unless (slot-boundp def 'arglist)
-              (oset def arglist (elsa-form-to-lisp args)))
+        (let ((type (or (elsa--make-function-type-from-annotation
+                         annotation)
+                        (elsa-function-type
+                         :args (elsa--get-default-function-types args)
+                         :return (elsa-type-unbound)))))
+
+          ;; If a definition already exists, this is an error because
+          ;; we are redefining existing generic.
+          (when-let ((def (elsa-state-get-defun state name)))
+            (elsa-state-add-message state
+              (elsa-make-error (elsa-car form)
+                "Redefinition of generic function %s"
+                :code "cl-defgeneric-redefinition"
+                name)))
+
           ;; Defgeneric without a body does not define any callable
           ;; method, but we still need to register the function for
           ;; things like "go to definition" to work.  Also we need to
@@ -127,9 +139,9 @@ keyword-sexp pairs."
           ;; unbound to mark this function as uncallable.
           (elsa-state-add-defun state
             (elsa-defun :name name
-                        :type (elsa-function-type
-                               :args (elsa--get-default-function-types args)
-                               :return (elsa-type-unbound))
+                        :defun-type 'cl-defgeneric
+                        :defgeneric-type type
+                        :type type
                         :arglist (elsa-form-to-lisp args))))
       (elsa--cl-analyse-specifiers args-raw)
       (elsa--analyse-defun-like-form name args body form scope state))))

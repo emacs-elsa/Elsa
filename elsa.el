@@ -225,6 +225,12 @@ GLOBAL-STATE is the initial configuration."
                (oref state defvars))
               (maphash
                (lambda (name def)
+                 (when (oref def defgeneric-type)
+                   (insert
+                    (format
+                     "%S\n"
+                     `(elsa-declare-defgeneric ,name ,(when (slot-boundp def 'arglist) (oref def arglist))
+                        ,(read (elsa-type-describe (oref def defgeneric-type)))))))
                  (insert
                   (format
                    "%S\n"

@@ -534,6 +534,13 @@ nullables and the &rest argument into a variadic."
              (t (push type types))))))))
     (nreverse types)))
 
+(defun elsa--make-function-type-from-annotation (annotation)
+  (and annotation
+       (if (symbolp (nth 2 annotation))
+           (elsa--make-type
+            `(function () ,(nth 2 annotation)))
+         (elsa--make-type (nth 2 annotation)))))
+
 (defun elsa--analyse-defun-like-form (name args body form scope state)
   "Analyse function or macro definition.
 
@@ -550,18 +557,9 @@ argument types.
 
 This function does not perform the call-site analysis, that is
 handled by `elsa--analyse-function-like-invocation'."
-;;  (elsa-log "annotation %s" (oref form annotation))
-  (let* (;; TODO: there should be an api for `(get name
-         ;; 'elsa-type)'... probably on `scope', but for now scope is
-         ;; separate for each processed file which is not great.
-         (function-type (get name 'elsa-type))
+  (let* ((annotation (oref form annotation))
+         (annotation-type (elsa--make-function-type-from-annotation annotation))
          (vars))
-    ;; Update the arg list if it was not already defined.  This
-    ;; happens when the function was first registered with a reader
-    ;; annotation.
-    (-when-let (def (elsa-state-get-defun state name))
-      (unless (slot-boundp def 'arglist)
-        (oset def arglist (elsa-form-to-lisp args))))
     (when args
       (-each-indexed (--remove
                       (memq (elsa-get-name it) '(&rest &optional))
@@ -573,11 +571,11 @@ handled by `elsa--analyse-function-like-invocation'."
                   :type (cond
                          ((not (elsa-type-mixed-p (elsa-get-type arg)))
                           (elsa-get-type arg))
-                         ((not function-type)
+                         ((not annotation-type)
                           (elsa-type-mixed))
                          (t
                           (let ((expected-type (elsa-function-type-nth-arg
-                                                function-type
+                                                annotation-type
                                                 index)))
                             (or expected-type
                                 (progn
@@ -589,48 +587,43 @@ handled by `elsa--analyse-function-like-invocation'."
                                   (elsa-type-mixed)))))))))
             (push var vars)
             (elsa-scope-add-var scope var)))))
+    ;; FIXME: we must somehow add *this* overload before analyzing the
+    ;; body, because it can be recursively called inside.  But then we
+    ;; won't know the return type...
     (when body (elsa--analyse-body body scope state))
     ;; check if return type of defun corresponds with the last form of
     ;; the body
-    (let* ((body-return-type (if body (oref (-last-item body) type) (elsa-type-nil)))
-           (function-return-type (elsa-type-get-return function-type)))
-      (when  function-return-type
-        (unless (elsa-type-assignable-p function-return-type body-return-type)
-          (elsa-state-add-message state
-            (elsa-make-error (elsa-car form)
-              (elsa-with-temp-explainer explainer
-                (elsa-explain-and-indent explainer
-                  ("Function is expected to return `%s' but returns `%s'"
-                   (elsa-type-describe function-return-type)
-                   (elsa-type-describe body-return-type))
-                  (elsa-type-accept function-return-type body-return-type explainer))
-                explainer)
-              :code "incompatible-return-type"
-              :compact t))))
-      ;; infer the type of the function
-      (let ((def (elsa-state-get-defun state name)))
-        ;; if there is no definition, register it
-        (if (not def)
-            (elsa-state-add-defun state
-              (elsa-defun :name name
-                          :type (elsa-function-type
-                                 :args (elsa--get-default-function-types args)
-                                 :return body-return-type)
-                          :arglist (elsa-form-to-lisp args)))
-          ;; Otherwise we will add a new overload to the existing
-          ;; function and re-add it to the state so it is cached again
-          ;; with all the so-far available overloads.
-          ;; TODO: warn if it is not a defmethod because we are
-          ;; overwriting an existing function.
-          (when (eq (elsa-get-name form) 'cl-defmethod)
-            (let ((fn-type (oref def type)))
-              (oset def type
-                    (elsa-type-intersect
-                     (elsa-function-type
-                      :args (elsa--get-default-function-types args)
-                      :return body-return-type)
-                     fn-type))
-              (elsa-state-add-defun state def))))))
+    (let* ((body-return-type (if body (oref (-last-item body) type) (elsa-type-nil))))
+      ;; Register the function
+      (let ((method (elsa-defun :name name
+                                :defun-type (elsa-get-name form)
+                                :type (or annotation-type
+                                          (elsa-function-type
+                                           :args (elsa--get-default-function-types args)
+                                           :return body-return-type))
+                                :arglist (elsa-form-to-lisp args))))
+        (elsa-state-add-method state method))
+
+      ;; (elsa-log "defun type %s" (elsa-tostring (oref (elsa-state-get-defun state name) type)))
+      ;; (elsa-log "defun defgeneric-type %s" (elsa-tostring (oref (elsa-state-get-defun state name) defgeneric-type)))
+      ;; (elsa-log "defun defun-type %s" (oref (elsa-state-get-defun state name) defun-type))
+      (let ((expected-return-type (or (elsa-type-get-return annotation-type)
+                                      (elsa-type-get-generic-return
+                                       (elsa-state-get-defun state name)))))
+        ;; (elsa-log "expected-return-type %s" (elsa-tostring expected-return-type))
+        (when expected-return-type
+          (unless (elsa-type-accept expected-return-type body-return-type)
+            (elsa-state-add-message state
+              (elsa-make-error (elsa-car form)
+                (elsa-with-temp-explainer explainer
+                  (elsa-explain-and-indent explainer
+                    ("Function is expected to return `%s' but returns `%s'"
+                     (elsa-type-describe expected-return-type)
+                     (elsa-type-describe body-return-type))
+                    (elsa-type-accept expected-return-type body-return-type explainer))
+                  explainer)
+                :code "incompatible-return-type"
+                :compact t))))))
     (--each vars (elsa-scope-remove-var scope it))))
 
 (defun elsa--analyse:defun (form scope state)

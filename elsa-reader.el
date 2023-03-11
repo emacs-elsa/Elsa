@@ -584,18 +584,13 @@ STATE is Elsa local state."
                  (elsa-form-function-call-p reader-form 'defsubst)
                  (elsa-form-function-call-p reader-form 'cl-defmethod)
                  (elsa-form-function-call-p reader-form 'cl-defgeneric)))
+        (oset reader-form annotation comment-form)
         (when (and state (not (eq form-name annotation-name)))
           (elsa-state-add-message state
-            (elsa-make-warning (elsa-nth 1 reader-form)
+            (elsa-make-error (elsa-nth 1 reader-form)
               "The function name `%s' and the annotation name `%s' do not match"
               (symbol-name form-name)
-              (symbol-name annotation-name))))
-        (elsa-state-add-defun state
-          (elsa-defun :name (elsa-get-name (cadr (oref reader-form sequence)))
-                      :type (cond
-                             ((symbolp (nth 2 comment-form))
-                              (eval `(elsa-make-type (function () ,@(cddr comment-form)))))
-                             (t (eval `(elsa-make-type ,@(cddr comment-form))))))))
+              (symbol-name annotation-name)))))
        ((and (elsa-form-sequence-p reader-form)
              (or (elsa-form-function-call-p reader-form 'defvar)
                  (elsa-form-function-call-p reader-form 'defcustom)

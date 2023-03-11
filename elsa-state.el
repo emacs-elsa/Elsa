@@ -86,12 +86,42 @@ where it was declared.")
                 (get parent-name 'elsa-defclass)))))
 
 (defclass elsa-defun (elsa-declaration)
-  ((type :initarg :type :documentation "Function type of the defun.")
-   (arglist :initarg :arglist :documentation "Defun arglist."))
+  ((type
+    :type elsa-type
+    :initarg :type
+    :documentation "Function type of the defun.")
+   (defun-type
+     :type symbol
+     :initarg :defun-type
+     :initform 'defun
+     :documentation "Type of the definition.
+
+Can be defun, defmacro, cl-defmethod, cl-defgeneric.")
+   (defgeneric-type
+     :type (or elsa-type null)
+     :initarg :defgeneric-type
+     :initform nil
+     :documentation "Type of the cl-defgeneric.
+
+If the defun-type is `cl-defgeneric' or `cl-defmethod' any new
+overload must be compatible with defgeneric-type.
+
+We also narrow the return type of an overload to the intersection of
+its returntype and defgeneric-type's return type.")
+   (arglist
+    :initarg :arglist
+    :documentation "Defun arglist."))
   :documentation "Defun and defun-like definitions discovered during analysis.")
 
 (cl-defmethod elsa-get-type ((this elsa-defun))
   (oref this type))
+
+(cl-defmethod elsa-type-get-return ((this elsa-defun))
+  (elsa-type-get-return (oref this type)))
+
+(cl-defmethod elsa-type-get-generic-return ((this elsa-defun))
+  (when-let ((defgeneric-type (oref this defgeneric-type)))
+    (elsa-type-get-return defgeneric-type)))
 
 (defclass elsa-defvar (elsa-declaration)
   ((type
@@ -215,13 +245,24 @@ readonly.")
   (declare (indent 1))
   (let ((def (elsa-state-get-defun this (oref method name))))
     (if (not def)
-        (elsa-state-add-defun this method)
-      ;; if the defun already exist, intersect the function type to
-      ;; add new "overload".
-      (oset def type
-            (elsa-type-intersect
-             (oref method type)
-             (oref def type)))
+        (progn
+          (when (and (eq (oref method defun-type) 'cl-defgeneric)
+                     (not (oref method defgeneric-type)))
+            (oset method defgeneric-type (oref method type)))
+          (elsa-state-add-defun this method))
+      (pcase (oref method defun-type)
+        ('cl-defmethod
+          (let ((expected-return-type
+                 (or (elsa-type-get-generic-return def)
+                     (elsa-type-mixed))))
+            ;; If the definition already exist, intersect the function
+            ;; type to add new "overload".
+            (oset def type (elsa-type-intersect (oref method type) (oref def type)))))
+        (`defun
+            ;; for defun, just replace the existing type.
+            (oset def type (oref method type))))
+      ;; We also need to re-add it to update the symbol and file
+      ;; definition pointer for caching and "go to definition".
       (elsa-state-add-defun this def))))
 
 (cl-defgeneric elsa-state-add-defvar ((this elsa-declarations) (def elsa-defvar))

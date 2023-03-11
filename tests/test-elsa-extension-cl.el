@@ -123,10 +123,28 @@
         )
       )
 
-    (xdescribe "defmethod"
+    (describe "defmethod"
 
-      (xdescribe "method registration"
+      (describe "resolving generic specifiers"
 
+        (it "should resolve simple type"
+          (elsa-test-with-analysed-form "|(cl-defmethod foo ((name symbol)) t)" form
+            :state-var state
+            (let ((name-form (elsa-car (elsa-car (elsa-nth 2 form)))))
+              (expect (oref name-form type) :to-be-type-equivalent
+                      (elsa-make-type symbol)))))
 
-        )
-      )))
+        (it "should resolve a class"
+          (let ((state (elsa-state)))
+            (elsa-state-add-defclass state
+              (elsa-defclass
+               :name 'elsa-form
+               :slots (make-hash-table)
+               :parents '((elsa-form))))
+            (elsa-test-with-analysed-form "|(cl-defmethod foo ((name elsa-form)) t)" form
+              :state state
+              (let ((name-form (elsa-car (elsa-car (elsa-nth 2 form)))))
+                (expect (oref name-form type) :to-be-type-equivalent
+                        (elsa-make-type (class elsa-form))))))))
+
+      (xdescribe "method registration"))))
