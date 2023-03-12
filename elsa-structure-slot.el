@@ -35,6 +35,7 @@
   ((name
     :type symbol
     :initarg :name
+    :accessor elsa-get-name
     :documentation "Slot name.")
    (initarg
     :type (or symbol null)
@@ -44,6 +45,7 @@
    (type
     :type elsa-type
     :initarg :type
+    :accessor elsa-get-type
     :documentation "Slot Elsa type."))
   :documentation "Data about a slot in interface-like structure.
 

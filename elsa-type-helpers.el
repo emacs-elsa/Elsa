@@ -158,7 +158,8 @@ Returns trinary value."
        (oset list-type car-type item-type)
        (oset list-type cdr-type item-type)
        list-type))
-    (`(plist . ,slots)
+    ((and `(,type . ,slots)
+          (guard (memq type '(plist keys))))
      (let* ((decl (-split-on '&extends slots))
             (slot-pairs (-partition 2 (unless (eq '&extends (car slots))
                                         (car decl))))
@@ -173,8 +174,10 @@ Returns trinary value."
                      :name (car slot)
                      :type (elsa--make-type (cadr slot)))
                     table)))
-       (elsa-type-plist :slots table
-                        :extends interfaces)))
+       (if (eq type 'plist)
+           (elsa-type-plist :slots table
+                            :extends interfaces)
+         (elsa-type-keys :slots table))))
     (`(interface ,name . ,slots)
      (let* ((decl (-split-on '&extends slots))
             (slot-pairs (-partition 2 (unless (eq '&extends (car slots))
@@ -330,6 +333,9 @@ might not make sense."
   "Select most specific overloads from LIST.
 
 If overloads are not comparable, select all of them.
+
+INDEX is the position in the arglist or a keyword for named
+arguments.
 
 Items in LIST are of form (TYPE . OVERLOAD-INDEX)."
   (-mapcat

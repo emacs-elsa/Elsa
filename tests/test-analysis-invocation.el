@@ -56,6 +56,33 @@
           :state state
           (expect (oref form type) :to-be-type-equivalent (elsa-make-type number))))))
 
+  (describe "check compatibility of passed argument"
+
+    (it "should produce error if incompatible type is passed to a function"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type (function (int) int))
+                      :arglist '(x)))
+        (elsa-test-with-analysed-form "|(b :keyword)" form
+          :state state
+          :errors-var errors
+          (expect (car errors)
+                  :message-to-match "Argument 1 accepts type `int' but received `(const :keyword)'"))))
+
+    (it "should produce error if incompatible type is passed to a function's keyword argument"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type (function ((keys :slot string)) int))
+                      :arglist '(&rest args)))
+        (elsa-test-with-analysed-form "|(b :slot :keyword)" form
+          :state state
+          :errors-var errors
+          (expect (length errors) :to-be 1)
+          (expect (car errors)
+                  :message-to-match "Argument :slot accepts type `string' but received `(const :keyword)'")))))
+
 
   (describe "number of arguments"
 
@@ -80,9 +107,22 @@
         (elsa-test-with-analysed-form "|(b 1 2)" form
           :state state
           :errors-var errors
-          (expect (length errors) :to-equal 2)
-          (expect (cadr errors)
-                  :message-to-match "Function `b' expects at most 1 argument but received 2")))))
+          (expect (length errors) :to-equal 1)
+          (expect (car errors)
+                  :message-to-match "Function `b' expects at most 1 argument but received 2"))))
+
+    (it "should report error if unknown keyword argument is passed"
+      (let ((state (elsa-state)))
+        (elsa-state-add-defun state
+          (elsa-defun :name 'b
+                      :type (elsa-make-type (function ((keys :slot string)) mixed))
+                      :arglist '(&rest keys)))
+        (elsa-test-with-analysed-form "|(b :foo \"bar\")" form
+          :state state
+          :errors-var errors
+          (expect (length errors) :to-equal 1)
+          (expect (car errors)
+                  :message-to-match "Argument :foo is present but the function signature does not define it.  Missing overload?")))))
 
 
   (describe "resolving expression type of funcall with type guard"

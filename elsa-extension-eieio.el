@@ -105,7 +105,8 @@
     (--each slots
       (let ((slot (elsa-structure-slot
                    :name (car it)
-                   :type (plist-get (cdr it) :type))))
+                   :type (plist-get (cdr it) :type)
+                   :initarg (plist-get (cdr it) :initarg))))
         (puthash (oref slot name) slot ht)))
     ht))
 
@@ -127,44 +128,59 @@
                                          (copy-sequence pts)))
                                (list p)))
                            parents))
-                        parents-names)))
+                        parents-names))
+         (class nil))
 
-    (elsa-state-add-defclass state
-      (elsa-defclass
-       :name name
-       :slots (elsa-eieio--create-slots
-               (mapcar
-                (lambda (slot)
-                  (let* ((slot-name (elsa-get-name slot))
-                         (type-form (map-elt (elsa-cdr slot) :type))
-                         (type-lisp (elsa-form-to-lisp type-form))
-                         (elsa-type (or (and type-lisp
-                                             (or (elsa--cl-type-to-elsa-type type-lisp)
-                                                 (elsa-type-mixed)))
-                                        (elsa-type-mixed)))
-                         (accessor (map-elt (elsa-cdr slot) :accessor)))
+    (setq
+     class
+     (elsa-defclass
+      :name name
+      :slots (elsa-eieio--create-slots
+              (mapcar
+               (lambda (slot)
+                 (let* ((slot-name (elsa-get-name slot))
+                        (type-form (map-elt (elsa-cdr slot) :type))
+                        (type-lisp (elsa-form-to-lisp type-form))
+                        (elsa-type (or (and type-lisp
+                                            (or (elsa--cl-type-to-elsa-type type-lisp)
+                                                (elsa-type-mixed)))
+                                       (elsa-type-mixed)))
+                        (accessor (map-elt (elsa-cdr slot) :accessor))
+                        (initarg (map-elt (elsa-cdr slot) :initarg)))
 
-                    (when accessor
-                      (elsa-state-add-method state
-                        (elsa-defun
-                         :name (elsa-get-name accessor)
-                         :defun-type 'cl-defmethod
-                         :type (elsa-function-type
-                                :args (list (elsa--make-type `(class ,name)))
-                                :return elsa-type)
-                         :arglist (list 'this))))
+                   (when accessor
+                     (elsa-state-add-method state
+                       (elsa-defun
+                        :name (elsa-get-name accessor)
+                        :defun-type 'cl-defmethod
+                        :type (elsa-function-type
+                               :args (list (elsa--make-type `(class ,name)))
+                               :return elsa-type)
+                        :arglist (list 'this))))
 
-                    (list slot-name :type elsa-type)))
-                (elsa-form-sequence slots)))
-       :parents (let ((-compare-fn (-on #'eq #'car)))
-                  (-uniq (cons (cons name parents-names) parents-tree)))))
+                   (list slot-name
+                         :type elsa-type
+                         :initarg (elsa-get-name initarg))))
+               (elsa-form-sequence slots)))
+      :parents (let ((-compare-fn (-on #'eq #'car)))
+                 (-uniq (cons (cons name parents-names) parents-tree)))))
+
+    (elsa-state-add-defclass state class)
 
     ;; add the constructor
-    (elsa-state-add-defun state
-      (elsa-defun
-       :name name
-       :type (elsa--make-type `(function (&rest mixed) (class ,name)))
-       :arglist (list '&rest 'args)))
+    (let ((kw-args (->> (elsa-get-slots class)
+                        (--filter (oref it initarg))
+                        (--map (list (oref it initarg)
+                                     (oref it type)))
+                        (elsa-type-make-plist-hashtable)
+                        (elsa-type-keys :slots))))
+      (elsa-state-add-defun state
+        (elsa-defun
+         :name name
+         :type (elsa-function-type
+                :args (list kw-args)
+                :return (elsa--make-type `(class ,name)))
+         :arglist (list '&rest 'args))))
 
     ;; add the type predicate
     (elsa-state-add-defun state

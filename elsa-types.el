@@ -209,14 +209,17 @@ A callable type can be called either directly as a list form or
 with `funcall' or `apply' (or with other similar functions)."
   nil)
 
-;; (elsa-function-type-nth-arg :: (function (mixed int) mixed))
+;; (elsa-function-type-nth-arg :: (function (mixed (or int symbol)) mixed))
 (cl-defgeneric elsa-function-type-nth-arg (_this _n)
-  "Return type of Nth argument.
+  "Return type of Nth argument or named argument.
 
 For non-callable functions, return nil.
 
-If N is more than the arity of the function and the last argument
-is variadic, return that type, otherwise return nil."
+If N is more or equal to the arity of the function and the last
+argument is variadic, return that type, otherwise return nil.
+
+If N is not a number, it is assumed to be a slot name which we
+look up in the last keys argument type."
   nil)
 
 (defclass elsa-type-empty (elsa-type elsa-simple-type eieio-singleton) ()
@@ -748,6 +751,24 @@ One key and value pair is called a slot.
 An example of plist is (:one 1 :two 2).  Elsa currently supports
 symbols as keys.")
 
+(defun elsa-type-make-plist-hashtable (pairs)
+  "Make hashtable of slots from PAIRS of keywords and types.
+
+Each item of PAIRS is a list (KEYWORD ELSA-TYPE)"
+  (let ((hashtable (make-hash-table)))
+    (dolist (pair pairs)
+      (let ((keyword (car pair))
+            (type (cadr pair)))
+        (puthash keyword (elsa-structure-slot :name keyword :type type) hashtable)))
+    hashtable))
+
+(defclass elsa-type-keys (elsa-type-plist) ()
+  "This is a type of keyword arguments and available slots.
+
+It is the same as plist except it is only used to denote that
+this plist type is supposed to be expanded into key-value pairs
+rather than consumed as a single value in the argument list.")
+
 (cl-defmethod elsa-type-accept ((this elsa-type-plist) (other elsa-type-plist) &optional explainer)
   (elsa-with-explainer explainer
     (elsa--fmt-explain-type-0-does-not-accept-type-1
@@ -758,7 +779,8 @@ symbols as keys.")
   (let* ((slots (oref this slots))
          (keys (-sort #'string< (hash-table-keys slots)))
          (extends (-sort #'string< (oref this extends))))
-    (format "(plist %s%s)"
+    (format "(%s %s%s)"
+            (if (elsa-type-plist-p this) "plist" "keys")
             (mapconcat
              (lambda (key)
                (let ((slot (gethash key slots)))
@@ -863,16 +885,19 @@ then this is a supertype of other."
 (cl-defmethod elsa-type-callable-p ((_this elsa-function-type)) t)
 
 (cl-defmethod elsa-function-type-nth-arg ((this elsa-function-type) n)
-  (let* ((args (oref this args))
-         (type (nth n args)))
+  (let* ((args (oref this args)))
     (cond
-     ((eq type nil)
+     ((symbolp n)
       (let ((last-type (-last-item args)))
-        (when (elsa-variadic-type-p last-type)
-          (oref last-type item-type))))
-     ((elsa-variadic-type-p type)
-      (oref type item-type))
-     (t type))))
+        (when (elsa-type-keys-p last-type)
+          (when-let ((slot (elsa-get-slot last-type n)))
+            (elsa-get-type slot)))))
+     ((<= (1- (length args)) n)
+      (let ((last-type (-last-item args)))
+        (if (elsa-variadic-type-p last-type)
+            (oref last-type item-type)
+          last-type)))
+     (t (nth n args)))))
 
 (cl-defmethod elsa-type-get-args ((this elsa-function-type))
   "Get argument types of THIS function type."

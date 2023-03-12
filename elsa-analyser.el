@@ -922,8 +922,8 @@ If no type annotation is provided, find the value type through
            ((not expected)
             (push (list overload overload-index
                         (format
-                         "Argument %d is present but the function signature does not define it.  Missing overload?"
-                         (1+ index)))
+                         "Argument %s is present but the function signature does not define it.  Missing overload?"
+                         (if (numberp index) (1+ index) index)))
                   overloads-errors))
            ((trinary-false-p acceptablep)
             (push (list overload overload-index
@@ -934,8 +934,8 @@ If no type annotation is provided, find the value type through
                         ;; possible type is (const "whatever")
                         (elsa-with-temp-explainer explainer
                           (elsa-explain-and-indent explainer
-                            ("Argument %d accepts type `%s' but received `%s'"
-                             (1+ index)
+                            ("Argument %s accepts type `%s' but received `%s'"
+                             (if (numberp index) (1+ index) index)
                              (elsa-type-describe expected-normalized)
                              (elsa-type-describe actual))
                             (elsa-type-accept expected-normalized actual explainer))
@@ -943,7 +943,6 @@ If no type annotation is provided, find the value type through
                   overloads-errors)))
           (and expected (trinary-possible-p acceptablep))))
       overloads))
-    ;; (elsa-log "good-overloads %s" (mapconcat (lambda (x) (elsa-tostring (car x))) good-overloads " "))
     (if good-overloads
         ;; If we have multiple overloads where the argument is of a
         ;; concrete type, that is not a sum or intersection (where the
@@ -955,9 +954,7 @@ If no type annotation is provided, find the value type through
         ;; pick the last (smallest) one.
         (if (= (length good-overloads) 1)
             (setq new-overloads good-overloads)
-          (setq new-overloads (elsa--simplify-overloads good-overloads index))
-          ;; (elsa-log "new-overloads %s" (mapconcat (lambda (x) (elsa-tostring (car x))) new-overloads " "))
-          )
+          (setq new-overloads (elsa--simplify-overloads good-overloads index)))
       (setq new-overloads nil)
       (elsa-state-add-message state
         (if (< 1 (length overloads-errors))
@@ -975,7 +972,9 @@ If no type annotation is provided, find the value type through
               (elsa-make-error argument-form
                 explainer
                 :code "no-overloads"))
-          (elsa-make-error argument-form
+          (elsa-make-error (if (keywordp index)
+                               (oref argument-form previous)
+                             argument-form)
             (let ((expl-or-fmt (nth 2 (car overloads-errors))))
               (if (elsa-explainer-p expl-or-fmt)
                   (elsa--reset-depth expl-or-fmt)
@@ -1011,35 +1010,37 @@ SCOPE and STATE are the scope and state objects."
   (setq spec (elsa--analyse-normalize-spec spec form))
   (let* ((name (elsa-get-name head))
          (type (elsa-get-type head))
-         (narrow-type (elsa-function-get-narrow-type name)))
+         (narrow-type (elsa-function-get-narrow-type name))
+         (num-of-args (length args))
+         (min 0)
+         (max num-of-args))
     (-each (-zip args spec)
       (-lambda ((arg . analysep))
         (when analysep
           (elsa--analyse-form arg scope state))))
     ;; check arity
     (when name
-      (-let (((min . max) (elsa-fn-arity state name))
-             (num-of-args (length args)))
-        (when (eq max 'undefined)
-          (elsa-state-add-message state
-            (elsa-make-warning head
-              "Function `%s' is missing arglist definition.  Maybe it is called before being declared?"
-              name)))
-        (when (< num-of-args min)
-          (elsa-state-add-message state
-            (elsa-make-error head
-              "Function `%s' expects at least %d %s but received %d"
-              name min
-              (elsa-pluralize "argument" min)
-              num-of-args)))
-        (when (and (not (memq max '(many unevalled undefined)))
-                   (> num-of-args max))
-          (elsa-state-add-message state
-            (elsa-make-error head
-              "Function `%s' expects at most %d %s but received %d"
-              name max
-              (elsa-pluralize "argument" max)
-              num-of-args)))))
+      (-setq (min . max) (elsa-fn-arity state name))
+      (when (eq max 'undefined)
+        (elsa-state-add-message state
+          (elsa-make-warning head
+            "Function `%s' is missing arglist definition.  Maybe it is called before being declared?"
+            name)))
+      (when (< num-of-args min)
+        (elsa-state-add-message state
+          (elsa-make-error head
+            "Function `%s' expects at least %d %s but received %d"
+            name min
+            (elsa-pluralize "argument" min)
+            num-of-args)))
+      (when (and (not (memq max '(many unevalled undefined)))
+                 (> num-of-args max))
+        (elsa-state-add-message state
+          (elsa-make-error head
+            "Function `%s' expects at most %d %s but received %d"
+            name max
+            (elsa-pluralize "argument" max)
+            num-of-args))))
     ;; check the types
     (when type
       ;; analyse the arguments
@@ -1054,13 +1055,38 @@ SCOPE and STATE are the scope and state objects."
                                (overloads (--map-indexed (cons it it-index) all-overloads)))
                     (-each-indexed args
                       (lambda (index argument-form)
-                        (let ((check-results (elsa--check-argument-for-index
-                                              index argument-form overloads state
-                                              all-overloads overloads-errors)))
-                          (setq overloads-errors
-                                (append overloads-errors (plist-get check-results :errors)))
-                          (setq overloads (plist-get check-results :overloads))
-                          (unless overloads (throw 'no-overloads nil)))))
+                        (when-let ((arg-idx (cond
+                                             ((< index min) index)
+                                             ((symbolp max)
+                                              ;; this is most likely a
+                                              ;; keyword argument, so we
+                                              ;; check if it's a keyword
+                                              ;; and if so pass it forward
+                                              (cond
+                                               ;; if this index is a
+                                               ;; keyword, we just skip to
+                                               ;; the next argument form.
+                                               ((and (elsa-form-keyword-p argument-form)
+                                                     (cl-evenp (- index min)))
+                                                nil)
+                                               ;; if the previous form was
+                                               ;; a keyword, that's the
+                                               ;; thing we need to look up
+                                               ((elsa-form-keyword-p
+                                                 (oref argument-form previous))
+                                                (elsa-form-to-lisp
+                                                 (oref argument-form previous)))
+                                               (t index)))
+                                             (t index))))
+                          (let ((check-results
+                                 (elsa--check-argument-for-index
+                                  arg-idx
+                                  argument-form overloads state
+                                  all-overloads overloads-errors)))
+                            (setq overloads-errors
+                                  (append overloads-errors (plist-get check-results :errors)))
+                            (setq overloads (plist-get check-results :overloads))
+                            (unless overloads (throw 'no-overloads nil))))))
                     (mapcar #'car overloads))))))
         ;; set the return type of the form according to the return type
         ;; of the function's declaration
