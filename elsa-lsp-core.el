@@ -36,12 +36,6 @@
        :message (lgr-format-event (oref this layout) event)))))
   this)
 
-(defconst elsa-lsp-logger (-> (lgr-get-logger "elsa")
-                              (lgr-add-appender
-                               (-> (elsa-lsp-appender)
-                                   (lgr-set-layout (elsa-plain-layout))
-                                   (lgr-set-threshold lgr-level-info)))))
-
 (defclass elsa-lsp-file ()
   ((name :type string :initarg :name)
    (buffer :type buffer :initarg :buffer)))

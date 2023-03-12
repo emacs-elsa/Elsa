@@ -7,6 +7,17 @@
 (defun elsa-lsp-stdin-loop ()
   "Reads from standard input in a loop and process incoming requests."
   (elsa-load-config)
+  (-> (lgr-get-logger "elsa")
+      (lgr-reset-appenders)
+      (lgr-add-appender
+       (-> (elsa-lsp-appender)
+           (lgr-set-layout (elsa-plain-layout))
+           (lgr-set-threshold lgr-level-info)))
+      (lgr-add-appender
+       (-> (lgr-appender)
+           (lgr-set-layout (lgr-layout-format :format "[%K] (%n) %m"))))
+      (lgr-set-threshold lgr-level-debug))
+
   (prettify-symbols-mode -1)
   (let ((input (read-from-minibuffer ""))
         (has-header nil))
