@@ -1170,85 +1170,9 @@ FORM is a result of `elsa-read-form'."
     (when (elsa-check-should-run it form scope state)
       (elsa-check-check it form scope state)))
   (when-let ((method (oref state lsp-method))
-             (params (oref state lsp-params)))
-    (cond
-     ((equal method "textDocument/hover")
-      (-let* (((&HoverParams :position (&Position :line :character))
-               params))
-        (when (and (= (oref form line) (1+ line))
-                   (<= (oref form column) character)
-                   (or (< (1+ line) (oref form end-line))
-                       (<= character (oref form end-column))))
-          (throw 'lsp-response
-                 (lsp-make-hover
-                  :contents (lsp-make-markup-content
-                             :kind "plaintext"
-                             :value (format
-                                     "%s: %s"
-                                     (elsa-form-print form)
-                                     (elsa-type-describe (elsa-get-type form))))
-                  :range (lsp-make-range
-                          :start (lsp-make-position
-                                  :line (1- (oref form line))
-                                  :character (oref form column))
-                          :end (lsp-make-position
-                                :line (1- (oref form end-line))
-                                :character  (oref form end-column))))))))
-     ((equal method "textDocument/completion")
-      (-let* (((&CompletionParams :position (&Position :line :character))
-               params))
-        (when (and (= (oref form line) (1+ line))
-                   (<= (oref form column) character)
-                   (or (< (1+ line) (oref form end-line))
-                       (<= character (oref form end-column))))
-          (when form (message "form %s" (elsa-tostring form)))
-          (when-let ((call-form (if (elsa-form-function-call-p form)
-                                    form
-                                  (and (slot-boundp form 'parent)
-                                       (oref form parent)
-                                       (elsa-form-function-call-p (oref form parent))
-                                       (oref form parent)))))
-            ;; special completion inside a function call form
-            (message "call-form %s" (elsa-tostring call-form))
-            (cond
-             ((eq (elsa-get-name call-form) 'oref)
-              (let* ((inst-form (elsa-cadr call-form))
-                     (inst-type (elsa-get-type inst-form)))
-                (when (elsa-struct-type-p inst-type)
-                  (when-let* ((class (get (oref inst-type name) 'elsa-defclass)))
-                    (let ((slots (--map
-                                  (oref it name)
-                                  (elsa-get-slots class))))
-                      (throw 'lsp-response
-                             (lsp-make-completion-list
-                              :is-incomplete json-false
-                              :items (elsa-lsp--list-completion-items
-                                      slots 'symbol-name))))))))))
-
-          ;; could still be a generic function call with point at the
-          ;; first arg
-          (when (or (elsa-form-function-call-p form)
-                    (and (elsa-form-symbol-p form)
-                         (eq (elsa-get-name form) 'nil)))
-            (message "generic call form %s" (elsa-tostring form))
-            (save-excursion
-              (goto-char (1- (oref form end)))
-              (when-let ((candidates (elsa-lsp--completions)))
-                (throw 'lsp-response
-                       (lsp-make-completion-list
-                        :is-incomplete json-false
-                        :items (elsa-lsp--list-completion-items candidates))))))
-
-          ;; regular symbol, we should use defvars and scope
-          ;; variables
-          (message "variable form %s" (elsa-tostring form))
-          (throw 'lsp-response
-                 (lsp-make-completion-list
-                  :is-incomplete json-false
-                  :items (elsa-lsp--list-completion-items
-                          (append (hash-table-keys (oref scope vars))
-                                  (elsa-state-get-var-symbols state))
-                          'symbol-name)))))))))
+             (params (oref state lsp-params))
+             (lsp-analyzer (oref state lsp-analyzer)))
+    (funcall lsp-analyzer form state method params)))
 
 (defun elsa--analyse-body (body scope state)
   (--each body (elsa--analyse-form it scope state)))

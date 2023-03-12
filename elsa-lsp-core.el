@@ -1,3 +1,42 @@
+;;; elsa-lsp-core.el --- LSP implementation with Elsa -*- lexical-binding: t -*-
+
+;; Copyright (C) 2023 Matúš Goljer
+
+;; Author: Matúš Goljer <matus.goljer@gmail.com>
+;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
+;; Version: 0.0.1
+;; Created: 12th March 2023
+;; Package-requires: ((dash "2.17.0"))
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License
+;; as published by the Free Software Foundation; either version 3
+;; of the License, or (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; LSP methods should be handled in functions called
+;; elsa-lsp--handle-CAPABILITY, for example
+;; `elsa-lsp--handle-textDocument/hover'.
+
+;; If the handler needs to run analysis of the surrounding form, it
+;; needs to pass the current lsp-method, lsp-params and lsp-analyzer
+;; to the `elsa-state' which is used for the form analysis.  The
+;; analyzer should be called elsa-lsp--analyze-CAPABILITY, for example
+;; `elsa-lsp--analyze-textDocument/hover'.  The analyzer will run in
+;; context of `elsa-analyse-form'.
+
+;;; Code:
+
 (require 'json)
 (require 'files)
 
@@ -138,12 +177,13 @@ be re-analysed during textDocument/didOpen handler.")))
                 (scan-error pos)))))
       (list beg end))))
 
-(defun elsa-lsp--list-completion-items (list &optional transform)
+(cl-defun elsa-lsp--list-completion-items (list &key transform kind)
   (setq transform (or transform #'identity))
   (apply #'vector
          (mapcar (lambda (item)
                    (lsp-make-completion-item
-                    :label (funcall transform item) ))
+                    :label (funcall transform item)
+                    :kind (or kind lsp/completion-item-kind-text)))
                  list)))
 
 (defun elsa-lsp--completions ()
@@ -186,6 +226,33 @@ be re-analysed during textDocument/didOpen handler.")))
     (elsa-state-update-global state elsa-global-state)
     (apply #'vector (mapcar #'elsa-message-to-lsp (oref state errors)))))
 
+(defun elsa-form-to-lsp-range (form)
+  "Convert FORM to LSP range."
+  (lsp-make-range
+   :start (lsp-make-position
+           :line (1- (oref form line))
+           :character (oref form column))
+   :end (lsp-make-position
+         :line (1- (oref form end-line))
+         :character  (oref form end-column))))
+
+(defun elsa-lsp--analyze-textDocument/hover (form state method params)
+  (-let* (((&HoverParams :position (&Position :line :character))
+           params))
+    (when (and (= (oref form line) (1+ line))
+               (<= (oref form column) character)
+               (or (< (1+ line) (oref form end-line))
+                   (<= character (oref form end-column))))
+      (throw 'lsp-response
+             (lsp-make-hover
+              :contents (lsp-make-markup-content
+                         :kind "plaintext"
+                         :value (format
+                                 "%s: %s"
+                                 (elsa-form-print form)
+                                 (elsa-type-describe (elsa-get-type form))))
+              :range (elsa-form-to-lsp-range form))))))
+
 (defun elsa-lsp--handle-textDocument/hover (id method params)
   (-let* (((&HoverParams :text-document (&TextDocumentIdentifier :uri)
                          :position (&Position :line :character))
@@ -200,11 +267,107 @@ be re-analysed during textDocument/didOpen handler.")))
         (beginning-of-defun)
         (let* ((state (elsa-state :global-state elsa-global-state
                                   :lsp-params params
-                                  :lsp-method method))
+                                  :lsp-method method
+                                  :lsp-analyzer #'elsa-lsp--analyze-textDocument/hover))
                (value (catch 'lsp-response
                         (elsa-process-form state))))
           (when (and value (hash-table-p value))
             (lsp--make-response id value)))))))
+
+(defun elsa-lsp--analyze-textDocument/completion (form state method params)
+  (-let* ((lgr (lgr-get-logger "elsa.lsp.analyzer"))
+          ((&CompletionParams :position (&Position :line :character))
+           params))
+    (when (and (= (oref form line) (1+ line))
+               (<= (oref form column) character)
+               (or (< (1+ line) (oref form end-line))
+                   (<= character (oref form end-column))))
+      (when form (lgr-debug lgr "form %s" (elsa-tostring form)))
+      (when-let ((call-form (if (elsa-form-function-call-p form)
+                                form
+                              (and (slot-boundp form 'parent)
+                                   (oref form parent)
+                                   (elsa-form-function-call-p (oref form parent))
+                                   (oref form parent)))))
+        ;; special completion inside a function call form
+        (lgr-debug lgr "call-formadsadasdasdadx %s" (elsa-tostring call-form))
+        (cond
+         ((eq (elsa-get-name call-form) 'oref)
+          (lgr-debug lgr "call-form is oref")
+          (let* ((inst-form (elsa-cadr call-form))
+                 (inst-type (elsa-get-type inst-form)))
+            (lgr-debug lgr "instance type is %s" (elsa-tostring inst-type))
+            (when (elsa-class-type-p inst-type)
+              (lgr-debug lgr "is class type of name %s" (oref inst-type name))
+              (when-let* ((class (elsa-state-get-defclass state (oref inst-type name))))
+                (lgr-debug lgr "has class")
+                (let ((slots (--map
+                              (oref it name)
+                              (elsa-get-slots class))))
+                  (throw 'lsp-response
+                         (lsp-make-completion-list
+                          :is-incomplete json-false
+                          :items (elsa-lsp--list-completion-items
+                                  slots :transform #'symbol-name))))))))))
+
+      ;; Here we complete the function name if the point is at the
+      ;; first position in a list
+      (when (or (elsa-form-function-call-p form)
+                (and (elsa-form-symbol-p form)
+                     (eq (elsa-get-name form) 'nil)))
+        (lgr-debug lgr "completing function name %s" (elsa-tostring form))
+        (save-excursion
+          (goto-char (1- (oref form end)))
+          (when-let ((candidates (elsa-lsp--completions)))
+            (throw 'lsp-response
+                   (lsp-make-completion-list
+                    :is-incomplete json-false
+                    :items (elsa-lsp--list-completion-items candidates))))))
+
+      ;; regular symbol, we should use defvars and scope
+      ;; variables
+      (lgr-debug lgr "variable form %s" (elsa-tostring form))
+      (throw 'lsp-response
+             (lsp-make-completion-list
+              :is-incomplete json-false
+              :items (elsa-lsp--list-completion-items
+                      (append (hash-table-keys (oref scope vars))
+                              (elsa-state-get-var-symbols state))
+                      :transform #'symbol-name
+                      :kind lsp/completion-item-kind-variable))))))
+
+(defun elsa-lsp--handle-textDocument/completion (id method params)
+  (-let* (((&CompletionParams :text-document (&TextDocumentIdentifier :uri)
+                              :position (&Position :line :character))
+           params)
+          (file (elsa-lsp--uri-to-file uri))
+          (buffer (elsa-lsp-get-buffer elsa-lsp-state file)))
+    (when buffer
+      (with-current-buffer buffer
+        (goto-char (point-min))
+        (forward-line line)
+        (forward-char character)
+        (beginning-of-defun)
+        (let* ((state (elsa-state :global-state elsa-global-state
+                                  :lsp-params params
+                                  :lsp-method method
+                                  :lsp-analyzer #'elsa-lsp--analyze-textDocument/completion))
+               (value (ignore-errors
+                        (catch 'lsp-response
+                          (elsa-process-form state)))))
+          (if (and value (hash-table-p value))
+              (lsp--make-response id value)
+            ;; fall back to capf
+            (lsp--make-response
+             id
+             (lsp-make-completion-list
+              :is-incomplete json-false
+              :items (apply
+                      #'vector
+                      (mapcar
+                       (lambda (item)
+                         (lsp-make-completion-item :label item))
+                       (elsa-lsp--capf-completions)))))))))))
 
 (defun elsa-lsp--handle-textDocument/didChange (id method params)
   (-let* (((&DidChangeTextDocumentParams
@@ -254,37 +417,7 @@ be re-analysed during textDocument/didOpen handler.")))
               ((equal method "textDocument/hover")
                (elsa-lsp--handle-textDocument/hover id method params))
               ((equal method "textDocument/completion")
-               (-let* (((&CompletionParams :text-document (&TextDocumentIdentifier :uri)
-                                           :position (&Position :line :character))
-                        params)
-                       (file (elsa-lsp--uri-to-file uri))
-                       (buffer (elsa-lsp-get-buffer elsa-lsp-state file)))
-                 (when buffer
-                   (with-current-buffer buffer
-                     (goto-char (point-min))
-                     (forward-line line)
-                     (forward-char character)
-                     (let* ((state (elsa-state :global-state elsa-global-state
-                                               :lsp-params params
-                                               :lsp-method method))
-                            (value (ignore-errors
-                                     (catch 'lsp-response
-                                       (save-excursion
-                                         (beginning-of-defun)
-                                         (elsa-process-form state))))))
-                       (if (and value (hash-table-p value))
-                           (lsp--make-response id value)
-                         ;; fall back to capf
-                         (lsp--make-response
-                          id
-                          (lsp-make-completion-list
-                           :is-incomplete json-false
-                           :items (apply
-                                   #'vector
-                                   (mapcar
-                                    (lambda (item)
-                                      (lsp-make-completion-item :label item))
-                                    (elsa-lsp--capf-completions)))))))))))
+               (elsa-lsp--handle-textDocument/completion id method params))
               ((equal method "textDocument/didOpen")
                (-let* (((&DidOpenTextDocumentParams :text-document (&TextDocumentItem :uri :version)) params)
                        (file (elsa-lsp--uri-to-file uri)))
@@ -303,6 +436,9 @@ be re-analysed during textDocument/didOpen handler.")))
                (-let* (((&DidSaveTextDocumentParams :text-document (&TextDocumentItem :uri :version)) params)
                        (file (elsa-lsp--uri-to-file uri)))
                  (elsa-lsp-update-file-buffer elsa-lsp-state file)
+                 (when (string-match-p "/elsa-" file)
+                   (lgr-debug (lgr-get-logger "elsa.lsp") "Reloading file %s" file)
+                   (load file t))
                  (lsp--make-notification
                   "textDocument/publishDiagnostics"
                   (lsp-make-publish-diagnostics-params
@@ -317,3 +453,4 @@ be re-analysed during textDocument/didOpen handler.")))
       (elsa-lsp-send-response (lsp--json-serialize res)))))
 
 (provide 'elsa-lsp-core)
+;;; elsa-lsp-core.el ends here

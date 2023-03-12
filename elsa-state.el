@@ -370,6 +370,7 @@ a single file, form or set of forms.")
    (scope :initform (elsa-scope))
    (lsp-method :initarg :lsp-method :initform nil)
    (lsp-params :initarg :lsp-params :initform nil)
+   (lsp-analyzer :initarg :lsp-analyzer :initform nil)
    (global-state :type elsa-global-state
                  :initarg :global-state
                  :initform (elsa-global-state))))
