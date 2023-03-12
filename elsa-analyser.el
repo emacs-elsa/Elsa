@@ -1152,7 +1152,7 @@ FORM is a result of `elsa-read-form'."
   (when-let ((annotation (oref form annotation)))
     (cond
      ((eq (car annotation) 'var)
-      (let ((var (elsa-scope-get-var scope (cadr annotation))))
+      (when-let ((var (elsa-scope-get-var scope (cadr annotation))))
         ;; update the type in the current scope
         (oset var type (eval `(elsa-make-type ,@(nthcdr 3 annotation))))))))
 
