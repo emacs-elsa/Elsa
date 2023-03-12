@@ -160,8 +160,10 @@ tokens."
                          (elsa-tostring form)
                          (error-message-string err))))))
         ;; When not running as language server, just crash on errors.
-        (while (setq form (elsa-read-form state))
-          (elsa-analyse-form state form))))
+        (condition-case nil
+            (while (setq form (elsa-read-form state))
+              (elsa-analyse-form state form))
+          (end-of-file t))))
     (unless no-log
       (elsa-log
        (with-ansi
