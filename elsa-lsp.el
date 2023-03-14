@@ -31,7 +31,9 @@
         (-let* (((&JSONResponse :params :method :id) (lsp--read-json input)))
           (condition-case err
               (elsa-lsp--on-request id method params)
-            (error (elsa-log "Elsa lsp error: %s" (error-message-string err)))))))
+            (error (lgr-error (lgr-get-logger "elsa")
+                     "Elsa lsp error: %s"
+                     (error-message-string err)))))))
 
       (setq input (read-from-minibuffer "")))))
 
