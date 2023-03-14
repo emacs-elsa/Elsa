@@ -329,28 +329,35 @@ might not make sense."
           (push (list item) groups))))
     groups))
 
-(defun elsa--simplify-overloads (list index)
+(defun elsa--simplify-overloads (list)
   "Select most specific overloads from LIST.
 
 If overloads are not comparable, select all of them.
 
-INDEX is the position in the arglist or a keyword for named
-arguments.
+Items in LIST are of form (TYPE OVERLOAD-INDEX INDEX).
 
-Items in LIST are of form (TYPE . OVERLOAD-INDEX)."
-  (-mapcat
-   #'car
-   (elsa--poset-sort
-    (lambda (a b)
-      (elsa-type-accept
-       (elsa-function-type-nth-arg (caar b) index)
-       (elsa-function-type-nth-arg (caar a) index)))
-    (elsa--equivalence-classes
-     (lambda (a b)
-       (elsa-type-equivalent-p
-        (elsa-function-type-nth-arg (car b) index)
-        (elsa-function-type-nth-arg (car a) index)))
-     list))))
+INDEX is the position in the arglist or a keyword for named
+arguments."
+  (let ((parts (--separate (nth 2 it) list)))
+    (append
+     (cadr parts)
+     (-mapcat
+      #'car
+      (elsa--poset-sort
+       ;; we order the equivalence classes by the first element of the
+       ;; group
+       (lambda (a b)
+         (let ((first (car a))
+               (second (car b)))
+           (elsa-type-accept
+            (elsa-function-type-nth-arg (car second) (nth 2 second))
+            (elsa-function-type-nth-arg (car first) (nth 2 first)))))
+       (elsa--equivalence-classes
+        (lambda (a b)
+          (elsa-type-equivalent-p
+           (elsa-function-type-nth-arg (car b) (nth 2 b))
+           (elsa-function-type-nth-arg (car a) (nth 2 a))))
+        (car parts)))))))
 
 (defun elsa-type-is-empty-p (this)
   "Test if THIS is type-equivalent to `elsa-type-empty'.
