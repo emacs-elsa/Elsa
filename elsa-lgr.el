@@ -36,6 +36,7 @@
 
 (require 'seq)
 (require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'format-spec)
 
 (eval-and-compile

@@ -26,6 +26,9 @@
 
 ;;; Code:
 
+(require 'eieio)
+(eval-and-compile (setq eieio-backward-compatibility nil))
+
 (defconst elsa--fmt-explain-type-0-does-not-accept-type-1
   "Type `%s' does not accept type `%s'")
 

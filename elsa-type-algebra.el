@@ -4,7 +4,7 @@
 (eval-and-compile (setq eieio-backward-compatibility nil))
 (require 'elsa-types)
 
-(eval-when-compile
+(eval-and-compile
   (defvar elsa-type-debug nil))
 
 (defvar elsa-type-debug-depth 0)

@@ -1,7 +1,9 @@
 ;; -*- lexical-binding: t -*-
 
-(require 'elsa-lgr)
 (require 'async)
+(require 'dash)
+
+(require 'elsa-lgr)
 
 (defclass elsa-worker-appender (lgr-appender) ()
   "Appender sending messages back to parent process.")
