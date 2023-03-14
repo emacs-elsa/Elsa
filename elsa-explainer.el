@@ -127,7 +127,7 @@ depth in case one explainer was appended to another.")
          (funcall (-flip #'string-join) "\n")
          (replace-regexp-in-string (concat "^" initial-prefix "\n") ""))))
 
-(cl-defgeneric elsa--reset-depth ((this elsa-explainer))
+(cl-defmethod elsa--reset-depth ((this elsa-explainer))
   (let* ((messages (elsa-get-messages this))
          (min-depth-message (--min-by (> (oref it depth)
                                          (oref other depth))
@@ -139,8 +139,8 @@ depth in case one explainer was appended to another.")
     (setf (elsa-get-depth this) 0))
   this)
 
-(cl-defgeneric elsa--append-explainer ((this elsa-explainer)
-                                       (other elsa-explainer))
+(cl-defmethod elsa--append-explainer ((this elsa-explainer)
+                                      (other elsa-explainer))
   "Append OTHER explainer to THIS on the same level."
   (let* ((this-messages (copy-sequence (elsa-get-messages this)))
          (other-messages (mapcar #'clone (elsa-get-messages other)))
@@ -152,8 +152,16 @@ depth in case one explainer was appended to another.")
           (append other-messages this-messages))
     this))
 
-(cl-defgeneric elsa--attach-explainer ((this elsa-explainer)
-                                       (other elsa-explainer))
+(cl-defmethod elsa--append-explainer ((this elsa-explainer)
+                                      (other string))
+  (elsa--append-explainer
+   this
+   (elsa-with-temp-explainer explainer
+     (elsa-explain explainer other)
+     explainer)))
+
+(cl-defmethod elsa--attach-explainer ((this elsa-explainer)
+                                      (other elsa-explainer))
   "Attach OTHER explainer to THIS indented by one extra level."
   (let* ((this-messages (copy-sequence (elsa-get-messages this)))
          (other-messages (mapcar #'clone (elsa-get-messages other)))
