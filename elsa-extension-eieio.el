@@ -58,15 +58,16 @@
                   (or slot-names "no slots"))))))))))
 
 (defun elsa--eieio-assert-struct-for-obj (instance state)
-  (let ((type (elsa-get-type instance)))
-    ;; This test instead of `elsa-class-type-p' is so that mixed can
-    ;; be used as a struct.
-    (unless (elsa-type-assignable-p (elsa-make-type (class nil)) type)
-      (elsa-state-add-message state
-        (elsa-make-error instance
-          "Type `%s' has no properties because it is not a class."
-          :code "eieio-not-a-class"
-          (elsa-type-describe type))))))
+  (when instance
+    (let ((type (elsa-get-type instance)))
+      ;; This test instead of `elsa-class-type-p' is so that mixed can
+      ;; be used as a struct.
+      (unless (elsa-type-assignable-p (elsa-make-type (class nil)) type)
+        (elsa-state-add-message state
+          (elsa-make-error instance
+            "Type `%s' has no properties because it is not a class."
+            :code "eieio-not-a-class"
+            (elsa-type-describe type)))))))
 
 (defun elsa--analyse:oref (form scope state)
   (let* ((instance (elsa-cadr form))
