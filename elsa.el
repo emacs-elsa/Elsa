@@ -647,7 +647,15 @@ This function is soft-deprecated in favour of
   (setq elsa-cli-with-exit t))
 
 (defun elsa-run ()
-  "Analyze files and output errors to stdout."
+  "Analyze files and output errors to stdout.
+
+Elsa supports some optional flags when executed from command
+line.  These must come before the list of files to be analyzed.
+Currently, these flags are supported:
+
+-with-exit => Sets the process exit code to non zero if errors
+              were reported.  This flag exists because flycheck
+              complains when process exits with non-zero status."
   (elsa-load-config)
   (let ((errors 0)
         (warnings 0)
