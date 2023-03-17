@@ -180,13 +180,19 @@ be re-analysed during textDocument/didOpen handler.")))
 (cl-defun elsa-lsp--list-completion-items (list &key transform kind)
   (setq transform (or transform #'identity))
   (apply #'vector
-         (mapcar (lambda (item)
-                   (lsp-make-completion-item
-                    :label (funcall transform item)
-                    :kind (or kind lsp/completion-item-kind-text)))
-                 list)))
+         (mapcar
+          (lambda (item)
+            (let ((completion (funcall transform item)))
+              (lsp-make-completion-item
+               :label (if (listp completion)
+                          (plist-get completion :label)
+                        completion)
+               :kind (if (listp completion)
+                         (plist-get completion :kind)
+                       (or kind lsp/completion-item-kind-text)))))
+          list)))
 
-(defun elsa-lsp--completions ()
+(defun elsa-lsp--function-completions ()
   ;; only used to extract start and end... we can reimplement it later
   (-when-let ((beg end) (elsa-lsp--completions-bounds))
     (message "bounds %s %s" beg end)
@@ -199,10 +205,10 @@ be re-analysed during textDocument/didOpen handler.")))
         (maphash
          (lambda (k v)
            (when (string-prefix-p prefix (symbol-name k))
-             (push k candidates)))
+             (push v candidates)))
          (oref elsa-global-state defuns))
         (message "has %d functions for prefix %s" (length candidates) prefix)))
-      (mapcar #'symbol-name candidates))))
+      candidates)))
 
 (defun elsa-lsp--capf-completions ()
   "Fallback completions engine is the `elisp-completion-at-point'."
@@ -236,7 +242,7 @@ be re-analysed during textDocument/didOpen handler.")))
          :line (1- (oref form end-line))
          :character  (oref form end-column))))
 
-(defun elsa-lsp--analyze-textDocument/hover (form state method params)
+(defun elsa-lsp--analyze-textDocument/hover (form _state _method params)
   (-let* (((&HoverParams :position (&Position :line :character))
            params))
     (when (and (= (oref form line) (1+ line))
@@ -275,9 +281,11 @@ be re-analysed during textDocument/didOpen handler.")))
             (lsp--make-response id value)))))))
 
 (defun elsa-lsp--analyze-textDocument/completion (form state method params)
-  (-let* ((lgr (lgr-get-logger "elsa.lsp.analyzer"))
-          ((&CompletionParams :position (&Position :line :character))
-           params))
+  (-let ((lgr (lgr-get-logger "elsa.lsp.analyzer"))
+         (scope (oref state scope))
+         ((&CompletionParams :position (&Position :line :character))
+          params))
+    (lgr-debug lgr "form before %s" (elsa-tostring form))
     (when (and (= (oref form line) (1+ line))
                (<= (oref form column) character)
                (or (< (1+ line) (oref form end-line))
@@ -290,25 +298,24 @@ be re-analysed during textDocument/didOpen handler.")))
                                    (elsa-form-function-call-p (oref form parent))
                                    (oref form parent)))))
         ;; special completion inside a function call form
-        (lgr-debug lgr "call-formadsadasdasdadx %s" (elsa-tostring call-form))
+        (lgr-debug lgr "call-form %s" (elsa-tostring call-form))
         (cond
-         ((eq (elsa-get-name call-form) 'oref)
-          (lgr-debug lgr "call-form is oref")
-          (let* ((inst-form (elsa-cadr call-form))
-                 (inst-type (elsa-get-type inst-form)))
-            (lgr-debug lgr "instance type is %s" (elsa-tostring inst-type))
+         ;; complete the slot for oref or oset
+         ((memq (elsa-get-name call-form) '(oref oset))
+          (when-let* ((inst-form (elsa-cadr call-form))
+                      (inst-type (elsa-get-type inst-form)))
             (when (elsa-class-type-p inst-type)
-              (lgr-debug lgr "is class type of name %s" (oref inst-type name))
               (when-let* ((class (elsa-state-get-defclass state (oref inst-type name))))
-                (lgr-debug lgr "has class")
-                (let ((slots (--map
-                              (oref it name)
-                              (elsa-get-slots class))))
+                (let ((slots (elsa-get-slots class)))
                   (throw 'lsp-response
                          (lsp-make-completion-list
                           :is-incomplete json-false
                           :items (elsa-lsp--list-completion-items
-                                  slots :transform #'symbol-name))))))))))
+                                  slots
+                                  :transform (lambda (x) (symbol-name (elsa-get-name x)))
+                                  :kind lsp/completion-item-kind-field))))))))
+
+         ))
 
       ;; Here we complete the function name if the point is at the
       ;; first position in a list
@@ -318,11 +325,19 @@ be re-analysed during textDocument/didOpen handler.")))
         (lgr-debug lgr "completing function name %s" (elsa-tostring form))
         (save-excursion
           (goto-char (1- (oref form end)))
-          (when-let ((candidates (elsa-lsp--completions)))
+          (when-let ((candidates (elsa-lsp--function-completions)))
             (throw 'lsp-response
                    (lsp-make-completion-list
                     :is-incomplete json-false
-                    :items (elsa-lsp--list-completion-items candidates))))))
+                    :items (elsa-lsp--list-completion-items
+                            candidates
+                            :transform
+                            (lambda (def)
+                              (list :label (symbol-name (oref def name))
+                                    :kind (if (memq (oref def defun-type)
+                                                    '(cl-defmethod cl-defgeneric))
+                                              lsp/completion-item-kind-method
+                                            lsp/completion-item-kind-function)))))))))
 
       ;; regular symbol, we should use defvars and scope
       ;; variables
