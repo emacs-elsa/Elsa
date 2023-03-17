@@ -13,7 +13,6 @@
         (elsa-test-with-analysed-form "|(1+ \"foo\") ;; elsa-disable-line" form
           :state state
           :errors-var errors
-          (elsa-log "ignored lines %s" (oref state ignored-lines))
           (expect errors :to-be nil)))))
 
   (describe "elsa-disable-next-line"
