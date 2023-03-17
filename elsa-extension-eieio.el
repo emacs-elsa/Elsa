@@ -140,12 +140,16 @@
               (mapcar
                (lambda (slot)
                  (let* ((slot-name (elsa-get-name slot))
+                        (slot-annotation (oref slot annotation))
                         (type-form (map-elt (elsa-cdr slot) :type))
                         (type-lisp (elsa-form-to-lisp type-form))
-                        (elsa-type (or (and type-lisp
-                                            (or (elsa--cl-type-to-elsa-type type-lisp)
-                                                (elsa-type-mixed)))
-                                       (elsa-type-mixed)))
+                        (elsa-type (or
+                                    (and slot-annotation
+                                         (elsa--make-type (nth 2 slot-annotation)))
+                                    (and type-lisp
+                                         (or (elsa--cl-type-to-elsa-type type-lisp)
+                                             (elsa-type-mixed)))
+                                    (elsa-type-mixed)))
                         (accessor (map-elt (elsa-cdr slot) :accessor))
                         (initarg (map-elt (elsa-cdr slot) :initarg)))
 

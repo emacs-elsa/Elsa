@@ -73,4 +73,34 @@ This only makes sense for the sequence forms:
 (cl-defgeneric elsa-form-sequence-p (_this)
   nil)
 
+(defun elsa-form-find-parent (form pred)
+  "Find first parent of FORM satisfying predicate PRED."
+  (declare (indent 1))
+  (let ((parent form))
+    (while (and parent (not (funcall pred parent)))
+      (setq parent (and (slot-boundp parent 'parent)
+                        (oref parent parent))))
+    parent))
+
+(defun elsa-form-find-child (form pred)
+  "Find first child of FORM satisfying predicate PRED."
+  (declare (indent 1))
+  (catch 'found
+    (elsa-form-visit form
+      (lambda (child)
+        (when (funcall pred child)
+          (throw 'found child))))))
+
+(defun elsa-locate-dominating-form (form name)
+  "Starting at FORM, look up parent forms for form with NAME.
+
+NAME can be a symbol or list of symbols, in which case matching
+any symbol from the list will stop the search."
+  (elsa-form-find-parent
+   form
+   (lambda (parent)
+     (if (listp name)
+         (memq (elsa-get-name parent) name)
+       (eq (elsa-get-name parent) name)))))
+
 (provide 'elsa-form)

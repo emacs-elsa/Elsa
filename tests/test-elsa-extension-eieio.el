@@ -108,4 +108,30 @@
         (it "should signal error if the slot type does not accept value"
           (elsa-test-with-analysed-form "|(progn (defclass a () ((name :type string))) (oset (a) name 2))" form
             :errors-var errors
-            (expect (car errors) :message-to-match "Property `name' can not accept type `(const 2)', has type `string'")))))))
+            (expect (car errors) :message-to-match "Property `name' can not accept type `(const 2)', has type `string'")))))
+
+    (describe "annotations"
+
+      (it "can annotate first slot if aligned with the surrounding list"
+        (elsa-test-with-analysed-form "(defclass foo ()\n ;; (slot :: number)\n ((slot)))" form
+          :state-var state
+          (expect (elsa-get-type (elsa-get-slot (elsa-state-get-defclass state 'foo) 'slot))
+                  :to-accept-type (elsa-type-number))))
+
+      (it "can annotate first slot if annotated under the surrounding list"
+        (elsa-test-with-analysed-form "(defclass foo ()\n (\n  ;; (slot :: number)\n  (slot)))" form
+          :state-var state
+          (expect (elsa-get-type (elsa-get-slot (elsa-state-get-defclass state 'foo) 'slot))
+                  :to-accept-type (elsa-type-number))))
+
+      (it "can annotate second slot"
+        (elsa-test-with-analysed-form "(defclass foo ()\n ((slot)\n  ;; (slot2 :: number)\n  (slot2)))" form
+          :state-var state
+          (expect (elsa-get-type (elsa-get-slot (elsa-state-get-defclass state 'foo) 'slot2))
+                  :to-accept-type (elsa-type-number))))
+
+      (it "overrides native slot type if provided"
+        (elsa-test-with-analysed-form "(defclass foo ()\n ;; (slot :: number)\n ((slot :type string)))" form
+          :state-var state
+          (expect (elsa-get-type (elsa-get-slot (elsa-state-get-defclass state 'foo) 'slot))
+                  :to-accept-type (elsa-type-number)))))))

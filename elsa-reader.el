@@ -607,6 +607,15 @@ STATE is Elsa local state."
         (elsa-state-add-defvar state
           (elsa-defvar :name (elsa-get-name (cadr (oref reader-form sequence)))
                        :type (eval `(elsa-make-type ,@(cddr comment-form))))))
+       ;; slot annotation in defclass
+       ((and (elsa-locate-dominating-form reader-form 'defclass)
+             (elsa-form-function-call-p reader-form (car comment-form)))
+        (oset reader-form annotation comment-form))
+       ;; annotations for let bindings
+       ((and (elsa-locate-dominating-form
+              reader-form '(let let* when-let when-let* if-let if-let*))
+             (elsa-form-function-call-p reader-form (car comment-form)))
+        (oset reader-form annotation comment-form))
        ((eq annotation-name 'var)
         (oset reader-form annotation comment-form))
        (t
@@ -681,28 +690,6 @@ for the analysis."
           ((functionp form) (elsa--read-function form state))
           (t (error "Invalid form")))))
     (elsa--set-line-and-column reader-form)
-    ;; check if there is a comment atached to this form
-    ;; TODO: this is really inefficient because it checks the same
-    ;; line multiple times.  We should only do this parsing for the
-    ;; first form on a line.
-    (save-excursion
-      (goto-char (oref reader-form start))
-      (forward-line -1)
-      (skip-chars-forward " \t\n\r")
-      (let ((line-end (line-end-position)))
-        (when (and (re-search-forward
-                    (rx "(" (+ (+? (or (syntax word) (syntax symbol))) (+ space)) ":: ")
-                    line-end t)
-                   (nth 4 (syntax-ppss)))
-          ;; we are inside a comment and inside a form starting with
-          ;; (elsa
-          (search-backward "(")
-          (let ((comment-form (read (current-buffer))))
-            ;; we must end on the same line, that way we can be sure
-            ;; the entire read form was inside a comment.
-            (when (<= (point) line-end)
-              ;; handle defun type declaration
-              (elsa--process-annotation reader-form comment-form state))))))
     reader-form))
 
 (defun elsa-read-form (state)
@@ -710,8 +697,35 @@ for the analysis."
   (while (forward-comment 1))
   (unless (eobp)
     (let* ((form (save-excursion
-                   (read (current-buffer)))))
-      (while (forward-comment 1))
-      (elsa--read-form form state))))
+                   (read (current-buffer))))
+           (elsa-form (progn
+                        (while (forward-comment 1))
+                        (elsa--read-form form state))))
+
+
+      ;; Process annotations attached to subforms in this top-level
+      ;; form.  We have to do it here after the entire form is read to
+      ;; be able to make use of parent/previous relations.
+      (elsa-form-visit elsa-form
+        (lambda (ef)
+          (save-excursion
+            (goto-char (oref ef start))
+            (forward-line -1)
+            (skip-chars-forward " \t\n\r")
+            (let ((line-end (line-end-position)))
+              (when (and (re-search-forward
+                          (rx "(" (+ (+? (or (syntax word) (syntax symbol))) (+ space)) ":: ")
+                          line-end t)
+                         (nth 4 (syntax-ppss)))
+                ;; we are inside a comment and inside a form starting with
+                ;; (elsa
+                (search-backward "(")
+                (let ((comment-form (read (current-buffer))))
+                  ;; we must end on the same line, that way we can be sure
+                  ;; the entire read form was inside a comment.
+                  (when (<= (point) line-end)
+                    ;; handle defun type declaration
+                    (elsa--process-annotation ef comment-form state))))))))
+      elsa-form)))
 
 (provide 'elsa-reader)

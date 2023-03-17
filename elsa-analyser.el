@@ -116,21 +116,25 @@ The BINDING should have one of the following forms:
 - place   ; initial is nil
 - (place) ; initial is nil
 - (place initial-value)"
-  (cond
-   ((or (listp binding)
-        (elsa-form-list-p binding))
-    (-let [(var source) (elsa-form-sequence binding)]
-      (when source
-        (elsa--analyse-form source scope state))
-      (when (elsa-form-symbol-p var)
-        (if (not source)
+  (let* ((annotation (oref binding annotation))
+         (annotation-type (and annotation
+                               (elsa--make-type (nth 2 annotation)))))
+    (cond
+     ((or (listp binding)
+          (elsa-form-list-p binding))
+      (-let [(var source) (elsa-form-sequence binding)]
+        (when source
+          (elsa--analyse-form source scope state))
+        (when (elsa-form-symbol-p var)
+          (if (not source)
+              (elsa-variable
+               :name (oref var name) :type (elsa-type-nil))
             (elsa-variable
-             :name (oref var name) :type (elsa-type-nil))
-          (elsa-variable
-           :name (oref var name) :type (oref source type))))))
-   ((elsa-form-symbol-p binding)
-    (elsa-variable :name (oref binding name) :type (elsa-make-type nil)))
-   (t nil)))
+             :name (oref var name) :type (or annotation-type
+                                             (oref source type)))))))
+     ((elsa-form-symbol-p binding)
+      (elsa-variable :name (oref binding name) :type (elsa-type-nil)))
+     (t nil))))
 
 (defun elsa--analyse:let (form scope state)
   (let* ((new-vars nil)
@@ -1153,13 +1157,6 @@ SCOPE and STATE are the scope and state objects."
 
 FORM is a result of `elsa-read-form'."
   (oset form reachable (elsa-state-get-reachability state))
-  (when-let ((annotation (oref form annotation)))
-    (cond
-     ((eq (car annotation) 'var)
-      (when-let ((var (elsa-scope-get-var scope (cadr annotation))))
-        ;; update the type in the current scope
-        (oset var type (eval `(elsa-make-type ,@(nthcdr 3 annotation))))))))
-
   (cond
    ((elsa-form-float-p form) (elsa--analyse-float form scope state))
    ((elsa-form-integer-p form) (elsa--analyse-integer form scope state))
