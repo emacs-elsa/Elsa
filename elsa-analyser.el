@@ -116,7 +116,8 @@ The BINDING should have one of the following forms:
 - place   ; initial is nil
 - (place) ; initial is nil
 - (place initial-value)"
-  (let* ((annotation (oref binding annotation))
+  (let* ((annotation (when (elsa-form-p binding)
+                       (oref binding annotation)))
          (annotation-type (and annotation
                                (elsa--make-type (nth 2 annotation)))))
     (cond
