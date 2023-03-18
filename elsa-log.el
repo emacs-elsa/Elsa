@@ -3,7 +3,7 @@
 (require 'async)
 (require 'dash)
 
-(require 'elsa-lgr)
+(require 'lgr)
 
 (defclass elsa-worker-appender (lgr-appender) ()
   "Appender sending messages back to parent process.")

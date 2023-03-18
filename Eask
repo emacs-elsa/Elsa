@@ -22,6 +22,7 @@
 (depends-on "ansi")
 (depends-on "cl-lib")
 (depends-on "async")
+(depends-on "lgr")
 
 (development
  (depends-on "elsa")
