@@ -174,7 +174,7 @@ Uses special rules for `elsa-type-mixed'.
 (cl-defmethod elsa-type-get-return ((this elsa-type))
   this)
 
-(cl-defmethod elsa-type-accept ((this elsa-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-type) (other elsa-type) &optional explainer)
   "Test if THIS type accepts OTHER.
 
 Accepting in this context means that OTHER can be assigned to
@@ -231,7 +231,7 @@ empty.")
 (cl-defmethod elsa-type-describe ((_this elsa-type-empty))
   "empty")
 
-(cl-defmethod elsa-type-accept ((this elsa-type-empty) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-type-empty) (other elsa-type) &optional explainer)
   (if (elsa-type-composite-p other)
       (elsa-type-is-accepted-by other this explainer)
     (elsa-with-explainer explainer
@@ -282,7 +282,7 @@ of them.")
     (oset new types types)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-intersection-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-intersection-type) (other elsa-type) &optional explainer)
   (elsa-with-explainer explainer
     (elsa--fmt-explain-type-0-does-not-accept-type-1
      (elsa-tostring this) (elsa-tostring other))
@@ -339,7 +339,7 @@ because the actual type can be any of them.")
     (oset new types types)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-sum-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-sum-type) (other elsa-type) &optional explainer)
   (cond
    ((elsa-type-composite-p other)
     (elsa-type-is-accepted-by other this explainer))
@@ -396,7 +396,7 @@ type and none of the negative types.")
     (oset new negative negative)
     new))
 
-(cl-defmethod elsa-type-accept ((this elsa-diff-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-diff-type) (other elsa-type) &optional explainer)
   (elsa-with-explainer explainer
     (elsa--fmt-explain-type-0-does-not-accept-type-1
      (elsa-tostring this) (elsa-tostring other))
@@ -845,7 +845,7 @@ then this is a supertype of other."
           (mapconcat 'elsa-type-describe (oref this args) " ")
           (elsa-type-describe (oref this return))))
 
-(cl-defmethod elsa-type-accept ((this elsa-function-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-function-type) (other elsa-type) &optional explainer)
   (if (elsa-type-composite-p other)
       (elsa-type-is-accepted-by other this explainer)
     (if (elsa-function-type-p other)
@@ -1035,7 +1035,7 @@ predefined value.")
 (cl-defmethod elsa-type-describe ((this elsa-const-type))
   (format "(const %S)" (oref this value)))
 
-(cl-defmethod elsa-type-accept ((this elsa-const-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-const-type) (other elsa-type) &optional explainer)
   "The const type is different from readonly in that a readonly
 type can never be assigned to but a const type is only a
 narrowing of a type to a concrete value from the type's domain.
@@ -1063,7 +1063,7 @@ to this value."
 It wraps any other type and makes the form or variable
 unassignable.")
 
-(cl-defmethod elsa-type-accept ((this elsa-readonly-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-readonly-type) (other elsa-type) &optional explainer)
   "Check if this readonly type accept other type.
 
 The acceptance does not depend on the readonly status.  Here we
@@ -1100,7 +1100,7 @@ trying to analyse 'nil, which is not a valid type or form."
   (when-let ((class (get (oref this name) 'elsa-defstruct)))
     (elsa-get-slot class name)))
 
-(cl-defmethod elsa-type-accept ((this elsa-struct-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-struct-type) (other elsa-type) &optional explainer)
   (cond
    ((elsa-type-composite-p other)
     (elsa-type-is-accepted-by other this explainer))
@@ -1142,7 +1142,7 @@ trying to analyse 'nil, which is not a valid type or form."
   (when-let ((class (get (oref this name) 'elsa-defclass)))
     (elsa-get-slot class name)))
 
-(cl-defmethod elsa-type-accept ((this elsa-class-type) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-class-type) (other elsa-type) &optional explainer)
   (cond
    ((elsa-type-composite-p other)
     (elsa-type-is-accepted-by other this explainer))
@@ -1203,7 +1203,7 @@ symbol represents.  During checking, we will try to forward to
 (cl-defmethod elsa-type-describe ((this elsa-type--cl-ref))
   (format "(cl-ref %s)" (oref this name)))
 
-(cl-defmethod elsa-type-accept ((this elsa-type--cl-ref) other &optional explainer)
+(cl-defmethod elsa-type-accept ((this elsa-type--cl-ref) (other elsa-type) &optional explainer)
   (elsa-type-accept (elsa-type--resolve-cl-ref this) other explainer))
 
 (cl-defmethod elsa-type-accept ((this elsa-class-type) (other elsa-type--cl-ref) &optional explainer)
