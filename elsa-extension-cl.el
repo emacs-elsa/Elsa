@@ -219,5 +219,9 @@ keyword-sexp pairs."
            :type (elsa--make-type `(function (&rest mixed) (struct ,name)))
            :arglist (list '&rest 'args)))))))
 
+(defun elsa--analyse:cl-eval-when (form scope state)
+  (let ((body (elsa-nthcdr 2 form)))
+    (elsa--analyse-body body scope state)))
+
 (provide 'elsa-extension-cl)
 ;;; elsa-extension-cl.el ends here

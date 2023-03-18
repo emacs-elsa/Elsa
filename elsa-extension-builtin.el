@@ -267,5 +267,12 @@ empty, because it has no value."
 (defun elsa--analyse:eval-when-compile (form scope state)
   (elsa--analyse:progn form scope state))
 
+(defun elsa--analyse:eval-and-compile (form scope state)
+  (elsa--analyse:progn form scope state))
+
+(defun elsa--analyse:with-suppressed-warnings (form scope state)
+  (let ((body (elsa-nthcdr 2 form)))
+    (elsa--analyse-body body scope state)))
+
 (provide 'elsa-extension-builtin)
 ;;; elsa-extension-builtin.el ends here
