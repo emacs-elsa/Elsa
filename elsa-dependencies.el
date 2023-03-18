@@ -116,7 +116,7 @@ Return the state."
   (unless state
     (setq state (list :visited nil :deps nil)))
   (setq current-library (or current-library file))
-  ;; (var this-file-requires :: (string string))
+  ;; (this-file-requires :: (string string))
   (let ((this-file-requires (elsa--get-requires file)))
     (dolist (req (nreverse this-file-requires))
       (let ((library (car req))
