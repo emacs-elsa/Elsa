@@ -41,7 +41,8 @@
   (float-time (time-subtract (current-time) start)))
 
 (defmacro elsa-with-elapsed-time (msg &rest body)
-  (declare (indent 1))
+  (declare (debug (stringp body))
+           (indent 1))
   (let ((nowvar (make-symbol "now"))
         (elapsedvar (make-symbol "elapsed")))
     `(let ((,nowvar (current-time)))
