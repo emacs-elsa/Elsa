@@ -92,11 +92,14 @@ This only makes sense for the sequence forms:
 (defun elsa-form-find-child (form pred)
   "Find first child of FORM satisfying predicate PRED."
   (declare (indent 1))
-  (catch 'found
-    (elsa-form-visit form
-      (lambda (child)
-        (when (funcall pred child)
-          (throw 'found child))))))
+  (let (re)
+    (catch 'found
+      (elsa-form-visit form
+        (lambda (child)
+          (when (funcall pred child)
+            (setq re child)
+            (throw 'found child)))))
+    re))
 
 (defun elsa-locate-dominating-form (form name)
   "Starting at FORM, look up parent forms for form with NAME.

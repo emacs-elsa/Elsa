@@ -5,6 +5,50 @@
 
 (describe "Elsa reader"
 
+  (describe "helpers"
+
+    (describe "elsa-locate-dominating-form"
+
+      (it "should look up first form with given name in the parent hierarchy"
+        (elsa-test-with-read-form "|(progn (prog1 (when (foo))))" form
+          (let ((foo-form (elsa-cadr (elsa-cadr (elsa-cadr form)))))
+            (expect (elsa-locate-dominating-form foo-form 'progn)
+                    :to-be form))))
+
+      (it "should return nil if no form with name exists in the hierarchy"
+        (elsa-test-with-read-form "|(progn (prog1 (when (foo))))" form
+          (let ((foo-form (elsa-cadr (elsa-cadr (elsa-cadr form)))))
+            (expect (elsa-locate-dominating-form foo-form 'let)
+                    :to-be nil))))
+
+      (it "should return itself if its name is name"
+        (elsa-test-with-read-form "|(progn (prog1 (when (foo))))" form
+          (let ((foo-form (elsa-cadr (elsa-cadr (elsa-cadr form)))))
+            (expect (elsa-locate-dominating-form foo-form 'foo)
+                    :to-be foo-form))))
+
+      (it "should work with a list of names"
+        (elsa-test-with-read-form "|(progn (prog1 (when (foo))))" form
+          (let ((foo-form (elsa-cadr (elsa-cadr (elsa-cadr form))))
+                (when-form (elsa-cadr (elsa-cadr form))))
+            (expect (elsa-locate-dominating-form foo-form '(when progn))
+                    :to-be when-form)))))
+
+    (describe "elsa-form-find-child"
+
+      (it "should find a child form matching a predicate"
+        (elsa-test-with-analysed-form "(progn (foo) (bar))" form
+          (let ((foo-form (elsa-cadr form)))
+            (expect (elsa-form-find-child form
+                      (lambda (f) (eq (elsa-get-name f) 'foo)))
+                    :to-be foo-form))))
+
+      (it "should return nil if no child form matches the predicate"
+        (elsa-test-with-analysed-form "(progn (foo) (bar))" form
+          (expect (elsa-form-find-child form
+                    (lambda (f) (eq (elsa-get-name f) 'baz)))
+                  :to-be nil)))))
+
   (describe "symbols"
 
     (it "should read a symbol"
