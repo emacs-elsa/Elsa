@@ -94,7 +94,7 @@
 (put '+ 'elsa-type (elsa-make-type (function (&rest (or number marker)) number)))
 (put '- 'elsa-type (elsa-make-type (function (&rest (or number marker)) number)))
 (put '* 'elsa-type (elsa-make-type (function (&rest (or number marker)) number)))
-(put '/ 'elsa-type (elsa-make-type (function ((or number marker) &rest (or number marker)) bool)))
+(put '/ 'elsa-type (elsa-make-type (function ((or number marker) &rest (or number marker)) number)))
 (put '% 'elsa-type (elsa-make-type (function ((or number marker) (or number marker)) number)))
 (put 'mod 'elsa-type (elsa-make-type (function ((or number marker) (or number marker)) number)))
 (put 'max 'elsa-type (elsa-make-type (function ((or number marker) &rest (or number marker)) number)))
