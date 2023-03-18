@@ -73,6 +73,13 @@ This only makes sense for the sequence forms:
 (cl-defgeneric elsa-form-sequence-p (_this)
   nil)
 
+;; (elsa-form-function-call-p :: (function (mixed (or symbol nil)) bool))
+(cl-defgeneric elsa-form-function-call-p (_this &optional _name) nil)
+
+;; (elsa-cadr :: (function (mixed) mixed))
+(cl-defgeneric elsa-cadr (thing)
+  "Return `cadr' of THING")
+
 (defun elsa-form-find-parent (form pred)
   "Find first parent of FORM satisfying predicate PRED."
   (declare (indent 1))

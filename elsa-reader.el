@@ -184,9 +184,6 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-form-to-lisp ((this elsa-form-keyword))
   (oref this name))
 
-;; (elsa-form-function-call-p :: (function (mixed (or symbol nil)) bool))
-(cl-defgeneric elsa-form-function-call-p (_this &optional _name) nil)
-
 (cl-defmethod elsa-get-name ((this elsa-form-symbol))
   (oref this name))
 
@@ -363,10 +360,6 @@ prefix and skipped by the sexp scanner.")
 
 (cl-defmethod elsa-cdr ((this elsa-form))
   (cdr (elsa-form-sequence this)))
-
-;; (elsa-cadr :: (function (mixed) mixed))
-(cl-defgeneric elsa-cadr (thing)
-  "Return `cadr' of THING")
 
 (cl-defmethod elsa-cadr ((this list))
   (cadr this))
