@@ -118,7 +118,8 @@ tokens."
      (with-ansi
       (green "[%s]" (elsa-global-state-get-counter global-state))
       (format " Processing file %s ..." file))))
-  (let ((state (elsa-state :global-state global-state))
+  (let ((lgr (lgr-get-logger "elsa.process.file"))
+        (state (elsa-state :global-state global-state))
         (current-time (current-time))
         (form))
     (elsa-state-clear-file-state global-state file)
@@ -162,6 +163,9 @@ tokens."
         ;; When not running as language server, just crash on errors.
         (condition-case nil
             (while (setq form (elsa-read-form state))
+              (lgr-trace lgr
+                "Processing form %s"
+                (replace-regexp-in-string "%" "%%%%" (elsa-tostring form)))
               (elsa-analyse-form state form))
           (end-of-file t))))
     (unless no-log
@@ -296,27 +300,29 @@ GLOBAL-STATE is the initial configuration."
                 (push frame frames))
               (when (eq (elt frame 1) 'elsa--worker-debugger)
                 (setq in-program-stack t)))
-            (mapconcat
-             ;; Frame is EVALD FUNC ARGS FLAGS.  Flags is
-             ;; useless so we drop it.
-             (lambda (frame)
-               (->>
-                (if (car frame)
-                    (format "  %S%s"
-                            (cadr frame)
-                            (if (nth 2 frame)
-                                (cl-prin1-to-string (nth 2 frame))
-                              "()"))
-                  (format "  (%S %s)"
-                          (cadr frame)
-                          (mapconcat
-                           (lambda (x) (format "%S" x))
-                           (nth 2 frame)
-                           " ")))
-                (replace-regexp-in-string "\n" "\\\\n")
-                (replace-regexp-in-string "%" "%%")))
-             (nreverse frames)
-             "\n")))))
+            (concat
+             (format "  %s\n" args)
+             (mapconcat
+              ;; Frame is EVALD FUNC ARGS FLAGS.  Flags is
+              ;; useless so we drop it.
+              (lambda (frame)
+                (->>
+                 (if (car frame)
+                     (format "  %S%s"
+                             (cadr frame)
+                             (if (nth 2 frame)
+                                 (cl-prin1-to-string (nth 2 frame))
+                               "()"))
+                   (format "  (%S %s)"
+                           (cadr frame)
+                           (mapconcat
+                            (lambda (x) (format "%S" x))
+                            (nth 2 frame)
+                            " ")))
+                 (replace-regexp-in-string "\n" "\\\\n")
+                 (replace-regexp-in-string "%" "%%%%")))
+              (nreverse frames)
+              "\n"))))))
 
 (defun elsa--worker-function-factory (worker-id project-directory)
   "Return function running in the Elsa analysis worker."
@@ -328,7 +334,7 @@ GLOBAL-STATE is the initial configuration."
           (lgr-reset-appenders)
           (lgr-add-appender
            (-> (elsa-worker-appender)
-               (lgr-set-layout (lgr-layout-format :format "[%K] %m"))))
+               (lgr-set-layout (lgr-layout-format :format "[%g] %K %m"))))
           (lgr-set-threshold lgr-level-warn))
       (let ((result nil))
         (let ((lgr (lgr-get-logger "elsa.analyse.worker"))
@@ -396,7 +402,10 @@ GLOBAL-STATE is the initial configuration."
                    (ack (plist-get result :ack)))
               (cond
                ((equal ack "error")
-                (lgr-fatal lgr (plist-get result :error))
+                (lgr-fatal lgr
+                  (with-ansi
+                   (red "Worker %d errored with:\n" worker-id)
+                   (yellow (plist-get result :error))))
                 (kill-emacs 1))
                ((equal op "echo")
                 (lgr-debug lgr
@@ -540,6 +549,7 @@ used by the LSP server to not reload already processed files."
                                 (elsa-get-elapsed start-time)))
         (cl-incf (oref global-state processed-file-index))
         (elsa-save-cache state global-state)
+        (elsa-state-update-global state global-state)
         state))))
 
 (defun elsa-analyse-file (file global-state &optional already-loaded)
@@ -657,6 +667,9 @@ Currently, these flags are supported:
               were reported.  This flag exists because flycheck
               complains when process exits with non-zero status."
   (elsa-load-config)
+
+  (require 'elsa-startup)
+
   (let ((errors 0)
         (warnings 0)
         (notices 0)
@@ -695,11 +708,11 @@ Currently, these flags are supported:
                  (blue "%.3f seconds" duration)))
 
       (lgr-trace (lgr-get-logger "elsa.perf")
-                 "memory report %s"
-                 (with-current-buffer (get-buffer-create "*Memory Report*")
-                   (require 'memory-report)
-                   (memory-report)
-                   (buffer-string))))
+        "memory report %s"
+        (with-current-buffer (get-buffer-create "*Memory Report*")
+          (require 'memory-report)
+          (memory-report)
+          (buffer-string))))
     (when (and elsa-cli-with-exit (< 0 errors))
       (kill-emacs 1))))
 

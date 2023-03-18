@@ -3,6 +3,7 @@
 
 (require 'trinary)
 
+(require 'elsa-form)
 (require 'elsa-types)
 (require 'elsa-scope)
 (require 'elsa-error)
@@ -362,7 +363,17 @@ a single file, form or set of forms.")
    (dependencies :initform nil :type list
                  :documentation "List of all recursively processed dependencies")
    (ignored-lines :initform nil)
-   (reachable :initform (list (trinary-true)))
+   (reachable
+    :initform (list (trinary-true))
+    :documentation "Is this form reachable during execution?
+
+This field is used during the analysis step.")
+   (no-expand
+    :type boolean
+    :initform nil
+    :documentation "Whether we are in an expanded macro.
+
+We should not try to instrument already instrumented forms.")
    ;; TODO: I don't remember or understand what this is.  I'm going to
    ;; commit it since I can't see it making any difference.  But it
    ;; probably serves some purpose.

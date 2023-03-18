@@ -7,6 +7,8 @@
 (defun elsa-lsp-stdin-loop ()
   "Reads from standard input in a loop and process incoming requests."
   (elsa-load-config)
+  (require 'elsa-startup)
+
   (-> (lgr-get-logger "elsa")
       (lgr-reset-appenders)
       (lgr-add-appender

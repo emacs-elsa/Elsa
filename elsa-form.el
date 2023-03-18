@@ -2,6 +2,7 @@
 
 (require 'trinary)
 
+(require 'elsa-methods)
 (require 'elsa-types-simple)
 
 (defclass elsa-form nil
@@ -23,6 +24,21 @@
     :type (or elsa-form null)
     :initarg :previous
     :documentation "Previous form in a sequence.")
+   (was-expanded
+    :type boolean
+    :initform nil
+    :documentation "Was this form a macro call form which was expanded.
+
+This is only set on the macro call form which was expanded, not on the
+child forms.")
+   (expanded-form
+    :type (or elsa-form null)
+    :initform nil
+    :documentation "The form corresponding to this form in macroexpanded subtree.")
+   (original-form
+    :type (or elsa-form null)
+    :initform nil
+    :documentation "The form from which this form was macroexpanded.")
    (annotation :type list :initarg :annotation :initform nil))
   :abstract t)
 

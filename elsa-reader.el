@@ -6,7 +6,10 @@
 (require 'backquote)
 (require 'seq)
 (require 'map)
+(require 'macroexp)
+(require 'edebug)
 
+(require 'lgr)
 (require 'trinary)
 
 (require 'elsa-form)
@@ -317,7 +320,9 @@ prefix and skipped by the sexp scanner.")
   (map-elt (elsa-form-sequence seq) key default))
 
 (cl-defmethod elsa-form-print ((this elsa-form-list))
-  (format "(%s)" (mapconcat 'elsa-form-print (oref this sequence) " ")))
+  (if (eq (elsa-get-name this) 'elsa--form)
+      (elsa-form-print (elsa-nth 2 this))
+    (format "(%s)" (mapconcat 'elsa-form-print (oref this sequence) " "))))
 
 (cl-defmethod elsa-form-print ((this list))
   (format "(%s)" (mapconcat 'elsa-form-print this " ")))
@@ -452,6 +457,153 @@ prefix and skipped by the sexp scanner.")
 (cl-defmethod elsa-cdr ((this elsa-form-improper-list))
   (cdr (oref this conses)))
 
+(defun elsa--form (_offset form)
+  "This is a fake form used in macroexpand to track original position.
+
+We use edebug to instrument forms in macroexpansion.  Instead of
+`edebug-before' and `edebug-after', we replace them with just
+`elsa--form' with first argument the *end* position of original
+form and second argument being the original form.  Using this
+information we can restore the original position and pair the
+original and expanded form."
+  form)
+
+(put 'elsa--form 'gv-expander
+     (lambda (do index place)
+       (gv-letplace (getter setter) place
+         (funcall do `(elsa--form ,index ,getter)
+                  (lambda (store)
+                    `(elsa--form ,index ,(funcall setter store)))))))
+
+;; For some reason these variables need to be redefined...
+(defvar edebug-top-window-data nil)
+(defvar edebug-form-begin-marker nil)
+(defvar edebug-offset-index 0)
+(defvar edebug-offset-list nil)
+
+(defun elsa--replace-edebug (tree &optional offsets)
+  "Replace edebug instrumentation forms with `elsa--form'."
+  (-tree-map-nodes
+   (lambda (x) (and (listp x)
+                    (or
+                     (and (eq (car x) 'edebug-after)
+                          (numberp (nth 2 x)))
+                     (and (eq (car x) 'edebug-enter)
+                          (listp (nth 1 x))
+                          (eq (car (nth 1 x)) 'quote)
+                          (symbolp (cadr (nth 1 x)))
+                          (string-match-p
+                           "\\`edebug-anon"
+                           (symbol-name (cadr (nth 1 x)))))
+                     (elsa--improper-list-p x))))
+   (lambda (x)
+     (cond
+      ((elsa--improper-list-p x) x)
+      ((and (eq (car x) 'edebug-after) offsets)
+       `(elsa--form ,(aref offsets (nth 2 x)) ,(elsa--replace-edebug (nth 3 x) offsets)))
+      ((eq (car x) 'edebug-enter)
+       (let ((offsets (nth 2 (get (cadr (nth 1 x)) 'edebug))))
+         `(progn
+            ,@(elsa--replace-edebug
+               (nthcdr 2 (cadr (nth 3 x)))
+               (vconcat (mapcar (lambda (x) (+ x edebug-form-begin-marker)) offsets))))))))
+   tree))
+
+(defun elsa--instrument-form (form)
+  "Instrument FORM with macro-expansion markers.
+
+This process uses edebug but replaces edebug annotations with
+`elsa--form'."
+  (let* ((edebug-all-forms t)
+         (spec (edebug-get-spec (car form)))
+         (edebug-form-begin-marker (point-marker)))
+    (when spec
+      (let ((instrumented (edebug-read-and-maybe-wrap-form)))
+        (elsa--replace-edebug instrumented)))))
+
+;; This is brutal, but we have to do it! Here we simply make sure to
+;; annotate all the forms, even constants, because we have to be able
+;; to track them back to the "unexpanded" forms.
+(defun edebug-form (cursor)
+  ;; Return the instrumented form for the following form.
+  ;; Add the point offsets to the edebug-offset-list for the form.
+  (let* ((form (edebug-top-element-required cursor "Expected form"))
+         (offset (edebug-top-offset cursor)))
+    (prog1
+        (cond
+         ((consp form)
+          ;; The first offset for a list form is for the list form itself.
+          (let* ((head (car form))
+                 (spec (and (symbolp head) (edebug-get-spec head)))
+                 (new-cursor (edebug-new-cursor form offset)))
+            ;; Find out if this is a defining form from first symbol.
+            ;; An indirect spec would not work here, yet.
+            (if (and (consp spec) (eq '&define (car spec)))
+                (edebug-defining-form
+                 new-cursor
+                 (car offset);; before the form
+                 (edebug-after-offset cursor)
+                 (cons (symbol-name head) (cdr spec)))
+              ;; Wrap a regular form.
+              (edebug-make-before-and-after-form
+               (edebug-inc-offset (car offset))
+               (edebug-list-form new-cursor)
+               ;; After processing the list form, the new-cursor is left
+               ;; with the offset after the form.
+               (edebug-inc-offset (edebug-cursor-offsets new-cursor))))))
+         ((vectorp form)
+          ;; ELSA: vectors are "self-evaluating", but we still might
+          ;; want to wrap them, because they can be say argument to a
+          ;; different function and we want to attach a message.
+          `(edebug-after
+            0
+            ,(edebug-inc-offset (cdr (last (car (edebug-cursor-offsets cursor)))))
+            ,form))
+         (t (edebug-make-after-form form (edebug-inc-offset (cdr offset)))))
+      (edebug-move-cursor cursor))))
+
+(defun elsa--macroexpand-form (form elsa-orig-form)
+  "Macroexpand buffer FORM corresponding to elsa reader form ELSA-ORIG-FORM."
+  (oset
+   elsa-orig-form
+   expanded-form
+   (save-excursion
+     (goto-char (oref elsa-orig-form start))
+     (condition-case err
+         (when-let* ((instrumented-form (elsa--instrument-form form))
+                     (macroexpanded-form (macroexpand-all instrumented-form))
+                     (exp-state (elsa-state)))
+           (oset exp-state no-expand t)
+           (with-temp-buffer
+             (emacs-lisp-mode)
+             (insert (format "%S" macroexpanded-form))
+             (goto-char (point-min))
+             (elsa-read-form exp-state)))
+       (error
+        (lgr-error (lgr-get-logger "elsa.reader.macroexpand")
+          (error-message-string err))
+        nil))))
+
+  (when (oref elsa-orig-form expanded-form)
+    (oset elsa-orig-form was-expanded t)
+
+    (let ((form-alist nil))
+      (elsa-form-visit (oref elsa-orig-form expanded-form)
+        ;; if name is elsa--form add to alist indexed by cadr
+        (lambda (form)
+          (when (and (elsa-form-function-call-p form 'elsa--form)
+                     (slot-boundp (elsa-cadr form) 'value))
+            (push (cons (oref (elsa-cadr form) value)
+                        form)
+                  form-alist))))
+      (elsa-form-visit elsa-orig-form
+        (lambda (fm)
+          (when-let ((expanded (cdr (assq (oref fm end) form-alist))))
+            (oset fm expanded-form expanded)
+            (oset expanded original-form fm)))))
+
+    (oset (oref elsa-orig-form expanded-form) original-form elsa-orig-form)))
+
 ;; (elsa--read-cons :: (function ((list mixed) mixed) mixed))
 (defsubst elsa--read-cons (form state)
   (elsa--skip-whitespace-forward)
@@ -476,31 +628,50 @@ prefix and skipped by the sexp scanner.")
                  (while (>= (cl-decf depth) 0) (up-list))
                  (apply 'cl-list* (nreverse items)))
        :end (progn (up-list) (point)))
-    (elsa-form-list
-     :start (prog1 (point) (down-list))
-     :sequence
-      (let ((depth 0)
-            (items))
-        (while form
-          (cond
-           ((elsa--quote-p (car form))
-            (let ((quoted-form (elsa--read-form form state)))
-              (setq items
-                    (-concat (reverse (oref quoted-form sequence))
-                             items)))
-            (setq form nil))
-           (t
-            (push (elsa--read-form (car form) state) items)
-            (!cdr form)))
-          (elsa--skip-whitespace-forward)
-          (when (and form (looking-at-p "\\.[^[:alnum:].]"))
-            (if (elsa--quote-p (car form))
-                (forward-sexp) ;; skip the dot
-              (cl-incf depth)
-              (down-list))))
-        (while (>= (cl-decf depth) 0) (up-list))
-        (nreverse items))
-      :end (progn (up-list) (point)))))
+    ;; In case this form is a macro and has no "elsa analysis"
+    ;; attached, we need to expand it and attach the expanded form to
+    ;; this form for analysis.
+    (let* ((orig-form (copy-sequence form))
+           (maybe-name (car-safe form))
+           (analyse-fn-name (and (listp form)
+                                 (symbolp (car form))
+                                 (intern (concat "elsa--analyse:" (symbol-name (car form))))))
+           (should-expand-form (and analyse-fn-name
+                                    (not (oref state no-expand))
+                                    (not (functionp analyse-fn-name))
+                                    (not (null (macrop maybe-name)))))
+           (list-form (elsa-form-list
+                       :start (prog1 (point) (down-list))
+                       :sequence
+                       (let ((depth 0)
+                             (items))
+                         (when should-expand-form
+                           (oset state no-expand t))
+                         (while form
+                           (cond
+                            ((elsa--quote-p (car form))
+                             (let ((quoted-form (elsa--read-form form state)))
+                               (setq items
+                                     (-concat (reverse (oref quoted-form sequence))
+                                              items)))
+                             (setq form nil))
+                            (t
+                             (push (elsa--read-form (car form) state) items)
+                             (!cdr form)))
+                           (elsa--skip-whitespace-forward)
+                           (when (and form (looking-at-p "\\.[^[:alnum:].]"))
+                             (if (elsa--quote-p (car form))
+                                 (forward-sexp) ;; skip the dot
+                               (cl-incf depth)
+                               (down-list))))
+                         (while (>= (cl-decf depth) 0) (up-list))
+                         (when should-expand-form
+                           (oset state no-expand nil))
+                         (nreverse items))
+                       :end (progn (up-list) (point)))))
+      (when should-expand-form
+        (elsa--macroexpand-form orig-form list-form))
+      list-form)))
 
 (defclass elsa-form-function (elsa-form)
   ((function :type function :initarg :function)))
@@ -523,6 +694,7 @@ prefix and skipped by the sexp scanner.")
   (elsa--skip-whitespace-forward)
   (let* ((expanded-form nil)
          (start (point))
+         (should-expand-form (not (oref state no-expand)))
          (seq (cons
                (elsa--set-line-and-column
                 (elsa-form-symbol
@@ -540,20 +712,29 @@ prefix and skipped by the sexp scanner.")
                               (forward-char (length (symbol-name (car form)))))))
                  :name (car form)
                  :end (point)))
-               (-map (lambda (f) (elsa--read-form f state))
-                     ;; make sure to make list here, because we might
-                     ;; be reading a "quoted quote" where the structure
-                     ;; can be for example an alist with key
-                     ;; `function' or `quote' and value anything,
-                     ;; including just a symbol.
-                     (-list (cdr form))))))
-    (elsa-form-list
-     :quote-type (car form)
-     :start start
-     :sequence seq
-     :end (progn
-            (when expanded-form (up-list))
-            (point)))))
+               (progn
+                 (when should-expand-form
+                   (oset state no-expand t))
+                 (prog1 (-map (lambda (f) (elsa--read-form f state))
+                              ;; make sure to make list here, because we might
+                              ;; be reading a "quoted quote" where the structure
+                              ;; can be for example an alist with key
+                              ;; `function' or `quote' and value anything,
+                              ;; including just a symbol.
+                              (-list (cdr form)))
+                   (when should-expand-form
+                     (oset state no-expand nil))))))
+         (list-form (elsa-form-list
+                     :quote-type (car form)
+                     :start start
+                     :sequence seq
+                     :end (progn
+                            (when expanded-form (up-list))
+                            (point)))))
+    (when (and should-expand-form
+               (eq (oref list-form quote-type) '\`))
+      (elsa--macroexpand-form form list-form))
+    list-form))
 
 (defsubst elsa--process-annotation (reader-form comment-form state)
   "Process annotation over a form.

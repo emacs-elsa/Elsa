@@ -244,11 +244,17 @@ be re-analysed during textDocument/didOpen handler.")))
 
 (defun elsa-lsp--analyze-textDocument/hover (form _state _method params)
   (-let* (((&HoverParams :position (&Position :line :character))
-           params))
-    (when (and (= (oref form line) (1+ line))
-               (<= (oref form column) character)
-               (or (< (1+ line) (oref form end-line))
-                   (<= character (oref form end-column))))
+           params)
+          (orig-form (oref form original-form)))
+    (when (or (and orig-form
+                   (= (oref orig-form line) (1+ line))
+                   (<= (oref orig-form column) character)
+                   (or (< (1+ line) (oref orig-form end-line))
+                       (<= character (oref orig-form end-column))))
+              (and (= (oref form line) (1+ line))
+                   (<= (oref form column) character)
+                   (or (< (1+ line) (oref form end-line))
+                       (<= character (oref form end-column)))))
       (throw 'lsp-response
              (lsp-make-hover
               :contents (lsp-make-markup-content

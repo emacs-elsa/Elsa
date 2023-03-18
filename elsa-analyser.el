@@ -656,6 +656,13 @@ The registered object can be a `defun', `defmacro', or
                          :return (elsa-type-mixed))
                   :arglist (elsa-form-to-lisp args))))))
 
+(defun elsa--analyse:elsa--form (form scope state)
+  "Analyse special marker for macroexpanded forms."
+  (let ((real-form (elsa-nth 2 form)))
+    (elsa--analyse-form real-form scope state)
+    (oset form type (oref real-form type))
+    (oset form narrow-types (oref real-form narrow-types))))
+
 (defun elsa--analyse:defmacro (form _scope state)
   "just skip for now, it's too complicated."
   (let ((name (elsa-get-name (elsa-cadr form)))
@@ -1142,6 +1149,18 @@ SCOPE and STATE are the scope and state objects."
           (pcase name
             ((guard (functionp analyse-fn-name))
              (funcall analyse-fn-name form scope state))
+            ((guard (and (oref form expanded-form)
+                         (oref form was-expanded)))
+             (let ((exp-form (oref form expanded-form)))
+               (elsa--analyse-form exp-form scope state)
+               (let ((form-alist nil))
+                 (elsa-form-visit form
+                   (lambda (fm)
+                     (when-let ((expanded (oref fm expanded-form)))
+                       (oset fm type (oref expanded type))
+                       (oset fm narrow-types (oref expanded narrow-types))))))
+               (oset form type (oref exp-form type))
+               (oset form narrow-types (oref exp-form narrow-types))))
             (`\` (elsa--analyse-backquote form scope state))
             (`\, (elsa--analyse-unquote form scope state))
             (`\,@ (elsa--analyse-splice form scope state))

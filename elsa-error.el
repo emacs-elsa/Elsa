@@ -108,37 +108,46 @@ In general, we recognize three states: error, warning, notice
 (cl-defmethod elsa-message-to-lsp-severity ((_this elsa-notice))
   lsp/diagnostic-severity-information)
 
+(defun elsa--message-resolve (expression)
+  (or (when-let ((of (elsa-form-find-parent expression
+                       (lambda (x)
+                         (oref x original-form)))))
+        (oref of original-form))
+      expression))
+
 (cl-defmethod elsa-message-format ((this elsa-message))
   "Format an `elsa-message'."
-  (with-ansi
-   (bright-green "%s" (oref this line))
-   ":"
-   (green "%s" (or (oref this column) "?"))
-   ":"
-   (elsa-message-type-ansi this)
-   ":"
-   (format "%s" (replace-regexp-in-string "%" "%%" (oref this message)))))
+  (let ((expr (elsa--message-resolve (oref this expression))))
+    (with-ansi
+     (bright-green "%s" (oref expr line))
+     ":"
+     (green "%s" (or (oref expr column) "?"))
+     ":"
+     (elsa-message-type-ansi this)
+     ":"
+     (format "%s" (replace-regexp-in-string "%" "%%" (oref this message))))))
 
 (cl-defmethod elsa-message-to-lsp ((this elsa-message))
-  (lsp-make-diagnostic
-   :code (oref this code)
-   :range (lsp-make-range
-           :start (lsp-make-position
-                   :line (1- (oref this line))
-                   :character (oref this column))
-           :end (lsp-make-position
-                 :line (1- (oref this line))
-                 :character (let ((expr (oref this expression)))
-                              (if (and (elsa-form-sequence-p expr)
-                                       (elsa-car expr))
-                                  (oref (elsa-car expr) end-column)
-                                (+ (oref this column)
-                                   (if (or (elsa-form-symbol-p expr)
-                                           (elsa-get-name expr))
-                                       (length (symbol-name (elsa-get-name expr)))
-                                     1))))))
-   :severity (elsa-message-to-lsp-severity this)
-   :message (oref this message)))
+  (let ((expression (elsa--message-resolve (oref this expression))))
+    (lsp-make-diagnostic
+     :code (oref this code)
+     :range (lsp-make-range
+             :start (lsp-make-position
+                     :line (1- (oref expression line))
+                     :character (oref expression column))
+             :end (lsp-make-position
+                   :line (1- (oref expression line))
+                   :character (let ((expr expression))
+                                (if (and (elsa-form-sequence-p expr)
+                                         (elsa-car expr))
+                                    (oref (elsa-car expr) end-column)
+                                  (+ (oref expression column)
+                                     (if (or (elsa-form-symbol-p expr)
+                                             (elsa-get-name expr))
+                                         (length (symbol-name (elsa-get-name expr)))
+                                       1))))))
+     :severity (elsa-message-to-lsp-severity this)
+     :message (oref this message))))
 
 (defun elsa--make-message (constructor expression format args)
   (let (code)
