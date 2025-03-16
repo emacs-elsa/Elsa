@@ -755,6 +755,7 @@ STATE is Elsa local state."
       (cond
        ((and (elsa-form-sequence-p reader-form)
              (or (elsa-form-function-call-p reader-form 'defun)
+                 (elsa-form-function-call-p reader-form 'cl-defun)
                  (elsa-form-function-call-p reader-form 'defsubst)
                  (elsa-form-function-call-p reader-form 'cl-defmethod)
                  (elsa-form-function-call-p reader-form 'cl-defgeneric)))
@@ -770,6 +771,7 @@ STATE is Elsa local state."
                  (elsa-form-function-call-p reader-form 'defcustom)
                  (elsa-form-function-call-p reader-form 'defconst)
                  (eq (car comment-form) 'defvar)))
+        (oset reader-form annotation comment-form)
         (when (eq (car comment-form) 'defvar)
           (!cdr comment-form))
         (when (and state (not (eq form-name annotation-name)))
