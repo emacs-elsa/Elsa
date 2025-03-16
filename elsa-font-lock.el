@@ -14,8 +14,14 @@
         t))))
 
 (defun elsa--font-lock-reset-anchor ()
-  (or (re-search-backward (rx (or "::" "elsa-make-type")) (line-beginning-position) t)
-      (and (re-search-backward "elsa-declare-defun" (line-beginning-position) t)
+  (or (re-search-backward (rx (or "::" "elsa-make-type"))
+                          (or (car-safe (nth 9 (syntax-ppss)))
+                              (line-beginning-position))
+                          t)
+      (and (re-search-backward "elsa-declare-defun"
+                               (or (car-safe (nth 9 (syntax-ppss)))
+                                   (line-beginning-position))
+                               t)
            (forward-sexp 3)
            (down-list)
            t)))
@@ -51,6 +57,13 @@
      (elsa--font-lock-setup-anchor -1)
      (elsa--font-lock-reset-anchor)
      (0 font-lock-constant-face t))
+    ;; generics
+    (,(rx symbol-start
+          "&" (group (1+ (or (syntax word) (syntax symbol))))
+          symbol-end)
+     (elsa--font-lock-setup-anchor -1)
+     (elsa--font-lock-reset-anchor)
+     (0 font-lock-variable-name-face t))
     (,(rx symbol-start (or "&extends" "&implements") symbol-end)
      (elsa--font-lock-setup-anchor -1)
      (elsa--font-lock-reset-anchor)
