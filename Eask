@@ -1,3 +1,5 @@
+;; -*- mode: eask; lexical-binding: t -*-
+
 (package "elsa"
          "0.1.0"
          "Emacs Lisp Static Analyser")
