@@ -97,7 +97,8 @@ The bottom layer is the last in the list."
                                        (down-list)
                                        (looking-at-p "eval-"))))) )
             (let* ((library-name (match-string 1))
-                   (library (elsa--find-dependency library-name)))
+		   (library (when library-name
+			      (elsa--find-dependency library-name))))
               (when library
                 (push (list library library-name) this-file-requires)))))))
     (nreverse this-file-requires)))
